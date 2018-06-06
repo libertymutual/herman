@@ -3,11 +3,11 @@
 ## Background
 
 Herman was created due to a need to deploy Docker containers to ECS for
-a team within Liberty Mutual group. Herman is a Bamboo plugin provides a
+a team within Liberty Mutual group. Herman is a Bamboo plugin that provides a
 standard way for teams to deploy containers to ECS and provision AWS
 resources (such as RDS instances, S3 buckets, etc) using a deployment
 task in Bamboo. Herman will read a deployment configuration YML file and
-handle making calls to the AWS endpoints to create or modify resources
+handle making calls to AWS APIs to create or modify resources
 as needed. For example:
 
 ``` java
