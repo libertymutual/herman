@@ -35,7 +35,7 @@ containerDefinitions:
 
 #### Plugin Setup
 
-Teams must organization-specific property values to a configuration file
+Teams must add organization-specific config values to a property file
 before deploying Herman as a Bamboo plugin: config/plugin-tasks.yml. 
 [See: Plugin configuration](docs/Plugin_Configuration.md)
 
