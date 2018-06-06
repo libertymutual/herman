@@ -1,4 +1,5 @@
 # Herman: AWS ECS Runtime and Deployment (Docker-on-AWS)
+[Join us on Slack!](https://join.slack.com/t/herman-dev/shared_invite/enQtMzU0ODIyNzkxOTQxLWU1NjExOTdkY2I2ZmYyYzQxNGI4OTI0OTU0ZTBkNWY2OWQyNzNiZDFkZTAyMTAyNjcxZDk4NWRjODdjZGNjYTQ)
 
 ## Background
 
