@@ -104,3 +104,6 @@ will be able to send metrics assuming the New Relic agent is configured
 in your app code. To go along with this, Herman will register alert
 conditions and notification channels for your application as well. For
 more information, see [New Relic](docs/New_Relic.md).
+
+## Contributing
+See [CONTRIBUTING.md](CONTRIBUTING.md)
