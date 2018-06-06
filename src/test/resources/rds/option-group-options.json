@@ -1,0 +1,23 @@
+{
+  "majorEngineVersion": "1.2.3",
+  "options": [
+    {
+      "optionName": "SSL",
+      "port": 2484,
+      "vpcSecurityGroupMemberships": [
+        {
+          "vpcSecurityGroupId": "sg-1acb0c64"
+        }
+      ]
+    },
+    {
+      "optionName": "SQLT",
+      "optionSettings": [
+        {
+          "name": "LICENSE_PACK",
+          "value": "T"
+        }
+      ]
+    }
+  ]
+}

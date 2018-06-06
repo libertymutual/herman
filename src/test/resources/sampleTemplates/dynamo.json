@@ -1,0 +1,62 @@
+{
+  "cluster": "some_cluster",
+  "appName": "some_app_name",
+  "service": {
+    "instanceCount": "1",
+    "urlPrefixOverride": "prefix",
+    "urlSuffix": "suffix",
+    "healthCheck": {
+      "target": "/health"
+    }
+  },
+  "containerDefinitions": [
+    {
+      "memory": "350",
+      "portMappings": [
+        {
+          "hostPort": 0,
+          "containerPort": 8443
+        }
+      ],
+      "environment": [
+        {
+          "name": "SPRING_PROFILES_ACTIVE",
+          "value": "non-prod"
+        },
+        {
+          "name": "app.version",
+          "value": "version"
+        }
+      ],
+      "image": "543944794056.dkr.ecr.us-east-1.amazonaws.com/${bamboo.maven.artifactId}:${bamboo.maven.version}"
+    }
+  ],
+  "dynamoDBTables": [
+    {
+      "attributes": [
+        {
+          "attributeName": "test",
+          "attributeType": "S"
+        }
+      ],
+      "keySchema": [
+        {
+          "attributeName": "test",
+          "keyType": "HASH"
+        }
+      ],
+      "provisionedThroughput": {
+        "readCapacityUnits": 5,
+        "writeCapacityUnits": 2
+      },
+      "sseSpecification": {
+        "enabled": true
+      },
+      "streamSpecification": {
+        "streamEnabled": true,
+        "streamViewType": "NEW_IMAGE"
+      },
+      "tableName": "test-table"
+    }
+  ]
+}

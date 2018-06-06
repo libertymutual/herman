@@ -1,0 +1,14 @@
+<atlassian-plugin key="${project.groupId}.${project.artifactId}-tests" name="${project.name}" plugins-version="2">
+  <plugin-info>
+    <description>${project.description}</description>
+    <version>${project.version}</version>
+    <vendor name="${project.organization.name}" url="${project.organization.url}"/>
+  </plugin-info>
+
+  <!-- from our base plugin -->
+  <component-import interface="com.lmig.ci.lmb.api.MyPluginComponent" key="myComponent"/>
+
+  <!-- from the product container -->
+  <component-import interface="com.atlassian.sal.api.ApplicationProperties" key="applicationProperties"/>
+
+</atlassian-plugin>

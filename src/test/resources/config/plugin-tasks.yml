@@ -1,0 +1,30 @@
+company: company-test-1
+sbu: sbu-test-1
+org: org-test-1
+ecsConsoleLinkPattern: "https://aws-fed.lmb.lmig.com/token/%s/read-only?target=ecs/home?region=%s#/clusters/%s/services/%s/details"
+rdsCredentialBrokerImage: "6628209.dkr.ecr.us-east-1.amazonaws.com/rds-credential-broker:BUILD7-Re7db3f67a688bd6f6077272fe33d8af6028e771e"
+newRelic:
+  accountId: 11223344
+  nrLambda: "herman-newrelic-broker"
+sslCertificates:
+  - urlSuffix:          "*"
+    urlPrefix:          "np-org.company-int.com"
+    pathSuffix:         "/aws-org/np-org.company-int.com"
+    internetFacingUrl:  false
+  - urlSuffix:          "*"
+    urlPrefix:          "org.company-int.com"
+    pathSuffix:         "/aws-org/np-org.company-int.com"
+    internetFacingUrl:  false
+  - urlSuffix:          "*"
+    urlPrefix:          "np-org.company.com"
+    pathSuffix:         "/aws-org/np-org.company.com"
+    internetFacingUrl:  true
+  - urlSuffix:          "*"
+    urlPrefix:          "org.company.com"
+    pathSuffix:         "/aws-org/np-org.company.com"
+    internetFacingUrl:  true
+splunkInstances:
+  - httpEventCollectorUrl: https://internal-logshaper.lmb.lmig.com
+    webUrl: https://libertymutual.splunkcloud.com
+  - httpEventCollectorUrl: https://internal-logshaper2.lmb.lmig.com
+    webUrl: https://libertymutual2.splunkcloud.com

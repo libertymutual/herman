@@ -1,0 +1,79 @@
+<atlassian-plugin key="${atlassian.plugin.key}" name="${project.name}"
+  plugins-version="2">
+  <plugin-info>
+    <description>${project.description}</description>
+    <version>${project.version}</version>
+    <vendor name="${project.organization.name}" url="${project.organization.url}"/>
+    <param name="plugin-icon">images/whale2.png</param>
+    <param name="plugin-logo">images/whale2.png</param>
+  </plugin-info>
+
+  <!-- add our i18n resource -->
+  <resource location="aws-ecs-tasks" name="i18n" type="i18n"/>
+
+  <!-- add our web resources -->
+  <web-resource key="aws-ecs-tasks-resources" name="aws-ecs-tasks Web Resources">
+    <dependency>com.atlassian.auiplugin:ajs</dependency>
+
+    <resource location="/css/aws-ecs-tasks.css" name="aws-ecs-tasks.css" type="download"/>
+    <resource location="/js/aws-ecs-tasks.js" name="aws-ecs-tasks.js" type="download"/>
+    <resource location="/images" name="images/" type="download"/>
+
+    <context>aws-ecs-tasks</context>
+  </web-resource>
+
+  <taskType class="com.libertymutualgroup.herman.task.ecr.ECRRepoCreateTask" key="ecsRepoCreateTask"
+    name="Herman (LTS) - Repo Create, Docker Login">
+    <description>Create an ECS repository with proper permissions and login</description>
+    <configuration class="com.libertymutualgroup.herman.task.ecr.ECRRepoCreateTaskConfigurator"/>
+    <resource location="editEcsRepoCreateTask.ftl" name="edit" type="freemarker"/>
+    <resource location="images/whale2.png" name="icon" type="download"/>
+  </taskType>
+
+  <taskType class="com.libertymutualgroup.herman.task.ecs.ECSPushTask" key="ecsPushTask"
+    name="Herman (LTS) - ECS Push">
+    <description>Push an app to ECS based on your template</description>
+    <resource location="images/whale2.png" name="icon" type="download"/>
+    <configuration class="com.libertymutualgroup.herman.task.ecs.ECSPushTaskConfigurator"/>
+    <resource location="editEcsPushTask.ftl" name="edit" type="freemarker"/>
+  </taskType>
+
+  <taskType class="com.libertymutualgroup.herman.task.cft.CftPushTask" key="cftPushTask"
+    name="Herman (LTS) - CFT Push">
+    <description>Push an app to ECS based on your template</description>
+    <resource location="images/whale2.png" name="icon" type="download"/>
+    <configuration class="com.libertymutualgroup.herman.task.cft.CftPushTaskConfigurator"/>
+    <resource location="editCftPushTask.ftl" name="edit" type="freemarker"/>
+  </taskType>
+
+  <taskType class="com.libertymutualgroup.herman.task.s3.S3CreateTask" key="s3CreateTask"
+    name="Herman (LTS) - S3 Bucket Create">
+    <description>Create an S3 Bucket</description>
+    <resource location="images/whale2.png" name="icon" type="download"/>
+    <configuration class="com.libertymutualgroup.herman.task.s3.S3CreateTaskConfigurator"/>
+    <resource location="editS3CreateTask.ftl" name="edit" type="freemarker"/>
+  </taskType>
+
+  <taskType class="com.libertymutualgroup.herman.task.lambda.LambdaCreateTask" key="lambdaPushTask"
+    name="Herman (LTS) - Lambda Push">
+    <description>Create an AWS Lambda Function</description>
+    <resource location="images/whale2.png" name="icon" type="download"/>
+    <configuration class="com.libertymutualgroup.herman.task.lambda.LambdaCreateTaskConfigurator"/>
+    <resource location="editLambdaCreateTask.ftl" name="edit" type="freemarker"/>
+  </taskType>
+
+  <taskType class="com.libertymutualgroup.herman.task.newrelic.NewRelicBrokerTask" key="newRelicConfigPushTask"
+    name="Herman (LTS) - New Relic Configuration Push">
+    <description>Create an AWS Lambda Function</description>
+    <resource location="images/whale2.png" name="icon" type="download"/>
+    <configuration class="com.libertymutualgroup.herman.task.newrelic.NewRelicBrokerTaskConfigurator"/>
+    <resource location="editNewRelicBrokerTask.ftl" name="edit" type="freemarker"/>
+  </taskType>
+
+  <servlet class="com.libertymutualgroup.herman.aws.DiskAdminServlet" key="healthServletLTS" name="Health Servlet LTS">
+    <description>Health Servlet</description>
+    <url-pattern>/HealthLTS</url-pattern>
+  </servlet>
+
+
+</atlassian-plugin>

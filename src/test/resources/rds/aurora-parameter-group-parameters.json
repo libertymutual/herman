@@ -1,0 +1,7 @@
+[
+  {
+    "parameterName": "sysdate-is-now",
+    "parameterValue": "TRUE",
+    "applyMethod": "immediate"
+  }
+]

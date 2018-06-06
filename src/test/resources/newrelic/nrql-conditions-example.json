@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Cluster CPU Utilization",
+    "enabled": false,
+    "terms": [
+      {
+        "duration": "5",
+        "operator": "above",
+        "priority": "critical",
+        "threshold": "80",
+        "time_function": "all"
+      }
+    ],
+    "value_function": "single_value",
+    "nrql": {
+      "query": "SELECT max(cpuPercent) FROM SystemSample WHERE 'cluster' = 'devtools-bamboo-agents-production-us-east-1-%'",
+      "since_value": "3"
+    }
+  }
+]

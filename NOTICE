@@ -1,0 +1,7 @@
+This code, released under the Apache 2.0 license as outlined in the LICENSE notice, leverages two outside SDKs also released under the Apache 2.0 license.
+
+AWS SDK for Java (https://aws.amazon.com/sdk-for-java/)
+* Proof of Apache 2.0 License (https://github.com/aws/aws-sdk-java/blob/master/LICENSE.txt)
+
+Atlassian Plugin SDK (https://developer.atlassian.com/server/framework/atlassian-sdk/)
+* Proof of Apache 2.0 License (https://developer.atlassian.com/server/framework/atlassian-sdk/packaging-and-releasing-your-plugin/)

@@ -1,0 +1,56 @@
+/*
+ * Copyright 2018 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.libertymutualgroup.herman.aws.ecs.loadbalancing;
+
+public class DeriveCertResult {
+
+    private SSLCertificate sslCertificate;
+    private String certArn;
+
+    public SSLCertificate getSslCertificate() {
+        return sslCertificate;
+    }
+
+    public void setSslCertificate(SSLCertificate sslCertificate) {
+        this.sslCertificate = sslCertificate;
+    }
+
+    public String getCertArn() {
+        return certArn;
+    }
+
+    public void setCertArn(String certArn) {
+        this.certArn = certArn;
+    }
+
+    public DeriveCertResult withSslCertificate(final SSLCertificate sslCertificate) {
+        this.sslCertificate = sslCertificate;
+        return this;
+    }
+
+    public DeriveCertResult withCertArn(final String certArn) {
+        this.certArn = certArn;
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return "DeriveCertResult{" +
+            "sslCertificate=" + sslCertificate +
+            ", certArn='" + certArn + '\'' +
+            '}';
+    }
+}

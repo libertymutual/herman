@@ -1,0 +1,30 @@
+cluster: my-cluster
+appName: my-app-dev
+service:
+  instanceCount: 1
+  urlPrefixOverride: my-app-dev
+  urlSuffix: np-lmb.lmig.com
+  healthCheck:
+    target: "/solr/parties/admin/ping"
+  deploymentConfiguration:
+    maximumPercent: 100
+    minimumHealthyPercent: 0
+containerDefinitions:
+- memory: 1900
+  portMappings:
+  - hostPort: 0
+    containerPort: 8984
+  image: 543944794056.dkr.ecr.us-east-1.amazonaws.com/my-app:BUILD1
+  environment:
+  - name: DEPLOY_ENVIRONMENT
+    value: dev
+  - name: LDAP_PROPS
+    value: foo
+  mountPoints:
+  - sourceVolume: solr-data
+    containerPath: /cores
+volumes:
+- name: solr-data
+  host:
+    sourcePath: /solr/cores
+

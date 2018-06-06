@@ -1,0 +1,7 @@
+[
+  {
+    "parameterName": "optimizer_adaptive_features",
+    "parameterValue": "FALSE",
+    "applyMethod": "immediate"
+  }
+]

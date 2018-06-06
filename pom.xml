@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.libertymutualgroup.herman</groupId>
+  <artifactId>herman-bamboo-plugin</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+
+  <organization>
+    <name>Liberty Mutual</name>
+    <url>http://www.libertymutual.com/</url>
+  </organization>
+
+  <name>herman</name>
+  <packaging>atlassian-plugin</packaging>
+
+  <properties>
+    <bamboo.version>5.13.2</bamboo.version>
+    <bamboo.data.version>5.13.2</bamboo.data.version>
+    <amps.version>6.2.11</amps.version>
+    <plugin.testrunner.version>1.2.3</plugin.testrunner.version>
+    <atlassian.spring.scanner.version>1.2.13</atlassian.spring.scanner.version>
+    <aws-sdk.version>1.11.335</aws-sdk.version>
+    <!-- This key is used to keep the consistency between the key in atlassian-plugin.xml
+      and the key to generate bundle. -->
+    <atlassian.plugin.key>${project.groupId}.${project.artifactId}</atlassian.plugin.key>
+
+    <jacoco.version>0.8.0</jacoco.version>
+    <coverage.reports.dir>${basedir}/target/coverage-reports</coverage.reports.dir>
+    <sonar.jacoco.reportPath>${coverage.reports.dir}/jacoco-unit.exec</sonar.jacoco.reportPath>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.amazonaws</groupId>
+        <artifactId>aws-java-sdk-bom</artifactId>
+        <version>${aws-sdk.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpcore</artifactId>
+        <version>4.4.4</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.atlassian.bamboo</groupId>
+      <artifactId>atlassian-bamboo-web</artifactId>
+      <version>${bamboo.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.atlassian.plugin</groupId>
+      <artifactId>atlassian-spring-scanner-annotation</artifactId>
+      <version>${atlassian.spring.scanner.version}</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.atlassian.plugin</groupId>
+      <artifactId>atlassian-spring-scanner-runtime</artifactId>
+      <version>${atlassian.spring.scanner.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>javax.inject</groupId>
+      <artifactId>javax.inject</artifactId>
+      <version>1</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.10</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- WIRED TEST RUNNER DEPENDENCIES -->
+    <dependency>
+      <groupId>com.atlassian.plugins</groupId>
+      <artifactId>atlassian-plugins-osgi-testrunner</artifactId>
+      <version>${plugin.testrunner.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>javax.ws.rs</groupId>
+      <artifactId>jsr311-api</artifactId>
+      <version>1.1.1</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>2.2.2-atlassian-1</version>
+    </dependency>
+
+    <!-- AWS Deps -->
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-ecs</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-ecr</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-cloudformation</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-elasticloadbalancing</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-elasticloadbalancingv2</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-iam</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-ec2</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-s3</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-rds</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-sqs</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-sns</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-kinesis</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-sts</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-cloudwatch</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-applicationautoscaling</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-dynamodb</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-lambda</artifactId>
+    </dependency>
+
+    <!-- 3rd Party Libs -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.4</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>1.7.16</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-yaml</artifactId>
+      <version>2.6.6</version>
+    </dependency>
+
+    <!-- JACOCO OFFLINE INSTRUMENTATION -->
+    <dependency>
+      <groupId>org.jacoco</groupId>
+      <artifactId>org.jacoco.agent</artifactId>
+      <version>${jacoco.version}</version>
+      <classifier>runtime</classifier>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-all</artifactId>
+      <version>1.9.5</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <includes>
+            <include>**/*Test.java</include>
+            <include>**/*Documentation.java</include>
+          </includes>
+          <systemPropertyVariables>
+            <jacoco-agent.destfile>${sonar.jacoco.reportPath}</jacoco-agent.destfile>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+
+      <!-- JACOCO -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco.version}</version>
+        <executions>
+          <execution>
+            <id>jacoco-instrument</id>
+            <goals>
+              <goal>instrument</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>jacoco-restore-instrumented-classes</id>
+            <goals>
+              <goal>restore-instrumented-classes</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>jacoco-report</id>
+            <goals>
+              <goal>report</goal>
+            </goals>
+            <configuration combine.self="override">
+              <includes>
+                <include>com/lmig/**/*.class</include>
+              </includes>
+              <dataFile>${sonar.jacoco.reportPath}</dataFile>
+              <outputDirectory>${coverage.reports.dir}</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>com.atlassian.maven.plugins</groupId>
+        <artifactId>maven-bamboo-plugin</artifactId>
+        <version>${amps.version}</version>
+        <extensions>true</extensions>
+        <configuration>
+          <productVersion>${bamboo.version}</productVersion>
+          <productDataVersion>${bamboo.data.version}</productDataVersion>
+          <enableQuickReload>true</enableQuickReload>
+          <enableFastdev>false</enableFastdev>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.5.1</version>
+        <executions>
+          <!-- Replacing default-compile as it is treated specially by maven -->
+          <execution>
+            <id>default-compile</id>
+            <phase>none</phase>
+          </execution>
+          <!-- Replacing default-testCompile as it is treated specially by maven -->
+          <execution>
+            <id>default-testCompile</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
+            <id>java-compile</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>java-test-compile</id>
+            <phase>test-compile</phase>
+            <goals>
+              <goal>testCompile</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.1</version>
+        <configuration>
+          <source>1.8</source>
+          <target>1.8</target>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

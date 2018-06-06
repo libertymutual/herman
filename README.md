@@ -1,0 +1,106 @@
+# Herman: AWS ECS Runtime and Deployment (Docker-on-AWS)
+
+## Background
+
+Herman was created due to a need to deploy Docker containers to ECS for
+a team within Liberty Mutual group. Herman is a Bamboo plugin provides a
+standard way for teams to deploy containers to ECS and provision AWS
+resources (such as RDS instances, S3 buckets, etc) using a deployment
+task in Bamboo. Herman will read a deployment configuration YML file and
+handle making calls to the AWS endpoints to create or modify resources
+as needed. For example:
+
+``` java
+cluster: ${ecs.cluster}
+appName: ${bamboo.maven.artifactId}-${bamboo.deploy.environment}
+service:
+  instanceCount: ${instance.count}
+  urlPrefixOverride: ${bamboo.deploy.environment}-${aws.region}-${bamboo.maven.artifactId}
+  urlSuffix: ${url.suffix}
+  healthCheck:
+    target: "/health"
+containerDefinitions:
+- memory: 512
+  portMappings:
+  - hostPort: 0
+    containerPort: 8443
+  environment:
+  - name: spring.profiles.active
+    value: ${bamboo.deploy.environment}
+  image: 892823.dkr.ecr.us-east-1.amazonaws.com/${bamboo.maven.artifactId}:${bamboo.maven.version}
+```
+
+## Setup
+
+#### Plugin Setup
+
+Teams must organization-specific property values to a configuration file
+before deploying Herman as a Bamboo plugin: config/plugin-tasks.yml. 
+[See: Plugin configuration](docs/Plugin_Configuration.md)
+
+There are two other files that need to be updated:
+-   ECR IAM Policy: [See: ECR Policy](src/main/resources/iam/ecr-policy.json).
+    This is the default IAM policy used when creating ECR repositories.
+-   KMS IAM Policy: [See: KMS Policy](src/main/resources/iam/kms-policy.json).
+    This is the default IAM policy used when creating KMS keys.
+    
+#### Broker Setup
+
+There are four broker services that need to be deployed before Herman is operational:
+-  DNS Broker: [See: DNS Broker Setup](docs/brokers/DNS_Broker_Setup.md)
+-  New Relic Broker: [See: New Relic Broker Setup](docs/brokers/NR_Broker_Setup.md)
+-  RDS Credential Broker: [See: RDS Credential Broker Setup](docs/brokers/RDS_Cred_Broker_Setup.md)
+-  CFT Push Variable Broker: [See: CFT Push Variable Broker Setup](docs/brokers/CFT_Push_Variable_Broker_Setup.md)
+
+## Supported Workload Types
+
+ECS supports three basic styles of container workloads:
+
+-   web (keep my app running, and give it a URL)
+-   daemon (keep my app running, but no url required)
+-   batch (run this task, shut down when done)
+
+[See: Task Definition Conventions](docs/Task_Definition_Conventions.md)
+
+## Application Identity (AWS "IAM")
+
+As part of deployment, your application will get provisioned an identity
+to be used when accessing other AWS resources such as RDS, SQS, and S3. 
+By convention, this IAM Role will match the appName field in your
+deployment manifest YML/JSON.
+
+Permissions are limited to start with to follow the "least privilege"
+model.  More details found on the IAM page, as well as specific examples
+for brokered services on their pages.
+
+[see: IAM Roles](docs/IAM_Roles.md)
+
+## Operational Services
+
+-   Application logs are centrally collected into Splunk per region - no
+    application changes are required
+-   NewRelic is available for performance monitoring.   Some app config
+    required, but labels and naming is injected automatically.
+
+## Provisioned Resources ("Brokered Services")
+
+Commonly used application resources are able to be provisioned via your
+deployment YML. For more information, see the page on [brokered
+services](docs/Brokered_Services_-_ECS_Sidecars.md).
+
+## Standalone Brokered Services
+Some AWS services can be used outside of the ECS context, and Herman
+provides a way to leverage its brokering capabilities without requiring
+an ECS deployment. These brokers include:
+
+-   [S3 Buckets](docs/standaloneBrokeredServices/S3_Websites.md) - Primarily used for static web content
+-   [Lambda Functions](docs/standaloneBrokeredServices/Lambda_Functions.md)
+
+## New Relic Monitoring and Alerting
+
+New Relic is commonly used for application monitoring and alerting.
+Herman will inform New Relic of a new deployment and your application
+will be able to send metrics assuming the New Relic agent is configured
+in your app code. To go along with this, Herman will register alert
+conditions and notification channels for your application as well. For
+more information, see [New Relic](docs/New_Relic.md).

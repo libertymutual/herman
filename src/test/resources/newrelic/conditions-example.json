@@ -1,0 +1,52 @@
+[
+  {
+    "type": "apm_jvm_metric",
+    "enabled": false,
+    "name": "High CPU",
+    "metric": "cpu_utilization_time",
+    "violation_close_timer": 24,
+    "terms": [
+      {
+        "duration": "5",
+        "operator": "above",
+        "priority": "critical",
+        "threshold": "75",
+        "time_function": "all"
+      }
+    ]
+  },
+  {
+    "type": "apm_jvm_metric",
+    "enabled": false,
+    "name": "PS GC (High)",
+    "metric": "gc_cpu_time",
+    "gc_metric": "GC/PS Scavenge",
+    "violation_close_timer": 24,
+    "terms": [
+      {
+        "duration": "5",
+        "operator": "above",
+        "priority": "critical",
+        "threshold": "5",
+        "time_function": "all"
+      }
+    ]
+  },
+  {
+    "type": "apm_jvm_metric",
+    "enabled": false,
+    "name": "PS MarkSweep (High)",
+    "metric": "gc_cpu_time",
+    "gc_metric": "GC/PS MarkSweep",
+    "violation_close_timer": 24,
+    "terms": [
+      {
+        "duration": "5",
+        "operator": "above",
+        "priority": "critical",
+        "threshold": "15",
+        "time_function": "all"
+      }
+    ]
+  }
+]

@@ -1,0 +1,62 @@
+[
+  {
+    "name": "DB Storage Utilization over 90%",
+    "enabled": true,
+    "metric_description": "FreeStorageSpace",
+    "metric": "Component/FreeStorageSpace[bytes]",
+    "value_function": "average",
+    "terms": [
+      {
+        "duration": "10",
+        "operator": "below",
+        "priority": "critical",
+        "threshold": "21474836480",
+        "time_function": "all"
+      }
+    ],
+    "plugin": {
+      "id": "3102",
+      "guid": "com.newrelic.aws.rds"
+    }
+  },
+  {
+    "name": "DB Memory Utilization over 90%",
+    "enabled": true,
+    "metric_description": "FreeableMemory",
+    "metric": "Component/FreeableMemory[bytes]",
+    "value_function": "average",
+    "terms": [
+      {
+        "duration": "10",
+        "operator": "below",
+        "priority": "critical",
+        "threshold": "402653184",
+        "time_function": "all"
+      }
+    ],
+    "plugin": {
+      "id": "3102",
+      "guid": "com.newrelic.aws.rds"
+    }
+  },
+  {
+    "name": "DB CPU Utilization over 80%",
+    "enabled": true,
+    "metric_description": "CPUUtilization",
+    "metric": "Component/CPUUtilization[percent]",
+    "value_function": "average",
+    "terms": [
+      {
+        "duration": "10",
+        "operator": "above",
+        "priority": "critical",
+        "threshold": "80",
+        "time_function": "all"
+      }
+    ],
+    "plugin": {
+      "id": "3102",
+      "guid": "com.newrelic.aws.rds"
+    }
+  }
+]

@@ -1,0 +1,21 @@
+company: # Short comapny name
+sbu: # Short business unit name
+org: # Short org name
+engine: # Short name for CI/CD engine
+ecsConsoleLinkPattern: # URL pattern to access the AWS console
+rdsCredentialBrokerImage: # RDS Cred Broker image location
+cftPushVariableBrokerLambda: # CFT Push Variable Broker Lambda name
+dnsBrokerLambda: # DNS Broker Lambda name
+awsAccount:
+  prod: # Prod AWS account
+newRelic:
+  accountId: # New Relic Account ID
+  nrLambda:  # New Relic Broker Lambda name
+sslCertificates:
+  - urlPrefix:          # "*" or a specific URL prefix. For example, given the test-app.np-lmb.lmig.com URL, the prefix could either be "*" OR "test-app"
+    urlSuffix:          # Suffix for the URL. For example, given the test-app.np-lmb.lmig.com URL, the suffix would be "np-lmb.lmig.com"
+    pathSuffix:         # Path for the SSL cert in IAM
+    internetFacingUrl:  # true if the URL is externally-facing
+splunkInstances:
+  - httpEventCollectorUrl:  # URL for the Splunk event collector for the Splunk instance. This is set for the ECS cluster.
+    webUrl:                 # Web UI URL for the instance. This is used to print out a link to the logs for a specific deployment.
