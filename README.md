@@ -108,3 +108,20 @@ more information, see [New Relic](docs/New_Relic.md).
 
 ## Contributing
 See [CONTRIBUTING.md](CONTRIBUTING.md)
+
+## Credits
+Herman was created through the hard work of a small, dynamic community within Liberty Mutual. Original authors:
+-   [Mike Dodge](https://github.com/dodgemich)
+-   [Blake Janelle](https://github.com/binaryblake)
+-   [Ryan Batchelder](https://github.com/c1phr)
+-   [Daniel Fritz](https://github.com/fritzdj)
+-   [Stephen Humer](https://github.com/stevehumer)
+-   [Chris Doherty](https://github.com/CWDoherty)
+-   [Evan Kellogg](https://github.com/evankellogg)
+-   [John Lazos](https://github.com/jelazos7)
+-   Calum McElhone
+-   Michael Van Berkel
+-   Andrew Barter
+-   Alex Schwartz
+-   Nathan Ridlon
+-   Michael Masscotte
