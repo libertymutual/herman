@@ -119,9 +119,11 @@ Herman was created through the hard work of a small, dynamic community within Li
 -   [Chris Doherty](https://github.com/CWDoherty)
 -   [Evan Kellogg](https://github.com/evankellogg)
 -   [John Lazos](https://github.com/jelazos7)
+-   [Trevor Creed](https://github.com/tcreeds)
 -   Calum McElhone
 -   Michael Van Berkel
 -   Andrew Barter
 -   Alex Schwartz
 -   Nathan Ridlon
 -   Michael Masscotte
+-   Sabir Iqbal
