@@ -18,7 +18,6 @@ package com.libertymutualgroup.herman.aws.ecs;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.PortMapping;
 import com.libertymutualgroup.herman.aws.AwsExecException;
-import java.util.Random;
 
 public class EcsPortHandler {
 
@@ -56,10 +55,9 @@ public class EcsPortHandler {
                 }
             }
         }
-        if (container != null) {
-            if (!isAlb) {
-                Random random = new Random();
-                int randomPort = (random.nextInt() * (DOCKER_MAX_PORT - DOCKER_MIN_PORT)) + DOCKER_MIN_PORT;
+        if(container!=null){
+            if(!isAlb){
+                int randomPort = (int) ((Math.random() * (DOCKER_MAX_PORT - DOCKER_MIN_PORT)) + DOCKER_MIN_PORT);
                 container.getPortMappings().get(0).setHostPort(randomPort);
             }
         } else {

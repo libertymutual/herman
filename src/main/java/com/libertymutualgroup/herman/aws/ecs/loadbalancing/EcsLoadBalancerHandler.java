@@ -116,10 +116,11 @@ public class EcsLoadBalancerHandler {
             deriveCertResult.getCertArn());
         List<com.amazonaws.services.elasticloadbalancing.model.Tag> tags = getElbTagList(
             clusterMetadata.getClusterCftStackTags(), appName);
+        CreateLoadBalancerRequest createLoadBalancerRequest = new CreateLoadBalancerRequest().withSubnets(elbSubnets)
+            .withListeners(listeners).withScheme(elbScheme).withSecurityGroups(elbSecurityGroups)
+            .withLoadBalancerName(appName).withTags(tags);
         try {
-            elbClient.createLoadBalancer(new CreateLoadBalancerRequest().withSubnets(elbSubnets)
-                .withListeners(listeners).withScheme(elbScheme).withSecurityGroups(elbSecurityGroups)
-                .withLoadBalancerName(appName).withTags(tags));
+            elbClient.createLoadBalancer(createLoadBalancerRequest);
         } catch (DuplicateLoadBalancerNameException e) {
             LOGGER.debug("Error creating ELB: " + appName, e);
             buildLogger.addBuildLogEntry("Updating ELB: " + appName);
@@ -135,7 +136,8 @@ public class EcsLoadBalancerHandler {
 
             elbClient.attachLoadBalancerToSubnets(
                 new AttachLoadBalancerToSubnetsRequest().withSubnets(elbSubnets).withLoadBalancerName(appName));
-
+        } catch (Exception ex) {
+            throw new RuntimeException("Error creating ELB: " + createLoadBalancerRequest);
         }
 
         if (definition.getService().getAppStickinessCookie() != null) {
