@@ -15,8 +15,6 @@
  */
 package com.libertymutualgroup.herman.aws.lambda;
 
-import static java.lang.Math.toIntExact;
-
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
@@ -36,6 +34,7 @@ import com.amazonaws.services.kms.model.Tag;
 import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
 import com.amazonaws.services.lambda.model.AddPermissionRequest;
+import com.amazonaws.services.lambda.model.AddPermissionResult;
 import com.amazonaws.services.lambda.model.CreateFunctionRequest;
 import com.amazonaws.services.lambda.model.CreateFunctionResult;
 import com.amazonaws.services.lambda.model.Environment;
@@ -64,6 +63,9 @@ import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
 import com.libertymutualgroup.herman.util.ArnUtil;
 import com.libertymutualgroup.herman.util.AwsNetworkingUtil;
 import com.libertymutualgroup.herman.util.FileUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -76,8 +78,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static java.lang.Math.toIntExact;
 
 public class LambdaBroker {
 
@@ -224,6 +226,8 @@ public class LambdaBroker {
                 .withStatementId(this.configuration.getFunctionName() + "-InvokePermission")
                 .withQualifier(permission.qualifier)
                 .withSourceArn(permission.sourceArn);
+            AddPermissionResult permissionResult = lambdaClient.addPermission(permissionRequest);
+            buildLogger.addBuildLogEntry("Added permissions: " + permissionResult.getStatement());
         }
 
         String kmsKeyArn = brokerKms(tags);

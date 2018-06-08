@@ -48,6 +48,11 @@ import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.TaskContextPropertyHandler;
 import com.libertymutualgroup.herman.task.cft.CFTPushTaskProperties;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -59,10 +64,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class CftPush {
 
@@ -111,6 +112,7 @@ public class CftPush {
         String projecName = taskContext.getDeploymentContext().getDeploymentProjectName();
 
         if (!this.taskProperties.getCftPushVariableBrokerLambda().isEmpty()) {
+            buildLogger.addBuildLogEntry("Getting CFT variables from Lambda: " + this.taskProperties.getCftPushVariableBrokerLambda());
             introspectEnvironment();
         }
         injectBambooContext();
