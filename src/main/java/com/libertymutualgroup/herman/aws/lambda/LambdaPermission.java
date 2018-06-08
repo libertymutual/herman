@@ -79,4 +79,16 @@ public class LambdaPermission {
     public void setSourceArn(String sourceArn) {
         this.sourceArn = sourceArn;
     }
+
+    @Override
+    public String toString() {
+        return "LambdaPermission{" +
+            "action=" + action +
+            ", eventSourceToken='" + eventSourceToken + '\'' +
+            ", effect='" + effect + '\'' +
+            ", principal='" + principal + '\'' +
+            ", qualifier='" + qualifier + '\'' +
+            ", sourceArn='" + sourceArn + '\'' +
+            '}';
+    }
 }

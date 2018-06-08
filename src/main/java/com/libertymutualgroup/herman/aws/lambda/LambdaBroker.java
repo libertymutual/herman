@@ -34,7 +34,6 @@ import com.amazonaws.services.kms.model.Tag;
 import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
 import com.amazonaws.services.lambda.model.AddPermissionRequest;
-import com.amazonaws.services.lambda.model.AddPermissionResult;
 import com.amazonaws.services.lambda.model.CreateFunctionRequest;
 import com.amazonaws.services.lambda.model.CreateFunctionResult;
 import com.amazonaws.services.lambda.model.Environment;
@@ -220,14 +219,12 @@ public class LambdaBroker {
         if (permission != null) {
             permissionRequest = new AddPermissionRequest()
                 .withFunctionName(this.configuration.getFunctionName())
-                .withAction(permission.action)
-                .withPrincipal(permission.principal)
-                .withEventSourceToken(permission.eventSourceToken)
+                .withAction(permission.getAction())
+                .withPrincipal(permission.getPrincipal())
+                .withEventSourceToken(permission.getEventSourceToken())
                 .withStatementId(this.configuration.getFunctionName() + "-InvokePermission")
-                .withQualifier(permission.qualifier)
-                .withSourceArn(permission.sourceArn);
-            AddPermissionResult permissionResult = lambdaClient.addPermission(permissionRequest);
-            buildLogger.addBuildLogEntry("Added permissions: " + permissionResult.getStatement());
+                .withQualifier(permission.getQualifier())
+                .withSourceArn(permission.getSourceArn());
         }
 
         String kmsKeyArn = brokerKms(tags);
@@ -283,7 +280,7 @@ public class LambdaBroker {
 
         if (permissionRequest != null) {
             try {
-                buildLogger.addBuildLogEntry("Restting execution permissions");
+                buildLogger.addBuildLogEntry("Resetting execution permissions");
 
                 RemovePermissionRequest removeExistingPerms = new RemovePermissionRequest()
                     .withFunctionName(this.configuration.getFunctionName())
