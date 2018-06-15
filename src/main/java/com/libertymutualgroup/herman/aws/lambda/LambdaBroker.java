@@ -42,6 +42,8 @@ import com.amazonaws.services.lambda.model.GetFunctionConfigurationRequest;
 import com.amazonaws.services.lambda.model.GetFunctionConfigurationResult;
 import com.amazonaws.services.lambda.model.GetFunctionRequest;
 import com.amazonaws.services.lambda.model.GetFunctionResult;
+import com.amazonaws.services.lambda.model.GetPolicyRequest;
+import com.amazonaws.services.lambda.model.GetPolicyResult;
 import com.amazonaws.services.lambda.model.RemovePermissionRequest;
 import com.amazonaws.services.lambda.model.ResourceNotFoundException;
 import com.amazonaws.services.lambda.model.TagResourceRequest;
@@ -51,6 +53,9 @@ import com.amazonaws.services.lambda.model.UpdateFunctionConfigurationResult;
 import com.amazonaws.services.lambda.model.VpcConfig;
 import com.amazonaws.util.IOUtils;
 import com.atlassian.bamboo.build.logger.BuildLogger;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.libertymutualgroup.herman.aws.AwsExecException;
@@ -72,6 +77,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -98,6 +104,8 @@ public class LambdaBroker {
     private AmazonIdentityManagement iamClient;
     private AwsNetworkingUtil networkingUtil;
     private CommonTaskProperties taskProperties;
+
+    private ObjectMapper mapper = new ObjectMapper();
 
     public LambdaBroker(LambdaPushContext context, BuildLogger buildLogger, Regions region) {
         this.context = context;
@@ -211,21 +219,7 @@ public class LambdaBroker {
         }
         Environment environment = new Environment().withVariables(environmentMap);
 
-        this.buildLogger.addBuildLogEntry("VPC Configuration: " + vpcConfig);
-
-        LambdaPermission permission = getExecutionPermission();
-
-        AddPermissionRequest permissionRequest = null;
-        if (permission != null) {
-            permissionRequest = new AddPermissionRequest()
-                .withFunctionName(this.configuration.getFunctionName())
-                .withAction(permission.getAction())
-                .withPrincipal(permission.getPrincipal())
-                .withEventSourceToken(permission.getEventSourceToken())
-                .withStatementId(this.configuration.getFunctionName() + "-InvokePermission")
-                .withQualifier(permission.getQualifier())
-                .withSourceArn(permission.getSourceArn());
-        }
+        this.buildLogger.addBuildLogEntry("... VPC Configuration: " + vpcConfig);
 
         String kmsKeyArn = brokerKms(tags);
 
@@ -269,7 +263,7 @@ public class LambdaBroker {
                 .withResource(functionArn)
                 .withTags(tagMap);
 
-            buildLogger.addBuildLogEntry("Updating with configuration: " + updateFunctionConfiguration);
+            buildLogger.addBuildLogEntry("... Updating with configuration: " + updateFunctionConfiguration);
             lambdaClient.updateFunctionCode(updateFunctionCode);
             UpdateFunctionConfigurationResult configurationResult = lambdaClient
                 .updateFunctionConfiguration(updateFunctionConfiguration);
@@ -278,21 +272,45 @@ public class LambdaBroker {
             buildLogger.addBuildLogEntry("Lambda updated: " + configurationResult.getFunctionName());
         }
 
-        if (permissionRequest != null) {
-            try {
-                buildLogger.addBuildLogEntry("Resetting execution permissions");
+        try {
+            buildLogger.addBuildLogEntry("... Resetting execution permissions");
+            List<String> sidsToRemove = getExistingExecutionPermissionSids();
 
-                RemovePermissionRequest removeExistingPerms = new RemovePermissionRequest()
-                    .withFunctionName(this.configuration.getFunctionName())
-                    .withStatementId(permissionRequest.getStatementId());
-                lambdaClient.removePermission(removeExistingPerms);
-            } catch (ResourceNotFoundException ex) {
-                LOGGER.debug("Function not found: " + this.configuration.getFunctionName(), ex);
-                buildLogger.addBuildLogEntry("Unable to reset permissions, skipping...");
+            if (sidsToRemove != null) {
+                for (String sid: sidsToRemove) {
+                    RemovePermissionRequest removeExistingPerms = new RemovePermissionRequest()
+                        .withFunctionName(this.configuration.getFunctionName())
+                        .withStatementId(sid);
+                    lambdaClient.removePermission(removeExistingPerms);
+                }
             }
+        } catch (ResourceNotFoundException ex) {
+            LOGGER.debug("Function not found: " + this.configuration.getFunctionName(), ex);
+            buildLogger.addBuildLogEntry("Unable to reset permissions, skipping...");
+        }
+
+        List<LambdaPermission> permissions = getExecutionPermission();
+
+        if (permissions != null) {
+
 
             buildLogger.addBuildLogEntry("Adding new execution permission");
-            lambdaClient.addPermission(permissionRequest);
+
+            for (int i = 0; i < permissions.size(); i++) {
+                LambdaPermission permission = permissions.get(i);
+                if (permission != null) {
+                    String sid = Optional.ofNullable(permission.getSid()).orElse(this.configuration.getFunctionName() + "-InvokePermission-" + i);
+                    AddPermissionRequest permissionRequest = new AddPermissionRequest()
+                        .withFunctionName(this.configuration.getFunctionName())
+                        .withAction(permission.getAction())
+                        .withPrincipal(permission.getPrincipal())
+                        .withEventSourceToken(permission.getEventSourceToken())
+                        .withStatementId(sid)
+                        .withQualifier(permission.getQualifier()).withSourceArn(permission.getSourceArn());
+
+                    lambdaClient.addPermission(permissionRequest);
+                }
+            }
         }
 
         buildLogger.addBuildLogEntry("Lambda pushed");
@@ -304,18 +322,46 @@ public class LambdaBroker {
         buildLogger.addBuildLogEntry(output.getConfiguration().toString());
     }
 
-    private LambdaPermission getExecutionPermission() {
+    private List<String> getExistingExecutionPermissionSids() {
+        final GetPolicyResult executionPolicyResult = lambdaClient.getPolicy(new GetPolicyRequest().withFunctionName(this.configuration.getFunctionName()));
+        if (executionPolicyResult == null) {
+            buildLogger.addBuildLogEntry("Unable to find existing execution policy");
+            return null;
+        }
+        try {
+            final JsonNode executionStatements = this.mapper.readTree(executionPolicyResult.getPolicy()).get("Statement");
+            final TypeReference<List<JsonNode>> listRef = new TypeReference<List<JsonNode>>(){};
+            List<JsonNode> statements = mapper.readValue(executionStatements.toString(), listRef);
+            return statements.stream().map(it -> it.get("Sid").textValue()).collect(Collectors.toList());
+        } catch (IOException e) {
+            buildLogger.addBuildLogEntry("Unable to parse existing execution policy");
+            return null;
+        }
+    }
+
+    private List<LambdaPermission> getExecutionPermission() {
         try {
             if (this.fileUtil.fileExists(LAMBDA_EXECUTION_PERMISSION)) {
                 this.buildLogger
-                    .addBuildLogEntry(String.format("Using %s for execution permissions", LAMBDA_EXECUTION_PERMISSION));
+                    .addBuildLogEntry(String.format("... Using %s for execution permissions", LAMBDA_EXECUTION_PERMISSION));
                 String template = fileUtil.findFile(LAMBDA_EXECUTION_PERMISSION, false);
-                ObjectMapper mapper = new ObjectMapper();
-                return mapper.readValue(this.context.getBambooPropertyHandler().mapInProperties(template),
-                    LambdaPermission.class);
+                String mappedPermissionString = this.context.getBambooPropertyHandler().mapInProperties(template);
+                final TypeReference<List<LambdaPermission>> listRef = new TypeReference<List<LambdaPermission>>(){};
+                try {
+                    return this.mapper.readValue(mappedPermissionString, listRef);
+                }
+                catch (JsonMappingException jsonEx) {
+                    buildLogger.addErrorLogEntry("DEPRECATION WARNING: Singleton permissions are deprecated, please pass execution permissions as an array.");
+                    LambdaPermission singletonPermission = this.mapper.readValue(mappedPermissionString, LambdaPermission.class);
+                    return Collections.singletonList(singletonPermission);
+                }
+                catch (Exception ex) {
+                    buildLogger.addErrorLogEntry("Error parsing permissions", ex);
+                    throw new AwsExecException(ex);
+                }
             }
         } catch (IOException ex) {
-            LOGGER.debug("Error getting execution permissions", ex);
+            buildLogger.addErrorLogEntry("Error getting execution permissions", ex);
             return null;
         }
 
@@ -344,11 +390,11 @@ public class LambdaBroker {
 
         try {
             if (new File(context.getRootPath() + File.separator + LAMBDA_TEMPLATE_JSON).exists()) {
-                buildLogger.addBuildLogEntry("Using " + LAMBDA_TEMPLATE_JSON);
+                buildLogger.addBuildLogEntry("... Using " + LAMBDA_TEMPLATE_JSON);
                 template = fileUtil.findFile(LAMBDA_TEMPLATE_JSON, false);
                 isJson = true;
             } else if (new File(context.getRootPath() + File.separator + LAMBDA_TEMPLATE_YML).exists()) {
-                buildLogger.addBuildLogEntry("Using " + LAMBDA_TEMPLATE_YML);
+                buildLogger.addBuildLogEntry("... Using " + LAMBDA_TEMPLATE_YML);
                 template = fileUtil.findFile(LAMBDA_TEMPLATE_YML, false);
                 isJson = false;
             } else {
@@ -360,7 +406,7 @@ public class LambdaBroker {
             definition = mapper.readValue(this.context.getBambooPropertyHandler().mapInProperties(template),
                 LambdaInjectConfiguration.class);
         } catch (FileNotFoundException e1) {
-            LOGGER.debug("No template found: " + LAMBDA_TEMPLATE_JSON, e1);
+            buildLogger.addErrorLogEntry("No template found: " + LAMBDA_TEMPLATE_JSON, e1);
             throw new AwsExecException("No template found at " + LAMBDA_TEMPLATE_JSON);
         } catch (IOException e1) {
             throw new AwsExecException(e1);
