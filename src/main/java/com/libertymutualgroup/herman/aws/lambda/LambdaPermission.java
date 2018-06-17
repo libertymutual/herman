@@ -19,6 +19,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class LambdaPermission {
 
+    @JsonProperty("Sid")
+    public String sid;
     @JsonProperty("Action")
     public String action;
     @JsonProperty("EventSourceToken")
@@ -31,6 +33,14 @@ public class LambdaPermission {
     public String qualifier;
     @JsonProperty("SourceArn")
     public String sourceArn;
+
+    public String getSid() {
+        return sid;
+    }
+
+    public void setSid(String sid) {
+        this.sid = sid;
+    }
 
     public String getAction() {
         return action;
@@ -83,7 +93,8 @@ public class LambdaPermission {
     @Override
     public String toString() {
         return "LambdaPermission{" +
-            "action=" + action +
+            "sid=" + sid +
+            ", action='" + action + '\'' +
             ", eventSourceToken='" + eventSourceToken + '\'' +
             ", effect='" + effect + '\'' +
             ", principal='" + principal + '\'' +

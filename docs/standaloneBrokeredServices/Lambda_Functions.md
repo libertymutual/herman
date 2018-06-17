@@ -99,12 +99,15 @@ called **lambda-execution-permission.json. **
 **lambda-execution-permission.json**
 
 ``` js
-{
-    "Action": "lambda:InvokeFunction",
-    "Effect": "Allow",
-    "Principal": "*",
-    "SourceArn": "<arn>"
-}
+[
+    {
+        "Sid": "<OPTIONAL>",
+        "Action": "lambda:InvokeFunction",
+        "Effect": "Allow",
+        "Principal": "*",
+        "SourceArn": "<arn>"
+    }
+]
 ```
 
 <table>
