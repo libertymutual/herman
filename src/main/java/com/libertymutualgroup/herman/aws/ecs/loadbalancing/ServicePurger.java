@@ -22,26 +22,27 @@ import com.amazonaws.services.ecs.model.DescribeServicesResult;
 import com.amazonaws.services.ecs.model.Service;
 import com.amazonaws.services.ecs.model.ServiceNotActiveException;
 import com.amazonaws.services.ecs.model.UpdateServiceRequest;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.libertymutualgroup.herman.aws.AwsExecException;
-import java.util.List;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 public class ServicePurger {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ServicePurger.class);
     private static final String INTERRUPTED_WHILE_POLLING = "Interrupted while polling";
     private AmazonECS ecsClient;
-    private BuildLogger buildLogger;
+    private HermanLogger buildLogger;
 
-    public ServicePurger(AmazonECS ecsClient, BuildLogger buildLogger) {
+    public ServicePurger(AmazonECS ecsClient, HermanLogger buildLogger) {
         this.ecsClient = ecsClient;
         this.buildLogger = buildLogger;
     }
 
     public void purgeOtherClusters(String targetCluster, String serviceName) {
-        buildLogger.addBuildLogEntry("Checking other clusters for app");
+        buildLogger.addLogEntry("Checking other clusters for app");
         List<String> clusters = ecsClient.listClusters().getClusterArns();
         for (String clusterArn : clusters) {
             if (!clusterArn.contains(targetCluster)) {
@@ -49,8 +50,8 @@ public class ServicePurger {
                     .describeServices(new DescribeServicesRequest().withCluster(clusterArn).withServices(serviceName));
                 if (!svcsResult.getServices().isEmpty()) {
                     ServicePurger purger = new ServicePurger(ecsClient, buildLogger);
-                    buildLogger.addBuildLogEntry("Moving app to " + targetCluster);
-                    buildLogger.addBuildLogEntry("Clearing service from " + clusterArn);
+                    buildLogger.addLogEntry("Moving app to " + targetCluster);
+                    buildLogger.addLogEntry("Clearing service from " + clusterArn);
                     purger.shutdownAndDeleteService(clusterArn, serviceName);
                 }
             }
@@ -63,12 +64,12 @@ public class ServicePurger {
             ecsClient.updateService(
                 new UpdateServiceRequest().withService(service).withCluster(cluster).withDesiredCount(0));
             waitForShutdown(cluster, service);
-            buildLogger.addBuildLogEntry("... Deleting app");
+            buildLogger.addLogEntry("... Deleting app");
             ecsClient.deleteService(new DeleteServiceRequest().withCluster(cluster).withService(service));
             waitForServiceDelete(cluster, service);
         } catch (ServiceNotActiveException e) {
             LOGGER.debug("Error updating service: " + service, e);
-            buildLogger.addBuildLogEntry("... Service not active, nothing to shutdown");
+            buildLogger.addLogEntry("... Service not active, nothing to shutdown");
         }
     }
 
@@ -83,12 +84,12 @@ public class ServicePurger {
             } else {
                 try {
                     buildLogger
-                        .addBuildLogEntry("... Waiting for shutdown to convert, still running: " + s.getRunningCount());
+                        .addLogEntry("... Waiting for shutdown to convert, still running: " + s.getRunningCount());
                     Thread.sleep(5000);
 
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    buildLogger.addBuildLogEntry(INTERRUPTED_WHILE_POLLING);
+                    buildLogger.addLogEntry(INTERRUPTED_WHILE_POLLING);
                     throw new AwsExecException(INTERRUPTED_WHILE_POLLING);
                 }
             }
@@ -97,12 +98,12 @@ public class ServicePurger {
     }
 
     private void waitForServiceDelete(String cluster, String service) {
-        buildLogger.addBuildLogEntry("... Waiting for service delete");
+        buildLogger.addLogEntry("... Waiting for service delete");
         for (int i = 0; i < 60; i++) {
             Service s = ecsClient
                 .describeServices(new DescribeServicesRequest().withCluster(cluster).withServices(service))
                 .getServices().get(0);
-            buildLogger.addBuildLogEntry("... Service state: " + s.getStatus());
+            buildLogger.addLogEntry("... Service state: " + s.getStatus());
             if (!("DRAINING".equalsIgnoreCase(s.getStatus()) || "ACTIVE".equalsIgnoreCase(s.getStatus()))) {
                 return;
             } else {
@@ -111,7 +112,7 @@ public class ServicePurger {
 
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    buildLogger.addBuildLogEntry(INTERRUPTED_WHILE_POLLING);
+                    buildLogger.addLogEntry(INTERRUPTED_WHILE_POLLING);
                     throw new AwsExecException(INTERRUPTED_WHILE_POLLING);
                 }
             }

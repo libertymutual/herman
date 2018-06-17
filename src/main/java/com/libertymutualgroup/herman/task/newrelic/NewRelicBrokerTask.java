@@ -19,7 +19,6 @@ import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.atlassian.bamboo.deployments.execution.DeploymentTaskContext;
 import com.atlassian.bamboo.task.TaskResult;
 import com.atlassian.bamboo.task.TaskResultBuilder;
@@ -34,10 +33,13 @@ import com.libertymutualgroup.herman.aws.ecs.TaskContextPropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.broker.newrelic.NewRelicBroker;
 import com.libertymutualgroup.herman.aws.ecs.broker.newrelic.NewRelicBrokerConfiguration;
 import com.libertymutualgroup.herman.aws.ecs.broker.newrelic.NewRelicDefinition;
+import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.util.FileUtil;
-import java.io.InputStream;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.io.InputStream;
 
 public class NewRelicBrokerTask extends AbstractDeploymentTask {
 
@@ -53,13 +55,13 @@ public class NewRelicBrokerTask extends AbstractDeploymentTask {
 
     @Override
     public TaskResult doExecute(final DeploymentTaskContext taskContext) {
-        final BuildLogger buildLogger = taskContext.getBuildLogger();
+        final AtlassianBuildLogger buildLogger = new AtlassianBuildLogger(taskContext.getBuildLogger());
         final PropertyHandler bambooPropertyHandler = new TaskContextPropertyHandler(taskContext,
             getCustomVariableContext());
         final FileUtil fileUtil = new FileUtil(taskContext.getRootDirectory().getAbsolutePath(), buildLogger);
 
         NewRelicDefinition newRelicDefinition = getNewRelicDefinition(bambooPropertyHandler, buildLogger, fileUtil);
-        buildLogger.addBuildLogEntry(newRelicDefinition.toString());
+        buildLogger.addLogEntry(newRelicDefinition.toString());
 
         AWSLambda lambdaClient = AWSLambdaClientBuilder.standard()
             .withCredentials(new AWSStaticCredentialsProvider(CredentialsHandler.getCredentials(taskContext)))
@@ -84,16 +86,16 @@ public class NewRelicBrokerTask extends AbstractDeploymentTask {
         return TaskResultBuilder.newBuilder(taskContext).success().build();
     }
 
-    private NewRelicDefinition getNewRelicDefinition(PropertyHandler handler, BuildLogger buildLogger,
+    private NewRelicDefinition getNewRelicDefinition(PropertyHandler handler, HermanLogger buildLogger,
         FileUtil fileUtil) {
         String template;
         boolean isJson;
         if (fileUtil.fileExists(NEWRELIC_TEMPLATE + JSON)) {
-            buildLogger.addBuildLogEntry("Using " + NEWRELIC_TEMPLATE + JSON);
+            buildLogger.addLogEntry("Using " + NEWRELIC_TEMPLATE + JSON);
             template = fileUtil.findFile(NEWRELIC_TEMPLATE + JSON, false);
             isJson = true;
         } else if (fileUtil.fileExists(NEWRELIC_TEMPLATE + YML)) {
-            buildLogger.addBuildLogEntry("Using " + NEWRELIC_TEMPLATE + YML);
+            buildLogger.addLogEntry("Using " + NEWRELIC_TEMPLATE + YML);
             template = fileUtil.findFile(NEWRELIC_TEMPLATE + YML, false);
             isJson = false;
         } else {

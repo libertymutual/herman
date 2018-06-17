@@ -33,21 +33,22 @@ import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
 import com.amazonaws.services.identitymanagement.model.AttachRolePolicyRequest;
 import com.amazonaws.services.identitymanagement.model.CreatePolicyRequest;
 import com.amazonaws.services.identitymanagement.model.CreatePolicyResult;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
-import java.util.ArrayList;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class DynamoDBBroker {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DynamoDBBroker.class);
     private static final String INTERRUPTED_WHILE_POLLING = "Interrupted while polling";
 
-    private BuildLogger buildLogger;
+    private HermanLogger buildLogger;
     private AmazonIdentityManagement iamClient;
     private EcsPushDefinition pushDefinition;
     private ECSPushTaskProperties taskProperties;
@@ -55,7 +56,7 @@ public class DynamoDBBroker {
     /**
      * Default constructor
      */
-    public DynamoDBBroker(BuildLogger buildLogger, AmazonIdentityManagement iamClient, EcsPushDefinition pushDefinition,
+    public DynamoDBBroker(HermanLogger buildLogger, AmazonIdentityManagement iamClient, EcsPushDefinition pushDefinition,
         ECSPushTaskProperties taskProperties) {
         this.buildLogger = buildLogger;
         this.iamClient = iamClient;
@@ -78,7 +79,7 @@ public class DynamoDBBroker {
      * Creates and updates tables
      */
     private void brokerDynamoDBTable(AmazonDynamoDB client, DynamoDBTable table) {
-        buildLogger.addBuildLogEntry("Brokering table: " + table.getTableName());
+        buildLogger.addLogEntry("Brokering table: " + table.getTableName());
 
         // Check if table exists
         DescribeTableResult describeTableResult = null;
@@ -101,8 +102,8 @@ public class DynamoDBBroker {
      * Create a table
      */
     private void createTable(AmazonDynamoDB client, DynamoDBTable table) {
-        buildLogger.addBuildLogEntry("Creating table: " + table.getTableName());
-        buildLogger.addBuildLogEntry("Table spec: \n" + table.toString());
+        buildLogger.addLogEntry("Creating table: " + table.getTableName());
+        buildLogger.addLogEntry("Table spec: \n" + table.toString());
         CreateTableRequest createTableRequest = new CreateTableRequest(table.getAttributes(), table.getTableName(),
             table.getKeySchema(), table.getProvisionedThroughput());
 
@@ -151,7 +152,7 @@ public class DynamoDBBroker {
                     "  ]" +
                     "}";
 
-            buildLogger.addBuildLogEntry("Creating DynamoDB Policy:\n" + policyDocument);
+            buildLogger.addLogEntry("Creating DynamoDB Policy:\n" + policyDocument);
 
             CreatePolicyRequest createPolicyRequest = new CreatePolicyRequest()
                 .withPolicyName(table.getTableName() + "Policy")
@@ -176,7 +177,7 @@ public class DynamoDBBroker {
         // check if anything needs to be updated and if so, update
         // Updates need to be done one by one and you have to wait for the update to finish before applying the next
 
-        buildLogger.addBuildLogEntry("Checking for updates on: " + table.getTableName());
+        buildLogger.addLogEntry("Checking for updates on: " + table.getTableName());
 
         // Update attributes
         if (!checkAndUpdateAttributes(client, table, describeTableResult)) {
@@ -214,7 +215,7 @@ public class DynamoDBBroker {
         DescribeTableResult describeTableResult) {
 
         if (checkIfStreamIsDifferent(describeTableResult.getTable(), table)) {
-            buildLogger.addBuildLogEntry("Updating Stream Specification");
+            buildLogger.addLogEntry("Updating Stream Specification");
             UpdateTableRequest updateTableRequest = new UpdateTableRequest();
             updateTableRequest.setTableName(table.getTableName());
             updateTableRequest.setStreamSpecification(table.getStreamSpecification());
@@ -258,7 +259,7 @@ public class DynamoDBBroker {
             .getProvisionedThroughput().getReadCapacityUnits() ||
             table.getProvisionedThroughput().getWriteCapacityUnits() != describeTableResult.getTable()
                 .getProvisionedThroughput().getWriteCapacityUnits()) {
-            buildLogger.addBuildLogEntry("Updating Provisioned Throughput");
+            buildLogger.addLogEntry("Updating Provisioned Throughput");
             UpdateTableRequest updateTableRequest = new UpdateTableRequest();
             updateTableRequest.setTableName(table.getTableName());
             updateTableRequest.setProvisionedThroughput(table.getProvisionedThroughput());
@@ -302,7 +303,7 @@ public class DynamoDBBroker {
                         UpdateGlobalSecondaryIndexAction updateAction = new UpdateGlobalSecondaryIndexAction();
                         updateAction.setIndexName(globalSecondaryIndex.getIndexName());
                         updateAction.setProvisionedThroughput(globalSecondaryIndex.getProvisionedThroughput());
-                        buildLogger.addBuildLogEntry("Updating index for " + table.getTableName());
+                        buildLogger.addLogEntry("Updating index for " + table.getTableName());
                         globalSecondaryIndexUpdate.add(new GlobalSecondaryIndexUpdate().withUpdate(updateAction));
                     }
                     found = true;
@@ -310,7 +311,7 @@ public class DynamoDBBroker {
             }
 
             if (!found) {
-                buildLogger.addBuildLogEntry("Creating index on " + table.getTableName());
+                buildLogger.addLogEntry("Creating index on " + table.getTableName());
                 CreateGlobalSecondaryIndexAction createAction = new CreateGlobalSecondaryIndexAction()
                     .withIndexName(globalSecondaryIndex.getIndexName())
                     .withKeySchema(globalSecondaryIndex.getKeySchema())
@@ -329,7 +330,7 @@ public class DynamoDBBroker {
                 }
             }
             if (!found) {
-                buildLogger.addBuildLogEntry("Deleting index on " + table.getTableName());
+                buildLogger.addLogEntry("Deleting index on " + table.getTableName());
                 DeleteGlobalSecondaryIndexAction deleteAction = new DeleteGlobalSecondaryIndexAction();
                 deleteAction.setIndexName(current.getIndexName());
                 globalSecondaryIndexUpdate.add(new GlobalSecondaryIndexUpdate().withDelete(deleteAction));
@@ -338,7 +339,7 @@ public class DynamoDBBroker {
 
         // push the global index change
         if (!globalSecondaryIndexUpdate.isEmpty()) {
-            buildLogger.addBuildLogEntry("Updating global secondary indexes");
+            buildLogger.addLogEntry("Updating global secondary indexes");
             UpdateTableRequest updateTableRequest = new UpdateTableRequest();
             updateTableRequest.setGlobalSecondaryIndexUpdates(globalSecondaryIndexUpdate);
             client.updateTable(updateTableRequest);
@@ -356,13 +357,13 @@ public class DynamoDBBroker {
         DescribeTableResult describeTableResult) {
         final List<AttributeDefinition> attributes = table.getAttributes();
         final List<AttributeDefinition> existingAttributes = describeTableResult.getTable().getAttributeDefinitions();
-        buildLogger.addBuildLogEntry("Checking for attribute updates");
+        buildLogger.addLogEntry("Checking for attribute updates");
 
         // Check if update needed
         if (!existingAttributes.containsAll(attributes) || !attributes.containsAll(existingAttributes)) {
 
             // Create update request
-            buildLogger.addBuildLogEntry("Found attribute change, updating");
+            buildLogger.addLogEntry("Found attribute change, updating");
             UpdateTableRequest updateTableRequest = new UpdateTableRequest();
             updateTableRequest.setAttributeDefinitions(attributes);
 
@@ -375,9 +376,9 @@ public class DynamoDBBroker {
             // wait for update to apply
             boolean result = waitForIt(client, table.getTableName());
             if (result) {
-                buildLogger.addBuildLogEntry("Attributes updated");
+                buildLogger.addLogEntry("Attributes updated");
             } else {
-                buildLogger.addBuildLogEntry("Timed out waiting for attribute update");
+                buildLogger.addLogEntry("Timed out waiting for attribute update");
             }
             return result;
         }
@@ -403,12 +404,12 @@ public class DynamoDBBroker {
             Thread.sleep(pause);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            buildLogger.addBuildLogEntry(INTERRUPTED_WHILE_POLLING);
+            buildLogger.addLogEntry(INTERRUPTED_WHILE_POLLING);
             throw new AwsExecException(INTERRUPTED_WHILE_POLLING);
         }
 
         String tableStatus = client.describeTable(tableName).getTable().getTableStatus();
-        buildLogger.addBuildLogEntry("Table status is " + tableStatus);
+        buildLogger.addLogEntry("Table status is " + tableStatus);
         while (tableStatus.matches("CREATING|UPDATING")) {
 
             if (currentCount > maxCount) {
@@ -417,13 +418,13 @@ public class DynamoDBBroker {
             }
             currentCount++;
             try {
-                buildLogger.addBuildLogEntry("Waiting...");
+                buildLogger.addLogEntry("Waiting...");
                 Thread.sleep(wait);
                 tableStatus = client.describeTable(tableName).getTable().getTableStatus();
-                buildLogger.addBuildLogEntry("Status: " + tableStatus);
+                buildLogger.addLogEntry("Status: " + tableStatus);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                buildLogger.addBuildLogEntry(INTERRUPTED_WHILE_POLLING);
+                buildLogger.addLogEntry(INTERRUPTED_WHILE_POLLING);
                 throw new AwsExecException(INTERRUPTED_WHILE_POLLING);
             }
 

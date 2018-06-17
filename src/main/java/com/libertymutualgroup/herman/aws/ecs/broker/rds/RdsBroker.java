@@ -21,7 +21,6 @@ import com.amazonaws.services.rds.AmazonRDS;
 import com.amazonaws.services.rds.model.OptionGroup;
 import com.amazonaws.services.rds.model.Parameter;
 import com.amazonaws.services.rds.model.Tag;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.libertymutualgroup.herman.aws.ecs.EcsPush;
@@ -29,8 +28,13 @@ import com.libertymutualgroup.herman.aws.ecs.EcsPushContext;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.util.DateUtil;
 import com.libertymutualgroup.herman.util.FileUtil;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.joda.time.DateTime;
+import org.springframework.util.Assert;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -40,9 +44,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.joda.time.DateTime;
-import org.springframework.util.Assert;
 
 public class RdsBroker {
 
@@ -57,7 +58,7 @@ public class RdsBroker {
     private String targetKeyId;
     private EcsPushDefinition definition;
     private EcsClusterMetadata clusterMetadata;
-    private BuildLogger logger;
+    private HermanLogger logger;
     private PropertyHandler propertyHandler;
     private EcsPushContext pushContext;
     private EcsPushFactory pushFactory;
@@ -112,29 +113,29 @@ public class RdsBroker {
         Boolean newDb = !rdsClient.dbExists(instanceId);
 
         if (!newDb) {
-            logger.addBuildLogEntry("Finding existing RDS instance");
-            logger.addBuildLogEntry("... RDS instance found: " + instanceId);
+            logger.addLogEntry("Finding existing RDS instance");
+            logger.addLogEntry("... RDS instance found: " + instanceId);
 
             if (rds.getPreDeployBackup()) {
                 rdsClient.waitForAvailableStatus(instanceId);
 
                 String snapshotId = instanceId + "-snapshot-" + DateUtil.getDateAsString(new DateTime());
-                logger.addBuildLogEntry("Creating snapshot " + snapshotId);
+                logger.addLogEntry("Creating snapshot " + snapshotId);
                 rdsClient.createSnapshot(instanceId, snapshotId);
             }
 
             rdsClient.waitForAvailableStatus(instanceId);
             if (rds.getFullUpdate()) {
-                logger.addBuildLogEntry("Performing full update on " + instanceId);
+                logger.addLogEntry("Performing full update on " + instanceId);
 
                 rdsClient.runFullUpdate(instanceId, masterUserPassword);
 
             } else if (!rds.getIAMDatabaseAuthenticationEnabled() && !staticPassword) {
-                logger.addBuildLogEntry("Updating master password for " + instanceId);
+                logger.addLogEntry("Updating master password for " + instanceId);
                 rdsClient.updateMasterPassword(instanceId, masterUserPassword);
             }
         } else {
-            logger.addBuildLogEntry("Creating new RDS instance, this will take about ten minutes.");
+            logger.addLogEntry("Creating new RDS instance, this will take about ten minutes.");
             rdsClient.createNewDb(instanceId, masterUserPassword);
         }
 
@@ -145,7 +146,7 @@ public class RdsBroker {
         if (newDb || rds.getFullUpdate() || (!rds.getIAMDatabaseAuthenticationEnabled() && !staticPassword)) {
             encryptedPassword = rds.getEncryptedPassword() != null ? rds.getEncryptedPassword()
                 : this.encrypt(kmsClient, targetKeyId, masterUserPassword);
-            logger.addBuildLogEntry("Encrypted password: " + encryptedPassword);
+            logger.addLogEntry("Encrypted password: " + encryptedPassword);
 
             rds.setEncryptedPassword(encryptedPassword);
 
@@ -186,7 +187,7 @@ public class RdsBroker {
         if (instance.getEngine().equalsIgnoreCase(POSTGRES_ENGINE)
             || instance.getEngine().equalsIgnoreCase(MYSQL_ENGINE)
             || instance.getEngine().contains(AURORA_ENGINE)) {
-            logger.addBuildLogEntry("Brokering credentials for " + instance.getEngine() + " instance "
+            logger.addLogEntry("Brokering credentials for " + instance.getEngine() + " instance "
                 + instance.getEndpoint().getAddress());
 
             String appUsername = instance.getAppUsername() != null ? instance.getAppUsername()
@@ -195,10 +196,10 @@ public class RdsBroker {
             String appPassword = instance.getAppEncryptedPassword() != null ? instance.getAppEncryptedPassword()
                 : this.encrypt(awskmsClient, targetKeyId, this.generateRandomPassword());
 
-            logger.addBuildLogEntry("... DB instance type is " + instance.getEngine().toLowerCase());
-            logger.addBuildLogEntry("... app username: " + appUsername);
-            logger.addBuildLogEntry("... app encrypted password: " + appPassword);
-            logger.addBuildLogEntry("... app password encrypted using KMS key: " + targetKeyId);
+            logger.addLogEntry("... DB instance type is " + instance.getEngine().toLowerCase());
+            logger.addLogEntry("... app username: " + appUsername);
+            logger.addLogEntry("... app encrypted password: " + appPassword);
+            logger.addLogEntry("... app password encrypted using KMS key: " + targetKeyId);
 
             String adminUsername = instance.getAdminUsername() != null ? instance.getAdminUsername()
                 : getUsername(instance, "admin");
@@ -206,9 +207,9 @@ public class RdsBroker {
             String adminPassword = instance.getAdminEncryptedPassword() != null ? instance.getAdminEncryptedPassword()
                 : this.encrypt(awskmsClient, targetKeyId, this.generateRandomPassword());
 
-            logger.addBuildLogEntry("... admin username: " + adminUsername);
-            logger.addBuildLogEntry("... admin encrypted password: " + adminPassword);
-            logger.addBuildLogEntry("... admin password encrypted using KMS key: " + targetKeyId);
+            logger.addLogEntry("... admin username: " + adminUsername);
+            logger.addLogEntry("... admin encrypted password: " + adminPassword);
+            logger.addLogEntry("... admin password encrypted using KMS key: " + targetKeyId);
 
             propertyHandler.addProperty("ecs.cluster", definition.getCluster());
             propertyHandler.addProperty("DB_ENGINE", this.getCredentialBrokerProfile(instance));
@@ -229,12 +230,12 @@ public class RdsBroker {
             instance.setAppEncryptedPassword(appPassword);
             instance.setAdminEncryptedPassword(adminPassword);
 
-            logger.addBuildLogEntry("\n");
-            logger.addBuildLogEntry("Running RDS credential broker to set updated IDs and passwords");
+            logger.addLogEntry("\n");
+            logger.addLogEntry("Running RDS credential broker to set updated IDs and passwords");
             EcsPush push = pushFactory.createPush(pushContext);
             push.push();
-            logger.addBuildLogEntry("RDS credential broker task completed");
-            logger.addBuildLogEntry("\n");
+            logger.addLogEntry("RDS credential broker task completed");
+            logger.addLogEntry("\n");
         }
 
         return instance;

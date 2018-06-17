@@ -1,12 +1,5 @@
 package com.libertymutualgroup.herman.aws.ecs.broker.rds;
 
-import static com.libertymutualgroup.herman.aws.ecs.broker.rds.RdsCommonTestObjects.initDbInstance;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.never;
-
 import com.amazonaws.services.kms.AWSKMS;
 import com.amazonaws.services.kms.model.DecryptResult;
 import com.amazonaws.services.kms.model.EncryptResult;
@@ -14,22 +7,30 @@ import com.amazonaws.services.rds.AmazonRDS;
 import com.amazonaws.services.rds.model.DBInstanceNotFoundException;
 import com.amazonaws.services.rds.model.DescribeDBInstancesResult;
 import com.amazonaws.services.rds.model.Tag;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.libertymutualgroup.herman.aws.ecs.EcsPush;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushContext;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
 import com.libertymutualgroup.herman.util.FileUtil;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import static com.libertymutualgroup.herman.aws.ecs.broker.rds.RdsCommonTestObjects.initDbInstance;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.never;
 
 public class RdsBrokerTest {
 
@@ -44,7 +45,7 @@ public class RdsBrokerTest {
     @Mock
     EcsPushContext pushContext;
     @Mock
-    BuildLogger logger;
+    HermanLogger logger;
     @Mock
     EcsPush ecsPush;
     @Mock

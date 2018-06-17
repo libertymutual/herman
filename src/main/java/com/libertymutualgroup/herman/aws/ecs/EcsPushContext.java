@@ -18,12 +18,12 @@ package com.libertymutualgroup.herman.aws.ecs;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.regions.Regions;
-import com.atlassian.bamboo.build.logger.BuildLogger;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
 
 public class EcsPushContext {
 
-    private BuildLogger logger;
+    private HermanLogger logger;
     private PropertyHandler bambooPropertyHandler;
     private String envName;
     private AWSCredentials sessionCredentials;
@@ -33,11 +33,11 @@ public class EcsPushContext {
     private String rootPath;
     private ECSPushTaskProperties taskProperties;
 
-    public BuildLogger getLogger() {
+    public HermanLogger getLogger() {
         return logger;
     }
 
-    public void setLogger(BuildLogger logger) {
+    public void setLogger(HermanLogger logger) {
         this.logger = logger;
     }
 
@@ -105,7 +105,7 @@ public class EcsPushContext {
         this.taskProperties = taskProperties;
     }
 
-    public EcsPushContext withLogger(final BuildLogger logger) {
+    public EcsPushContext withLogger(final HermanLogger logger) {
         this.logger = logger;
         return this;
     }

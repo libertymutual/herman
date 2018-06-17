@@ -15,32 +15,33 @@
  */
 package com.libertymutualgroup.herman.aws.ecs.broker.newrelic;
 
-import static org.springframework.http.HttpStatus.Series.SUCCESSFUL;
-
 import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.model.InvocationType;
 import com.amazonaws.services.lambda.model.InvokeRequest;
 import com.amazonaws.services.lambda.model.InvokeResult;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.broker.domain.HermanBrokerStatus;
 import com.libertymutualgroup.herman.aws.ecs.logging.LoggingService;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.util.FileUtil;
-import java.nio.charset.Charset;
-import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus.Series;
 
+import java.nio.charset.Charset;
+import java.util.Optional;
+
+import static org.springframework.http.HttpStatus.Series.SUCCESSFUL;
+
 public class NewRelicBroker {
 
-    private BuildLogger buildLogger;
+    private HermanLogger buildLogger;
     private PropertyHandler propertyHandler;
     private FileUtil fileUtil;
     private NewRelicBrokerConfiguration brokerConfiguration;
     private AWSLambda lambdaClient;
 
-    public NewRelicBroker(PropertyHandler propertyHandler, BuildLogger buildLogger, FileUtil fileUtil,
+    public NewRelicBroker(PropertyHandler propertyHandler, HermanLogger buildLogger, FileUtil fileUtil,
         NewRelicBrokerConfiguration brokerConfiguration, AWSLambda lambdaClient) {
         this.propertyHandler = propertyHandler;
         this.buildLogger = buildLogger;
@@ -55,8 +56,8 @@ public class NewRelicBroker {
         String newRelicApplicationName,
         String newRelicLicenseKey) {
 
-        buildLogger.addBuildLogEntry("\n");
-        buildLogger.addBuildLogEntry("Brokering New Relic configuration");
+        buildLogger.addLogEntry("\n");
+        buildLogger.addLogEntry("Brokering New Relic configuration");
 
         String payload;
         try {
@@ -71,7 +72,7 @@ public class NewRelicBroker {
             .withFunctionName(brokerConfiguration.getBrokerProperties().getNrLambda())
             .withInvocationType(InvocationType.RequestResponse)
             .withPayload(payload);
-        buildLogger.addBuildLogEntry(
+        buildLogger.addLogEntry(
             "... Invoke request sent to the broker: " + brokerConfiguration.getBrokerProperties().getNrLambda());
 
         InvokeResult invokeResult = this.lambdaClient.invoke(dnsBrokerInvokeRequest);
@@ -90,18 +91,18 @@ public class NewRelicBroker {
 
             response.getUpdates().stream().forEach(update -> {
                 buildLogger
-                    .addBuildLogEntry(
+                    .addLogEntry(
                         String.format("... New Relic Broker: [%s] %s", update.getStatus(), update.getMessage()));
 
                 if (HermanBrokerStatus.ERROR.equals(update.getStatus())) {
-                    buildLogger.addBuildLogEntry("... Error returned by the NR Broker given payload: " + payload);
+                    buildLogger.addLogEntry("... Error returned by the NR Broker given payload: " + payload);
                     throw new RuntimeException("New Relic broker error. See logs.");
                 }
             });
 
             addNewRelicLinkToLogs(response.getApplicationId());
         } else {
-            buildLogger.addBuildLogEntry("... Error thrown by the NR Broker given payload: " + payload);
+            buildLogger.addLogEntry("... Error thrown by the NR Broker given payload: " + payload);
             throw new RuntimeException("Error invoking the New Relic Broker: " + invokeResult);
         }
     }

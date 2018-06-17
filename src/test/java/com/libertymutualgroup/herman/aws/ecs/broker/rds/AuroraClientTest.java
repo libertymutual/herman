@@ -1,8 +1,5 @@
 package com.libertymutualgroup.herman.aws.ecs.broker.rds;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.times;
-
 import com.amazonaws.services.rds.AmazonRDS;
 import com.amazonaws.services.rds.model.CreateDBClusterParameterGroupRequest;
 import com.amazonaws.services.rds.model.DBCluster;
@@ -19,24 +16,28 @@ import com.amazonaws.services.rds.model.DescribeDBInstancesResult;
 import com.amazonaws.services.rds.model.ModifyDBClusterRequest;
 import com.amazonaws.services.rds.model.Parameter;
 import com.amazonaws.services.rds.model.Tag;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.util.FileUtil;
-import java.io.File;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+
+import java.io.File;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.times;
 
 public class AuroraClientTest {
 
@@ -47,7 +48,7 @@ public class AuroraClientTest {
     @Mock
     private EcsClusterMetadata clusterMetadata;
     @Mock
-    private BuildLogger logger;
+    private HermanLogger logger;
 
     @Before
     public void setup() {

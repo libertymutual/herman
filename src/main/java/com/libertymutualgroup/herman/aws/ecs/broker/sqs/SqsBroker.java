@@ -18,24 +18,25 @@ package com.libertymutualgroup.herman.aws.ecs.broker.sqs;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import com.amazonaws.services.sqs.model.QueueDoesNotExistException;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 public class SqsBroker {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SqsBroker.class);
 
-    private BuildLogger buildLogger;
+    private HermanLogger buildLogger;
     private PropertyHandler handler;
 
-    public SqsBroker(BuildLogger buildLogger, PropertyHandler handler) {
+    public SqsBroker(HermanLogger buildLogger, PropertyHandler handler) {
         this.buildLogger = buildLogger;
         this.handler = handler;
     }
@@ -53,7 +54,7 @@ public class SqsBroker {
      */
 
     public void brokerQueue(AmazonSQS client, SqsQueue queue, String queuePolicy) {
-        buildLogger.addBuildLogEntry("Starting SQS Broker with queue: " + queue.getName());
+        buildLogger.addLogEntry("Starting SQS Broker with queue: " + queue.getName());
         Map<String, String> attributes = new HashMap<>();
         if (!StringUtils.isEmpty(queue.getDelaySeconds())) {
             attributes.put("DelaySeconds", queue.getDelaySeconds());
@@ -104,12 +105,12 @@ public class SqsBroker {
 
     private void createNewQueue(AmazonSQS client, SqsQueue queue, Map<String, String> attributes) {
         buildLogger
-            .addBuildLogEntry("Could not find queue with name: " + queue.getName() + ". Attempting to create...");
+            .addLogEntry("Could not find queue with name: " + queue.getName() + ". Attempting to create...");
 
         CreateQueueRequest request = new CreateQueueRequest().withQueueName(queue.getName()).withAttributes(attributes);
         try {
             client.createQueue(request);
-            buildLogger.addBuildLogEntry("Created queue: " + queue.getName());
+            buildLogger.addLogEntry("Created queue: " + queue.getName());
         } catch (Exception createQueueEx) {
             buildLogger.addErrorLogEntry(
                 String.format("Error creating queue %s: %s", request.getQueueName(), request.getAttributes()));
@@ -120,7 +121,7 @@ public class SqsBroker {
     private void updateQueueAttributes(AmazonSQS client, SqsQueue queue, Map<String, String> attributes) {
         String queueUrl;
         queueUrl = client.getQueueUrl(queue.getName()).getQueueUrl();
-        buildLogger.addBuildLogEntry("Queue with name " + queue.getName() + " already exists, attempting update.");
+        buildLogger.addLogEntry("Queue with name " + queue.getName() + " already exists, attempting update.");
 
         try {
             client.setQueueAttributes(queueUrl, attributes);
@@ -130,6 +131,6 @@ public class SqsBroker {
             throw sqaEx;
         }
 
-        buildLogger.addBuildLogEntry("Updated queue: " + queue.getName());
+        buildLogger.addLogEntry("Updated queue: " + queue.getName());
     }
 }

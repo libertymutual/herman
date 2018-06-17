@@ -1,23 +1,24 @@
 package com.libertymutualgroup.herman.aws.ecs.broker.sns;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.CreateTopicRequest;
 import com.amazonaws.services.sns.model.CreateTopicResult;
 import com.amazonaws.services.sns.model.GetTopicAttributesResult;
 import com.amazonaws.services.sns.model.SetTopicAttributesRequest;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
-import java.util.HashMap;
-import java.util.Map;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Test Case for SnsBroker
@@ -27,7 +28,7 @@ import org.mockito.MockitoAnnotations;
 public class SnsBrokerTest {
 
     @Mock
-    private BuildLogger logger;
+    private HermanLogger logger;
 
     @Mock
     private PropertyHandler handler;

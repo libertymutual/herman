@@ -75,7 +75,6 @@ import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.amazonaws.util.IOUtils;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.broker.autoscaling.AutoscalingBroker;
 import com.libertymutualgroup.herman.aws.ecs.broker.dynamodb.DynamoDBBroker;
@@ -104,9 +103,13 @@ import com.libertymutualgroup.herman.aws.ecs.loadbalancing.EcsLoadBalancerV2Hand
 import com.libertymutualgroup.herman.aws.ecs.loadbalancing.ElbOrAlbDecider;
 import com.libertymutualgroup.herman.aws.ecs.loadbalancing.ServicePurger;
 import com.libertymutualgroup.herman.aws.ecs.logging.LoggingService;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
 import com.libertymutualgroup.herman.util.ArnUtil;
 import com.libertymutualgroup.herman.util.FileUtil;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.util.StopWatch;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -117,8 +120,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.util.StopWatch;
 
 public class EcsPush {
 
@@ -126,7 +127,7 @@ public class EcsPush {
 
     private static final int POLLING_INTERVAL_MS = 10000;
 
-    private BuildLogger logger;
+    private HermanLogger logger;
     private EcsPushContext pushContext;
     private PropertyHandler bambooPropertyHandler;
     private ECSPushTaskProperties taskProperties;
@@ -227,7 +228,7 @@ public class EcsPush {
         stopWatch.start();
 
         EcsPushDefinition definition = getEcsPushDefinition();
-        logger.addBuildLogEntry(definition.toString());
+        logger.addLogEntry(definition.toString());
         logInvocationInCloudWatch(definition);
 
         EcsClusterIntrospector clusterIntrospector = new EcsClusterIntrospector(cftClient, ec2Client, logger);
@@ -242,10 +243,10 @@ public class EcsPush {
         IAMBroker iamBroker = new IAMBroker(logger);
         Role appRole;
         if (definition.getIamRole() == null || definition.getAppName().equals(definition.getIamRole())) {
-            logger.addBuildLogEntry("Brokering role with policy " + customIamPolicyFileName);
+            logger.addLogEntry("Brokering role with policy " + customIamPolicyFileName);
             appRole = iamBroker.brokerAppRole(iamClient, definition, customIamPolicy, bambooPropertyHandler);
         } else {
-            logger.addBuildLogEntry("Using existing role: " + definition.getIamRole());
+            logger.addLogEntry("Using existing role: " + definition.getIamRole());
             appRole = iamBroker.getRole(iamClient, definition.getIamRole());
         }
 
@@ -290,7 +291,7 @@ public class EcsPush {
         RegisterTaskDefinitionResult taskResult = registerTask(definition, definition.getAppName(), ecsClient,
             clusterMetadata.getClusterId());
 
-        logger.addBuildLogEntry("Task role: " + definition.getTaskRoleArn());
+        logger.addLogEntry("Task role: " + definition.getTaskRoleArn());
 
         loggingService.provideSplunkLog(taskResult);
 
@@ -332,7 +333,7 @@ public class EcsPush {
         EcsPushDefinition definition;
         boolean isJson;
         if (classpathTemplate != null) {
-            logger.addBuildLogEntry("Using classpathTemplate " + classpathTemplate);
+            logger.addLogEntry("Using classpathTemplate " + classpathTemplate);
             InputStream streamToParse = this.getClass().getResourceAsStream(classpathTemplate);
             if (streamToParse == null) {
                 throw new AwsExecException("Resource " + classpathTemplate + " not found on the classpath");
@@ -344,11 +345,11 @@ public class EcsPush {
             }
             isJson = classpathTemplate.endsWith(".json");
         } else if (fileUtil.fileExists("template.json")) {
-            logger.addBuildLogEntry("Using template.json");
+            logger.addLogEntry("Using template.json");
             template = fileUtil.findFile("template.json", false);
             isJson = true;
         } else if (fileUtil.fileExists("template.yml")) {
-            logger.addBuildLogEntry("Using template.yml");
+            logger.addLogEntry("Using template.yml");
             template = fileUtil.findFile("template.yml", false);
             isJson = false;
         } else {
@@ -363,11 +364,11 @@ public class EcsPush {
         List<ContainerDefinition> containerDefinitions) {
         RunTaskRequest runTaskRequest = new RunTaskRequest().withCluster(clusterMetadata.getClusterId())
             .withTaskDefinition(taskDefinition.getTaskDefinitionArn());
-        logger.addBuildLogEntry("Running task...");
+        logger.addLogEntry("Running task...");
         RunTaskResult runTaskResult = ecsClient.runTask(runTaskRequest);
         for (Failure f : runTaskResult.getFailures()) {
-            logger.addBuildLogEntry("Error running " + f.getArn());
-            logger.addBuildLogEntry(f.getReason());
+            logger.addLogEntry("Error running " + f.getArn());
+            logger.addLogEntry(f.getReason());
         }
 
         for (Task task : runTaskResult.getTasks()) {
@@ -396,7 +397,7 @@ public class EcsPush {
             .withVolumes(definition.getVolumes()).withPlacementConstraints(definition.getPlacementConstraints())
             .withNetworkMode(definition.getNetworkMode())
             .withTaskRoleArn(definition.getTaskRoleArn()).withMemory(definition.getTaskMemory()));
-        logger.addBuildLogEntry("Registered new task: " + taskResult.getTaskDefinition().getTaskDefinitionArn());
+        logger.addLogEntry("Registered new task: " + taskResult.getTaskDefinition().getTaskDefinitionArn());
 
         DescribeServicesResult serviceResult = ecsClient
             .describeServices(new DescribeServicesRequest().withCluster(clusterId).withServices(appName));
@@ -411,7 +412,7 @@ public class EcsPush {
             for (String arn : taskListResult.getTaskDefinitionArns()) {
                 if (!Objects.equals(taskResult.getTaskDefinition().getTaskDefinitionArn(), arn)
                     && !Objects.equals(currentTaskArn, arn)) {
-                    logger.addBuildLogEntry("Deregistering prior task: " + arn);
+                    logger.addLogEntry("Deregistering prior task: " + arn);
                     ecsClient.deregisterTaskDefinition(new DeregisterTaskDefinitionRequest().withTaskDefinition(arn));
                 }
             }
@@ -430,7 +431,7 @@ public class EcsPush {
         String serviceArn = null;
         for (Service service : serviceSearch.getServices()) {
             if (!Objects.equals(service.getStatus(), "INACTIVE")) {
-                logger.addBuildLogEntry("Service found: " + service.getServiceName() + " : " + service.getStatus());
+                logger.addLogEntry("Service found: " + service.getServiceName() + " : " + service.getStatus());
                 serviceExists = true;
                 serviceArn = service.getServiceArn();
             }
@@ -439,7 +440,7 @@ public class EcsPush {
         String serviceRole = null;
         if (balancer != null) {
             serviceRole = clusterMetadata.getClusterEcsRole();
-            logger.addBuildLogEntry("Assuming service role: " + serviceRole);
+            logger.addLogEntry("Assuming service role: " + serviceRole);
         }
 
         NetworkConfiguration networkConfiguration = null;
@@ -457,7 +458,7 @@ public class EcsPush {
         }
 
         if (!serviceExists) {
-            logger.addBuildLogEntry("NEW SERVICE");
+            logger.addLogEntry("NEW SERVICE");
             CreateServiceRequest cr = new CreateServiceRequest().withCluster(clusterMetadata.getClusterId())
                 .withDesiredCount(definition.getService().getInstanceCount()).withRole(serviceRole)
                 .withTaskDefinition(taskDefinition.getTaskDefinitionArn()).withServiceName(appName)
@@ -466,7 +467,7 @@ public class EcsPush {
                 .withPlacementStrategy(definition.getPlacementStrategies());
 
             if (balancer != null) {
-                logger.addBuildLogEntry("Adding load balancer to service");
+                logger.addLogEntry("Adding load balancer to service");
                 cr.withLoadBalancers(balancer)
                     .withHealthCheckGracePeriodSeconds(definition.getService().getHealthCheckGracePeriodSeconds());
             }
@@ -474,12 +475,12 @@ public class EcsPush {
                 cr.withNetworkConfiguration(networkConfiguration);
             }
 
-            logger.addBuildLogEntry("request is: " + cr.toString());
+            logger.addLogEntry("request is: " + cr.toString());
             CreateServiceResult csr = ecsClient.createService(cr);
             serviceArn = csr.getService().getServiceArn();
 
         } else {
-            logger.addBuildLogEntry("UPDATE SERVICE");
+            logger.addLogEntry("UPDATE SERVICE");
             UpdateServiceRequest updateRequest = new UpdateServiceRequest().withCluster(clusterMetadata.getClusterId())
                 .withDesiredCount(definition.getService().getInstanceCount())
                 .withDeploymentConfiguration(definition.getService().getDeploymentConfiguration())
@@ -501,8 +502,8 @@ public class EcsPush {
 
         if (!deploySuccessful) {
             if (priorDef != null) {
-                logger.addBuildLogEntry("Deployment never stabilized - rolling back!");
-                logger.addBuildLogEntry("Rolling back to " + priorDef.getTaskRoleArn());
+                logger.addLogEntry("Deployment never stabilized - rolling back!");
+                logger.addLogEntry("Rolling back to " + priorDef.getTaskRoleArn());
 
                 UpdateServiceRequest updateRequest = new UpdateServiceRequest()
                     .withCluster(clusterMetadata.getClusterId())
@@ -551,18 +552,18 @@ public class EcsPush {
             Service service = servicesResult.getServices().get(0);
             ServiceEvent lastEvent = service.getEvents().get(0);
 
-            logger.addBuildLogEntry("Status:" + service.getStatus() + "  Desired:" + service.getDesiredCount()
+            logger.addLogEntry("Status:" + service.getStatus() + "  Desired:" + service.getDesiredCount()
                 + "  Pending:" + service.getPendingCount() + "  Running:" + service.getRunningCount());
 
             if (!Objects.equals(lastEvent.getId(), lastEventId)) {
-                logger.addBuildLogEntry(lastEvent.getMessage());
+                logger.addLogEntry(lastEvent.getMessage());
                 lastEventId = lastEvent.getId();
             }
 
             ServiceEvent latest = service.getEvents().get(0);
             if (Objects.equals(service.getDesiredCount(), service.getRunningCount())
                 && latest.getMessage().contains("has reached a steady state")) {
-                logger.addBuildLogEntry("App has stabilized");
+                logger.addLogEntry("App has stabilized");
                 return true;
             }
             try {
@@ -577,7 +578,7 @@ public class EcsPush {
     }
 
     private void setUnsuccessfulServiceToZero(String appName, AmazonECS ecsClient, EcsClusterMetadata clusterMetadata) {
-        logger.addBuildLogEntry("Deployment was not successful - setting instance count to 0");
+        logger.addLogEntry("Deployment was not successful - setting instance count to 0");
         ecsClient.updateService(new UpdateServiceRequest().withCluster(clusterMetadata.getClusterId())
             .withDesiredCount(0).withService(appName));
     }
@@ -600,7 +601,7 @@ public class EcsPush {
                 if (lastEvent != null) {
                     Date lastEventDate = lastEvent.getCreatedAt();
                     if (new Date().getTime() - lastEventDate.getTime() > 60000) {
-                        logger.addBuildLogEntry("Waiting for start...");
+                        logger.addLogEntry("Waiting for start...");
                     } else {
                         return;
                     }
@@ -614,7 +615,7 @@ public class EcsPush {
     private void waitForTaskCompletion(AmazonECS client, String taskName, String clusterName,
         List<ContainerDefinition> definitions) {
 
-        logger.addBuildLogEntry("Waiting for task completion: " + taskName);
+        logger.addLogEntry("Waiting for task completion: " + taskName);
 
         Set<String> essentialContainers = new HashSet<>();
         for (ContainerDefinition container : definitions) {
@@ -630,14 +631,14 @@ public class EcsPush {
             DescribeTasksRequest req = new DescribeTasksRequest().withTasks(taskName).withCluster(clusterName);
             List<Task> tasks = client.describeTasks(req).getTasks();
             if (tasks.isEmpty()) {
-                logger.addBuildLogEntry("Tasks empty...waiting");
+                logger.addLogEntry("Tasks empty...waiting");
             }
             for (Task task : tasks) {
-                logger.addBuildLogEntry("Task Id: " + task.getTaskArn() + "  Status:" + task.getLastStatus()
+                logger.addLogEntry("Task Id: " + task.getTaskArn() + "  Status:" + task.getLastStatus()
                     + "  Desired:" + task.getDesiredStatus());
                 if (Objects.equals(task.getLastStatus(), "STOPPED")) {
                     logTaskExitCodes(essentialContainers, task);
-                    logger.addBuildLogEntry("Task stopped: " + taskName);
+                    logger.addLogEntry("Task stopped: " + taskName);
                     return;
                 }
             }
@@ -647,27 +648,27 @@ public class EcsPush {
                 Thread.sleep(POLLING_INTERVAL_MS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                logger.addBuildLogEntry(INTERRUPTED_WHILE_POLLING);
-                logger.addBuildLogEntry("Stopping task " + taskName);
+                logger.addLogEntry(INTERRUPTED_WHILE_POLLING);
+                logger.addLogEntry("Stopping task " + taskName);
                 client.stopTask(new StopTaskRequest().withCluster(clusterName).withTask(taskName)
                     .withReason("Manual stop of deploy plan"));
                 throw new AwsExecException(INTERRUPTED_WHILE_POLLING);
             }
             timeoutCount--;
         }
-        logger.addBuildLogEntry("Stopping task " + taskName);
+        logger.addLogEntry("Stopping task " + taskName);
         client.stopTask(new StopTaskRequest().withCluster(clusterName).withTask(taskName).withReason("Timed out!"));
         throw new AwsExecException("Task never stabilized");
     }
 
     private void logTaskExitCodes(Set<String> essentialContainers, Task task) {
-        logger.addBuildLogEntry("Stopped reason: " + task.getStoppedReason());
+        logger.addLogEntry("Stopped reason: " + task.getStoppedReason());
         for (Container c : task.getContainers()) {
             String code = c.getExitCode() != null ? c.getExitCode() + "" : "N/A";
             String essential = essentialContainers.contains(c.getName()) ? "true" : "false";
-            logger.addBuildLogEntry("Container: " + c.getName() + "  Code: " + code + "  Essential: " + essential);
+            logger.addLogEntry("Container: " + c.getName() + "  Code: " + code + "  Essential: " + essential);
             if (essentialContainers.contains(c.getName()) && (c.getExitCode() == null || c.getExitCode() != 0)) {
-                logger.addBuildLogEntry(c.getName() + " errored with " + c.getExitCode());
+                logger.addLogEntry(c.getName() + " errored with " + c.getExitCode());
                 throw new AwsExecException(c.getName() + " errored with " + c.getExitCode());
             }
         }
@@ -718,7 +719,7 @@ public class EcsPush {
             RdsInstance instance = rdsBroker.brokerDb();
 
             if (instance != null) {
-                logger.addBuildLogEntry("Injecting RDS instance values as environment variables");
+                logger.addLogEntry("Injecting RDS instance values as environment variables");
                 injectMagic.injectRds(definition, instance);
             }
         }
@@ -828,7 +829,7 @@ public class EcsPush {
             cloudWatchClient.putMetricData(new PutMetricDataRequest().withNamespace("Herman/Deploy").withMetricData(d));
         } catch (Exception e) { // NOSONAR
             pushContext.getLogger()
-                .addBuildLogEntry("Error logging invocation to CW: " + e.getMessage());// nothing to do
+                .addLogEntry("Error logging invocation to CW: " + e.getMessage());// nothing to do
         }
     }
 
@@ -853,7 +854,7 @@ public class EcsPush {
 
             cloudWatchClient.putMetricData(new PutMetricDataRequest().withNamespace("Herman/Deploy").withMetricData(d));
         } catch (Exception e) { // NOSONAR
-            pushContext.getLogger().addBuildLogEntry("Error logging result to CW: " + e.getMessage());// nothing to do
+            pushContext.getLogger().addLogEntry("Error logging result to CW: " + e.getMessage());// nothing to do
         }
     }
 }

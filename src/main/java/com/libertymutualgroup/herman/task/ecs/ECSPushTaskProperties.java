@@ -19,6 +19,7 @@ import com.libertymutualgroup.herman.aws.ecs.loadbalancing.SSLCertificate;
 import com.libertymutualgroup.herman.aws.ecs.logging.SplunkInstance;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
 import com.libertymutualgroup.herman.task.newrelic.NewRelicBrokerProperties;
+
 import java.util.List;
 
 public class ECSPushTaskProperties extends CommonTaskProperties {

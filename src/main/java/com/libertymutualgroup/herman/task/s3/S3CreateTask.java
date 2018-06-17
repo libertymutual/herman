@@ -16,7 +16,6 @@
 package com.libertymutualgroup.herman.task.s3;
 
 import com.amazonaws.regions.Regions;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.atlassian.bamboo.deployments.execution.DeploymentTaskContext;
 import com.atlassian.bamboo.task.TaskException;
 import com.atlassian.bamboo.task.TaskResult;
@@ -31,10 +30,12 @@ import com.libertymutualgroup.herman.aws.ecs.TaskContextPropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.BucketMeta;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3Broker;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3CreateContext;
+import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
-import java.io.InputStream;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.io.InputStream;
 
 public class S3CreateTask extends AbstractDeploymentTask {
 
@@ -47,7 +48,7 @@ public class S3CreateTask extends AbstractDeploymentTask {
 
     @Override
     public TaskResult doExecute(final DeploymentTaskContext taskContext) throws TaskException {
-        final BuildLogger buildLogger = taskContext.getBuildLogger();
+        final AtlassianBuildLogger buildLogger = new AtlassianBuildLogger(taskContext.getBuildLogger());
         Regions awsRegion = Regions.fromName(taskContext.getConfigurationMap().getOrDefault("awsRegion",
             String.valueOf(S3CreateTaskConfigurator.DEFAULT_REGION)));
         PropertyHandler handler = new TaskContextPropertyHandler(taskContext, getCustomVariableContext());

@@ -70,10 +70,5 @@
     <resource location="editNewRelicBrokerTask.ftl" name="edit" type="freemarker"/>
   </taskType>
 
-  <servlet class="com.libertymutualgroup.herman.aws.DiskAdminServlet" key="healthServletLTS" name="Health Servlet LTS">
-    <description>Health Servlet</description>
-    <url-pattern>/HealthLTS</url-pattern>
-  </servlet>
-
 
 </atlassian-plugin>

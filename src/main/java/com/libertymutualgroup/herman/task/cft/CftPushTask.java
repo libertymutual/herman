@@ -16,7 +16,6 @@
 package com.libertymutualgroup.herman.task.cft;
 
 import com.amazonaws.regions.Regions;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.atlassian.bamboo.deployments.execution.DeploymentTaskContext;
 import com.atlassian.bamboo.task.TaskException;
 import com.atlassian.bamboo.task.TaskResult;
@@ -27,9 +26,11 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.libertymutualgroup.herman.aws.AbstractDeploymentTask;
 import com.libertymutualgroup.herman.aws.CredentialsHandler;
 import com.libertymutualgroup.herman.aws.cft.CftPush;
-import java.io.InputStream;
+import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.io.InputStream;
 
 public class CftPushTask extends AbstractDeploymentTask {
 
@@ -42,7 +43,7 @@ public class CftPushTask extends AbstractDeploymentTask {
 
     @Override
     public TaskResult doExecute(final DeploymentTaskContext taskContext) throws TaskException {
-        final BuildLogger buildLogger = taskContext.getBuildLogger();
+        final AtlassianBuildLogger buildLogger = new AtlassianBuildLogger(taskContext.getBuildLogger());
 
         CftPush push = new CftPush(buildLogger, taskContext, CredentialsHandler.getCredentials(taskContext),
             CredentialsHandler.getConfiguration(), Regions.fromName(taskContext.getConfigurationMap().get("awsRegion")),

@@ -35,26 +35,27 @@ import com.amazonaws.services.ecr.model.Repository;
 import com.amazonaws.services.ecr.model.RepositoryAlreadyExistsException;
 import com.amazonaws.services.ecr.model.SetRepositoryPolicyRequest;
 import com.amazonaws.util.IOUtils;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.libertymutualgroup.herman.aws.AwsExecException;
+import com.libertymutualgroup.herman.logging.HermanLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class EcrCreate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EcrCreate.class);
 
-    private BuildLogger buildLogger;
+    private HermanLogger buildLogger;
     private AmazonECR client;
     private Regions region;
 
-    public EcrCreate(BuildLogger buildLogger, AWSCredentials sessionCredentials, ClientConfiguration config,
+    public EcrCreate(HermanLogger buildLogger, AWSCredentials sessionCredentials, ClientConfiguration config,
         Regions region) {
         client = AmazonECRClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(sessionCredentials))
             .withClientConfiguration(config).withRegion(region).build();
@@ -96,7 +97,7 @@ public class EcrCreate {
             trimRepo(client, name);
         } catch (Exception e) {
             LOGGER.debug("Error trimming repo: " + name, e);
-            buildLogger.addBuildLogEntry("Error trimming repo: " + e.getMessage());
+            buildLogger.addLogEntry("Error trimming repo: " + e.getMessage());
         }
         return result;
 
@@ -134,13 +135,13 @@ public class EcrCreate {
         }
 
         for (ImageIdentifier detail : toDelete) {
-            buildLogger.addBuildLogEntry("DELETING: " + detail.getImageTag());
+            buildLogger.addLogEntry("DELETING: " + detail.getImageTag());
         }
         if (!toDelete.isEmpty()) {
             BatchDeleteImageRequest delReq = new BatchDeleteImageRequest().withRepositoryName(name)
                 .withImageIds(toDelete);
             BatchDeleteImageResult res = client.batchDeleteImage(delReq);
-            buildLogger.addBuildLogEntry("DELETE called with " + res.getFailures().size() + " failed images.");
+            buildLogger.addLogEntry("DELETE called with " + res.getFailures().size() + " failed images.");
         }
 
     }

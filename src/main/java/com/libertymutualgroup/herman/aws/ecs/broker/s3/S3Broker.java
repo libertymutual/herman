@@ -28,7 +28,6 @@ import com.amazonaws.services.s3.model.HeadBucketRequest;
 import com.amazonaws.services.s3.model.SetBucketPolicyRequest;
 import com.amazonaws.services.s3.model.TagSet;
 import com.amazonaws.util.IOUtils;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.libertymutualgroup.herman.aws.AwsExecException;
@@ -36,8 +35,12 @@ import com.libertymutualgroup.herman.aws.CredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
 import com.libertymutualgroup.herman.util.FileUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -45,8 +48,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class S3Broker {
 
@@ -54,7 +55,7 @@ public class S3Broker {
     private static final String S3_TEMPLATE_JSON = "s3_template.json";
     private static final String S3_TEMPLATE_YML = "s3_template.yml";
 
-    private BuildLogger buildLogger;
+    private HermanLogger buildLogger;
     private PropertyHandler handler;
     private CommonTaskProperties taskProperties;
     private S3CreateContext context;
@@ -84,8 +85,8 @@ public class S3Broker {
         }
 
         brokerBucket(client, configuration, tags, policy);
-        buildLogger.addBuildLogEntry("Setting bamboo.s3.brokered.name = " + configuration.getAppName());
-        buildLogger.addBuildLogEntry("Setting bamboo.s3.brokered.region = " + client.getRegionName());
+        buildLogger.addLogEntry("Setting bamboo.s3.brokered.name = " + configuration.getAppName());
+        buildLogger.addLogEntry("Setting bamboo.s3.brokered.region = " + client.getRegionName());
         BucketMeta result = new BucketMeta();
         result.setName(configuration.getAppName());
         result.setRegion(client.getRegionName());
@@ -109,11 +110,11 @@ public class S3Broker {
 
     private void brokerBucket(AmazonS3 client, S3InjectConfiguration configuration, TagSet tags, String bucketPolicy) {
         String bucketName = configuration.getAppName();
-        buildLogger.addBuildLogEntry("Deploying S3 Bucket to " + client.getRegionName());
-        buildLogger.addBuildLogEntry("Checking for existing bucket: " + bucketName);
+        buildLogger.addLogEntry("Deploying S3 Bucket to " + client.getRegionName());
+        buildLogger.addLogEntry("Checking for existing bucket: " + bucketName);
         boolean exists = client.doesBucketExistV2(bucketName);
         if (!exists) {
-            buildLogger.addBuildLogEntry("Bucket not found, creating...");
+            buildLogger.addLogEntry("Bucket not found, creating...");
             client.createBucket(new CreateBucketRequest(bucketName));
         } else {
             try {
@@ -122,13 +123,13 @@ public class S3Broker {
                 Pattern regionPattern = Pattern.compile("The bucket is in this region: ([a-z-]+[\\d]).");
                 Matcher regionMatcher = regionPattern.matcher(ex.getMessage());
                 if (regionMatcher.find()) {
-                    buildLogger.addBuildLogEntry(
+                    buildLogger.addLogEntry(
                         "Bucket found in different region: " + regionMatcher.group(1) + "! Skipping update...");
                     return;
                 }
                 throw ex;
             }
-            buildLogger.addBuildLogEntry("Existing bucket found, updating...");
+            buildLogger.addLogEntry("Existing bucket found, updating...");
         }
 
         setBucketPolicy(client, bucketPolicy, bucketName);
@@ -145,14 +146,14 @@ public class S3Broker {
                 .getErrorDocument()
                 + " at URL: " + bucketWebsiteUrl;
 
-            buildLogger.addBuildLogEntry(websiteConfigurationString);
+            buildLogger.addLogEntry(websiteConfigurationString);
         } else {
             S3BucketEncryption bucketEncryption = new S3BucketEncryption(bucketName, exists, client, buildLogger);
             try {
                 bucketEncryption.ensureEncryption();
             } catch (Exception ex) {
                 buildLogger
-                    .addBuildLogEntry(String.format("Error enabling bucket default encryption for %s", bucketName));
+                    .addLogEntry(String.format("Error enabling bucket default encryption for %s", bucketName));
                 throw new AwsExecException("Error enabling bucket default encryption", ex);
             }
         }
@@ -167,17 +168,17 @@ public class S3Broker {
             try {
                 client.setBucketPolicy(new SetBucketPolicyRequest(bucketName, fullPolicy));
             } catch (Exception ex) {
-                buildLogger.addBuildLogEntry(
+                buildLogger.addLogEntry(
                     String.format("Error setting bucket policy for %s: Policy = %s", bucketName, fullPolicy));
                 throw new AwsExecException("Error setting bucket policy", ex);
             }
         } else {
             BucketPolicy currentPolicy = client.getBucketPolicy(bucketName);
             if (currentPolicy.getPolicyText() != null) {
-                buildLogger.addBuildLogEntry("No bucket policy specified, deleting current bucket policy");
+                buildLogger.addLogEntry("No bucket policy specified, deleting current bucket policy");
                 client.deleteBucketPolicy(bucketName);
             } else {
-                buildLogger.addBuildLogEntry("No bucket policy specified and no bucket policy previously existed");
+                buildLogger.addLogEntry("No bucket policy specified and no bucket policy previously existed");
             }
         }
     }
@@ -191,14 +192,14 @@ public class S3Broker {
             if (new File(context.getRootPath() + File.separator + S3_TEMPLATE_JSON).exists()) {
                 try (InputStream streamToParse = new FileInputStream(
                     new File(context.getRootPath() + File.separator + S3_TEMPLATE_JSON))) {
-                    buildLogger.addBuildLogEntry("Using " + S3_TEMPLATE_JSON);
+                    buildLogger.addLogEntry("Using " + S3_TEMPLATE_JSON);
                     template = IOUtils.toString(streamToParse);
                     isJson = true;
                 }
             } else if (new File(context.getRootPath() + File.separator + S3_TEMPLATE_YML).exists()) {
                 try (InputStream streamToParse = new FileInputStream(
                     new File(context.getRootPath() + File.separator + S3_TEMPLATE_YML))) {
-                    buildLogger.addBuildLogEntry("Using " + S3_TEMPLATE_YML);
+                    buildLogger.addLogEntry("Using " + S3_TEMPLATE_YML);
                     template = IOUtils.toString(streamToParse);
                     isJson = false;
                 }

@@ -23,7 +23,7 @@ import com.amazonaws.services.s3.model.ServerSideEncryptionByDefault;
 import com.amazonaws.services.s3.model.ServerSideEncryptionConfiguration;
 import com.amazonaws.services.s3.model.ServerSideEncryptionRule;
 import com.amazonaws.services.s3.model.SetBucketEncryptionRequest;
-import com.atlassian.bamboo.build.logger.BuildLogger;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,9 +34,9 @@ public class S3BucketEncryption {
     private final String bucketName;
     private final boolean bucketExists;
     private final AmazonS3 s3Client;
-    private final BuildLogger buildLogger;
+    private final HermanLogger buildLogger;
 
-    public S3BucketEncryption(String bucketName, boolean bucketExists, AmazonS3 s3Client, BuildLogger buildLogger) {
+    public S3BucketEncryption(String bucketName, boolean bucketExists, AmazonS3 s3Client, HermanLogger buildLogger) {
         this.bucketName = bucketName;
         this.bucketExists = bucketExists;
         this.s3Client = s3Client;
@@ -44,18 +44,18 @@ public class S3BucketEncryption {
     }
 
     public void ensureEncryption() {
-        buildLogger.addBuildLogEntry("Ensuring default encryption enabled for bucket " + bucketName);
+        buildLogger.addLogEntry("Ensuring default encryption enabled for bucket " + bucketName);
 
         if (bucketExists) {
             try {
                 GetBucketEncryptionResult bucketEncryption = s3Client.getBucketEncryption(bucketName);
                 if (bucketEncryption.getServerSideEncryptionConfiguration() != null) {
-                    buildLogger.addBuildLogEntry("Bucket already has default encryption enabled -- Skipping");
+                    buildLogger.addLogEntry("Bucket already has default encryption enabled -- Skipping");
                     return;
                 }
             } catch (AmazonS3Exception e) {
                 LOGGER.debug("Error getting bucket encryption: ", e);
-                buildLogger.addBuildLogEntry("No default encryption exists - enabling");
+                buildLogger.addLogEntry("No default encryption exists - enabling");
             }
         }
 

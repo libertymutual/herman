@@ -1,8 +1,5 @@
 package com.libertymutualgroup.herman.aws.ecs.broker.rds;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.times;
-
 import com.amazonaws.services.rds.AmazonRDS;
 import com.amazonaws.services.rds.model.CreateDBParameterGroupRequest;
 import com.amazonaws.services.rds.model.CreateOptionGroupRequest;
@@ -26,12 +23,19 @@ import com.amazonaws.services.rds.model.OptionGroupNotFoundException;
 import com.amazonaws.services.rds.model.Parameter;
 import com.amazonaws.services.rds.model.PendingModifiedValues;
 import com.amazonaws.services.rds.model.Tag;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.util.FileUtil;
+import org.apache.commons.io.FileUtils;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+
 import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
@@ -39,12 +43,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.apache.commons.io.FileUtils;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.times;
 
 public class StandardRdsClientTest {
 
@@ -53,7 +54,7 @@ public class StandardRdsClientTest {
     @Mock
     EcsClusterMetadata clusterMetadata;
     @Mock
-    BuildLogger logger;
+    HermanLogger logger;
     @Mock
     FileUtil fileUtil;
 

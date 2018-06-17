@@ -31,27 +31,28 @@ import com.amazonaws.services.kinesis.model.ResourceNotFoundException;
 import com.amazonaws.services.kinesis.model.StartStreamEncryptionRequest;
 import com.amazonaws.services.kinesis.model.StreamDescription;
 import com.amazonaws.services.kinesis.model.Tag;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class KinesisBroker {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KinesisBroker.class);
 
-    private BuildLogger buildLogger;
+    private HermanLogger buildLogger;
     private AmazonKinesis client;
     private EcsClusterMetadata clusterMetadata;
     private EcsPushDefinition definition;
     private CommonTaskProperties taskProperties;
 
-    public KinesisBroker(BuildLogger buildLogger, AmazonKinesis client, EcsClusterMetadata clusterMetadata,
+    public KinesisBroker(HermanLogger buildLogger, AmazonKinesis client, EcsClusterMetadata clusterMetadata,
         EcsPushDefinition definition, CommonTaskProperties taskProperties) {
         this.buildLogger = buildLogger;
         this.client = client;
@@ -66,11 +67,11 @@ public class KinesisBroker {
             DescribeStreamRequest describeStreamRequest = new DescribeStreamRequest().withStreamName(stream.getName());
             StreamDescription streamDescription = client.describeStream(describeStreamRequest).getStreamDescription();
             buildLogger
-                .addBuildLogEntry(String
+                .addLogEntry(String
                     .format("Stream %s has a status of %s.%n", stream.getName(), streamDescription.getStreamStatus()));
 
             if ("DELETING".equals(streamDescription.getStreamStatus())) {
-                buildLogger.addBuildLogEntry(String.format("Stream %s is being deleted.", stream.getName()));
+                buildLogger.addLogEntry(String.format("Stream %s is being deleted.", stream.getName()));
             }
 
             // Wait for the stream to become active if it is not yet ACTIVE.
@@ -79,7 +80,7 @@ public class KinesisBroker {
             }
         } catch (ResourceNotFoundException ex) {
             LOGGER.debug("Stream not found: " + stream.getName(), ex);
-            buildLogger.addBuildLogEntry(String.format("Stream %s does not exist. Creating it now.", stream.getName()));
+            buildLogger.addLogEntry(String.format("Stream %s does not exist. Creating it now.", stream.getName()));
 
             CreateStreamRequest createStreamRequest = new CreateStreamRequest();
             createStreamRequest.setStreamName(stream.getName());
@@ -133,7 +134,7 @@ public class KinesisBroker {
     }
 
     private void waitForStreamToBecomeAvailable(String streamName) throws InterruptedException {
-        buildLogger.addBuildLogEntry(String.format("Waiting for Stream %s to become ACTIVE...%n", streamName));
+        buildLogger.addLogEntry(String.format("Waiting for Stream %s to become ACTIVE...%n", streamName));
 
         long startTime = System.currentTimeMillis();
         long endTime = startTime + TimeUnit.MINUTES.toMillis(10);
@@ -148,7 +149,7 @@ public class KinesisBroker {
                 DescribeStreamResult describeStreamResponse = client.describeStream(describeStreamRequest);
 
                 String streamStatus = describeStreamResponse.getStreamDescription().getStreamStatus();
-                buildLogger.addBuildLogEntry(String.format("Current state: %s", streamStatus));
+                buildLogger.addLogEntry(String.format("Current state: %s", streamStatus));
 
                 if ("ACTIVE".equals(streamStatus)) {
                     return;
@@ -187,11 +188,11 @@ public class KinesisBroker {
 
                         if (!kinesisStreamNames.contains(streamName)) {
                             deleteStream(streamName);
-                            buildLogger.addBuildLogEntry(String.format("Deleted Stream %s.", streamName));
+                            buildLogger.addLogEntry(String.format("Deleted Stream %s.", streamName));
                         }
                     } else {
                         deleteStream(streamName);
-                        buildLogger.addBuildLogEntry(String.format("Deleted Stream %s.", streamName));
+                        buildLogger.addLogEntry(String.format("Deleted Stream %s.", streamName));
                     }
                 }
             }

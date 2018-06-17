@@ -15,8 +15,6 @@
  */
 package com.libertymutualgroup.herman.aws.ecs.broker.rds;
 
-import static com.libertymutualgroup.herman.aws.ecs.broker.rds.RdsBroker.pollingIntervalMs;
-
 import com.amazonaws.services.rds.AmazonRDS;
 import com.amazonaws.services.rds.model.AddTagsToResourceRequest;
 import com.amazonaws.services.rds.model.CreateDBClusterParameterGroupRequest;
@@ -50,14 +48,17 @@ import com.amazonaws.services.rds.model.OptionGroup;
 import com.amazonaws.services.rds.model.Parameter;
 import com.amazonaws.services.rds.model.RebootDBInstanceRequest;
 import com.amazonaws.services.rds.model.Tag;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
+import com.libertymutualgroup.herman.logging.HermanLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static com.libertymutualgroup.herman.aws.ecs.broker.rds.RdsBroker.pollingIntervalMs;
 
 public class AuroraClient implements RdsClient {
 
@@ -69,10 +70,10 @@ public class AuroraClient implements RdsClient {
     private RdsInstance rds;
     private EcsClusterMetadata clusterMetadata;
     private List<Tag> tags;
-    private BuildLogger buildLogger;
+    private HermanLogger buildLogger;
 
     AuroraClient(AmazonRDS client, RdsInstance rds, EcsClusterMetadata clusterMetadata, List<Tag> tags,
-        BuildLogger buildLogger) {
+        HermanLogger buildLogger) {
         this.client = client;
         this.rds = rds;
         this.clusterMetadata = clusterMetadata;
@@ -82,7 +83,7 @@ public class AuroraClient implements RdsClient {
 
     @Override
     public Boolean dbExists(String clusterId) {
-        buildLogger.addBuildLogEntry("Looking for cluster: " + clusterId);
+        buildLogger.addLogEntry("Looking for cluster: " + clusterId);
 
         DescribeDBClustersRequest request = new DescribeDBClustersRequest().withDBClusterIdentifier(clusterId);
         try {
@@ -96,16 +97,16 @@ public class AuroraClient implements RdsClient {
 
     @Override
     public void createNewDb(String clusterId, String masterUserPassword) {
-        buildLogger.addBuildLogEntry("Creating new Aurora cluster and instance(s)");
+        buildLogger.addLogEntry("Creating new Aurora cluster and instance(s)");
         DBCluster cluster = this.createAuroraCluster(clusterId, masterUserPassword);
         this.waitForAvailableStatus(cluster.getDBClusterIdentifier());
 
-        buildLogger.addBuildLogEntry("Creating Aurora primary");
+        buildLogger.addLogEntry("Creating Aurora primary");
         DBInstance instance = this.createAuroraInstance(rds.getAvailabilityZones()[0], cluster, clusterId);
         this.waitForAvailableClusterInstance(instance.getDBInstanceIdentifier());
 
         if (rds.getAvailabilityZones().length > 1) { // Create read replicas
-            buildLogger.addBuildLogEntry("Creating Aurora Replicas");
+            buildLogger.addLogEntry("Creating Aurora Replicas");
             for (String az : rds.getAvailabilityZones()) {
                 if (az.equals(rds.getAvailabilityZones()[0])) {
                     continue; // Skip primary AZ
@@ -117,7 +118,7 @@ public class AuroraClient implements RdsClient {
 
     @Override
     public void updateMasterPassword(String clusterId, String masterUserPassword) {
-        buildLogger.addBuildLogEntry("Modifying cluster: " + clusterId);
+        buildLogger.addLogEntry("Modifying cluster: " + clusterId);
 
         ModifyDBClusterRequest clusterRequest = new ModifyDBClusterRequest().withDBClusterIdentifier(clusterId)
             .withMasterUserPassword(masterUserPassword).withApplyImmediately(true);
@@ -136,16 +137,16 @@ public class AuroraClient implements RdsClient {
 
     @Override
     public void waitForAvailableStatus(String clusterId) {
-        buildLogger.addBuildLogEntry("... Waiting for Aurora cluster to be available.");
+        buildLogger.addLogEntry("... Waiting for Aurora cluster to be available.");
         try {
             DBCluster clusterResult;
             do {
                 Thread.sleep(pollingIntervalMs);
                 clusterResult = this.getDbCluster(clusterId);
-                buildLogger.addBuildLogEntry("... Cluster status: " + clusterResult.getStatus());
+                buildLogger.addLogEntry("... Cluster status: " + clusterResult.getStatus());
             } while (!clusterResult.getStatus().equals(AVAILABLE_STATUS));
 
-            buildLogger.addBuildLogEntry("... Cluster Result: " + clusterResult);
+            buildLogger.addLogEntry("... Cluster Result: " + clusterResult);
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -177,7 +178,7 @@ public class AuroraClient implements RdsClient {
         final String dbClusterParameterGroupName = String
             .format("%s-%s", dbEngineVersion.getDBParameterGroupFamily().replaceAll("\\.", "-"),
                 rdsResult.getDBClusterIdentifier());
-        buildLogger.addBuildLogEntry("DB cluster parameter group name = " + dbClusterParameterGroupName);
+        buildLogger.addLogEntry("DB cluster parameter group name = " + dbClusterParameterGroupName);
 
         try {
             DescribeDBClusterParameterGroupsResult describeDBClusterParameterGroupsResult = client
@@ -187,7 +188,7 @@ public class AuroraClient implements RdsClient {
                 .next();
 
             buildLogger
-                .addBuildLogEntry("Updating parameters for DB cluster parameter group " + dbClusterParameterGroupName);
+                .addLogEntry("Updating parameters for DB cluster parameter group " + dbClusterParameterGroupName);
             client.modifyDBClusterParameterGroup(new ModifyDBClusterParameterGroupRequest()
                 .withDBClusterParameterGroupName(dbClusterParameterGroupName)
                 .withParameters(parameters));
@@ -195,7 +196,7 @@ public class AuroraClient implements RdsClient {
         } catch (DBParameterGroupNotFoundException ex) {
             LOGGER.debug("DB cluster parameter group for found: " + dbClusterParameterGroupName, ex);
 
-            buildLogger.addBuildLogEntry("Creating DB cluster parameter group " + dbClusterParameterGroupName);
+            buildLogger.addLogEntry("Creating DB cluster parameter group " + dbClusterParameterGroupName);
             dbClusterParameterGroup = client.createDBClusterParameterGroup(new CreateDBClusterParameterGroupRequest()
                 .withDBParameterGroupFamily(dbEngineVersion.getDBParameterGroupFamily())
                 .withDBClusterParameterGroupName(dbClusterParameterGroupName)
@@ -204,7 +205,7 @@ public class AuroraClient implements RdsClient {
                 .withTags(tags));
 
             buildLogger
-                .addBuildLogEntry("Updating parameters for DB cluster parameter group " + dbClusterParameterGroupName);
+                .addLogEntry("Updating parameters for DB cluster parameter group " + dbClusterParameterGroupName);
             client.modifyDBClusterParameterGroup(new ModifyDBClusterParameterGroupRequest()
                 .withDBClusterParameterGroupName(dbClusterParameterGroupName)
                 .withParameters(parameters));
@@ -212,7 +213,7 @@ public class AuroraClient implements RdsClient {
 
         boolean dbParameterGroupIsSet = dbClusterParameterGroupName.equals(rdsResult.getDBClusterParameterGroup());
         if (!dbParameterGroupIsSet) {
-            buildLogger.addBuildLogEntry(
+            buildLogger.addLogEntry(
                 "Modifying DB cluster cluster to use parameter group " + dbClusterParameterGroup
                     .getDBClusterParameterGroupName());
             client.modifyDBCluster(new ModifyDBClusterRequest()
@@ -243,7 +244,7 @@ public class AuroraClient implements RdsClient {
         client.createDBClusterSnapshot(request);
         try {
             DescribeDBClusterSnapshotsResult result = getDescribeDBClusterSnapshotsResult(snapshotId);
-            buildLogger.addBuildLogEntry("DB Cluster Snapshot Result: " + result.getDBClusterSnapshots().get(0));
+            buildLogger.addLogEntry("DB Cluster Snapshot Result: " + result.getDBClusterSnapshots().get(0));
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -256,7 +257,7 @@ public class AuroraClient implements RdsClient {
         String status = "";
         DescribeDBClusterSnapshotsResult result = null;
 
-        buildLogger.addBuildLogEntry("Waiting for snapshot to be created...");
+        buildLogger.addLogEntry("Waiting for snapshot to be created...");
         do {
             Thread.sleep(pollingIntervalMs);
             try {
@@ -264,17 +265,17 @@ public class AuroraClient implements RdsClient {
                 if (result.getDBClusterSnapshots().size() == 1) {
                     status = result.getDBClusterSnapshots().get(0).getStatus();
                 }
-                buildLogger.addBuildLogEntry("... Snapshot status: " + status);
+                buildLogger.addLogEntry("... Snapshot status: " + status);
             } catch (DBClusterSnapshotNotFoundException ex) {
                 LOGGER.debug("DB cluster snapshot not found: " + snapshotId, ex);
-                buildLogger.addBuildLogEntry("... Waiting for snapshot creation");
+                buildLogger.addLogEntry("... Waiting for snapshot creation");
             }
         } while (result == null || !status.equals(AVAILABLE_STATUS));
         return result;
     }
 
     private DBCluster createAuroraCluster(String clusterId, String masterUserPassword) {
-        buildLogger.addBuildLogEntry("... Creating cluster: " + clusterId);
+        buildLogger.addLogEntry("... Creating cluster: " + clusterId);
 
         if (rds.getAdditionalSecGroups() == null) {
             rds.setAdditionalSecGroups(new ArrayList<String>());
@@ -299,7 +300,7 @@ public class AuroraClient implements RdsClient {
     }
 
     private DBCluster fullUpdateAuroraCluster(String clusterId, String masterUserPassword) {
-        buildLogger.addBuildLogEntry("Modifying cluster: " + clusterId);
+        buildLogger.addLogEntry("Modifying cluster: " + clusterId);
 
         if (rds.getAdditionalSecGroups() == null) {
             rds.setAdditionalSecGroups(new ArrayList<String>());
@@ -321,7 +322,7 @@ public class AuroraClient implements RdsClient {
 
     private DBInstance createAuroraInstance(String availabilityZone, DBCluster cluster, String clusterId) {
         String instanceIdentifier = this.clusterIdToInstanceId(clusterId, availabilityZone);
-        buildLogger.addBuildLogEntry("... Creating instance: " + instanceIdentifier);
+        buildLogger.addLogEntry("... Creating instance: " + instanceIdentifier);
 
         CreateDBInstanceRequest createReplicaRequest = new CreateDBInstanceRequest();
         createReplicaRequest.withAvailabilityZone(availabilityZone)
@@ -341,7 +342,7 @@ public class AuroraClient implements RdsClient {
 
     private void fullUpdateAuroraInstance(String availabilityZone, String clusterId) {
         String instanceIdentifier = this.clusterIdToInstanceId(clusterId, availabilityZone);
-        buildLogger.addBuildLogEntry("Modifying instance: " + instanceIdentifier);
+        buildLogger.addLogEntry("Modifying instance: " + instanceIdentifier);
 
         ModifyDBInstanceRequest modifyDBInstanceRequest = new ModifyDBInstanceRequest();
         modifyDBInstanceRequest
@@ -375,11 +376,11 @@ public class AuroraClient implements RdsClient {
                 DescribeDBInstancesResult searchResult = client.describeDBInstances(
                     new DescribeDBInstancesRequest().withDBInstanceIdentifier(instanceId));
                 rdsResult = searchResult.getDBInstances().get(0);
-                buildLogger.addBuildLogEntry("... Instance status: " + rdsResult.getDBInstanceStatus());
+                buildLogger.addLogEntry("... Instance status: " + rdsResult.getDBInstanceStatus());
             } while (!rdsResult.getDBInstanceStatus().equals(AVAILABLE_STATUS)
                 || rdsResult.getPendingModifiedValues().getMasterUserPassword() != null);
 
-            buildLogger.addBuildLogEntry("RDS Result: " + rdsResult);
+            buildLogger.addLogEntry("RDS Result: " + rdsResult);
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -411,7 +412,7 @@ public class AuroraClient implements RdsClient {
                 .equals(dbParameterGroupStatus.getParameterApplyStatus()))
             .findAny();
         if (statusOptional.isPresent()) {
-            buildLogger.addBuildLogEntry(String
+            buildLogger.addLogEntry(String
                 .format("DB param group %s has a status of %s", statusOptional.get().getDBParameterGroupName(),
                     PENDING_REBOOT_STATUS));
             return true;
@@ -421,7 +422,7 @@ public class AuroraClient implements RdsClient {
     }
 
     void rebootDb(String instanceId) {
-        buildLogger.addBuildLogEntry("Rebooting DB: " + instanceId);
+        buildLogger.addLogEntry("Rebooting DB: " + instanceId);
         client.rebootDBInstance(new RebootDBInstanceRequest().withDBInstanceIdentifier(instanceId));
     }
 

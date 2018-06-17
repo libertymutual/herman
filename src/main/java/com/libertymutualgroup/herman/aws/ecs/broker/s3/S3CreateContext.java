@@ -17,25 +17,25 @@ package com.libertymutualgroup.herman.aws.ecs.broker.s3;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.regions.Regions;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushContext;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
 
 public class S3CreateContext {
 
-    private BuildLogger logger;
+    private HermanLogger logger;
     private PropertyHandler bambooPropertyHandler;
     private AWSCredentials sessionCredentials;
     private Regions region;
     private String rootPath;
     private CommonTaskProperties taskProperties;
 
-    public BuildLogger getLogger() {
+    public HermanLogger getLogger() {
         return logger;
     }
 
-    public void setLogger(BuildLogger logger) {
+    public void setLogger(HermanLogger logger) {
         this.logger = logger;
     }
 
@@ -79,7 +79,7 @@ public class S3CreateContext {
         this.taskProperties = taskProperties;
     }
 
-    public S3CreateContext withLogger(final BuildLogger logger) {
+    public S3CreateContext withLogger(final HermanLogger logger) {
         this.logger = logger;
         return this;
     }

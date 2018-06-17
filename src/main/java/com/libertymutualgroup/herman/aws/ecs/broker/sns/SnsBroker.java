@@ -23,21 +23,22 @@ import com.amazonaws.services.sns.model.SubscribeRequest;
 import com.amazonaws.services.sns.model.Subscription;
 import com.amazonaws.services.sns.model.UnsubscribeRequest;
 import com.amazonaws.util.StringUtils;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
+import com.libertymutualgroup.herman.logging.HermanLogger;
+import org.apache.commons.collections4.CollectionUtils;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.commons.collections4.CollectionUtils;
 
 public class SnsBroker {
 
 
     public static final String AND_ENDPOINT = " and endpoint: ";
-    private BuildLogger logger;
+    private HermanLogger logger;
     private PropertyHandler handler;
 
-    public SnsBroker(BuildLogger logger, PropertyHandler handler) {
+    public SnsBroker(HermanLogger logger, PropertyHandler handler) {
         this.logger = logger;
         this.handler = handler;
     }
@@ -51,7 +52,7 @@ public class SnsBroker {
     public void brokerTopic(AmazonSNS client, SnsTopic topic, String topicPolicy) {
 
         CreateTopicResult createTopicResult;
-        logger.addBuildLogEntry("Creating topic :  " + topic.getName());
+        logger.addLogEntry("Creating topic :  " + topic.getName());
         createTopicResult = client.createTopic(new CreateTopicRequest().withName(topic.getName()));
 
         String topicArn = createTopicResult.getTopicArn();
@@ -78,11 +79,11 @@ public class SnsBroker {
             String protocol = subscription.getProtocol();
             String endpoint = subscription.getEndpoint();
             if (!StringUtils.isNullOrEmpty(protocol) && !StringUtils.isNullOrEmpty(endpoint)) {
-                logger.addBuildLogEntry("Adding subscription with protocol: " + protocol + AND_ENDPOINT + endpoint);
+                logger.addLogEntry("Adding subscription with protocol: " + protocol + AND_ENDPOINT + endpoint);
                 SubscribeRequest subscribeRequest = new SubscribeRequest(topicArn, protocol, endpoint);
                 client.subscribe(subscribeRequest);
             } else {
-                logger.addBuildLogEntry("Skipping subscription with protocol: " + protocol + AND_ENDPOINT + endpoint);
+                logger.addLogEntry("Skipping subscription with protocol: " + protocol + AND_ENDPOINT + endpoint);
             }
         }
     }
@@ -94,7 +95,7 @@ public class SnsBroker {
                     sub -> equalsWithoutNonEndpointCharacters(sub.getEndpoint(), subscription.getEndpoint()) &&
                         equalsWithoutNonEndpointCharacters(sub.getProtocol(), subscription.getProtocol()));
                 if (!subscriptionExists) {
-                    logger.addBuildLogEntry(
+                    logger.addLogEntry(
                         "Delete subscription with protocol: " + subscription.getProtocol() + AND_ENDPOINT + subscription
                             .getEndpoint() +
                             " as it is no longer in the subscription list");
@@ -111,7 +112,7 @@ public class SnsBroker {
                 : topic.getDeliveryStatusAttributes().size());
         if (CollectionUtils.isNotEmpty(topic.getDeliveryStatusAttributes())) {
             topic.getDeliveryStatusAttributes().forEach(i -> {
-                logger.addBuildLogEntry(
+                logger.addLogEntry(
                     "Updating topic delivery status attribute. Name: " + i.getName() + " and value: " + i.getValue());
                 requestedTopicAttributeNameValueMap.put(i.getName(), i.getValue());
             });
@@ -128,7 +129,7 @@ public class SnsBroker {
         client.getTopicAttributes(topicArn).getAttributes().forEach((k, v) -> {
             if (possibleDeliveryAttributeNameValueMap.get(k) != null && !requestedTopicAttributeNameValueMap
                 .containsKey(k)) {
-                logger.addBuildLogEntry("Defaulting topic delivery status attribute. Key: " + k + " and value: "
+                logger.addLogEntry("Defaulting topic delivery status attribute. Key: " + k + " and value: "
                     + possibleDeliveryAttributeNameValueMap.get(k));
                 updatedDeliveryStatusTopicAttributeNameValueMap
                     .put(k, SnsDeliveryStatusAttribute.valueOf(k).getValue());
@@ -136,7 +137,7 @@ public class SnsBroker {
         });
 
         updatedDeliveryStatusTopicAttributeNameValueMap
-            .forEach((k, v) -> logger.addBuildLogEntry("Attributes to be updated - key : " + k + " value : " + v));
+            .forEach((k, v) -> logger.addLogEntry("Attributes to be updated - key : " + k + " value : " + v));
 
         updatedDeliveryStatusTopicAttributeNameValueMap.forEach((k, v) -> {
             SetTopicAttributesRequest setTopicAttributesRequest =

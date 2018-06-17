@@ -16,8 +16,11 @@
 package com.libertymutualgroup.herman.util;
 
 import com.amazonaws.util.IOUtils;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.libertymutualgroup.herman.aws.AwsExecException;
+import com.libertymutualgroup.herman.logging.HermanLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -25,17 +28,15 @@ import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class FileUtil {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FileUtil.class);
 
     private String rootPath;
-    private BuildLogger buildLogger;
+    private HermanLogger buildLogger;
 
-    public FileUtil(String rootPath, BuildLogger buildLogger) {
+    public FileUtil(String rootPath, HermanLogger buildLogger) {
         this.rootPath = rootPath;
         this.buildLogger = buildLogger;
     }
@@ -69,7 +70,7 @@ public class FileUtil {
                 return new FileInputStream(file);
             } catch (IOException e) {
                 LOGGER.debug("Error finding file: " + path, e); //NOSONAR
-                buildLogger.addBuildLogEntry(String.format("Error finding file %s: %s", path, e.getMessage()));
+                buildLogger.addLogEntry(String.format("Error finding file %s: %s", path, e.getMessage()));
             }
         }
         return null;
@@ -85,7 +86,7 @@ public class FileUtil {
                 return IOUtils.toString(streamToParse);
             } catch (IOException e) {
                 LOGGER.debug("Error finding file: " + path, e);
-                buildLogger.addBuildLogEntry(String.format("Error finding file %s: %s", path, e.getMessage()));
+                buildLogger.addLogEntry(String.format("Error finding file %s: %s", path, e.getMessage()));
             }
         }
         return null;
@@ -108,7 +109,7 @@ public class FileUtil {
             } catch (IOException e) {
                 LOGGER.debug("Error finding file: " + filename, e);
                 buildLogger
-                    .addBuildLogEntry(String.format("Error reading file in zip %s: %s", filename, e.getMessage()));
+                    .addLogEntry(String.format("Error reading file in zip %s: %s", filename, e.getMessage()));
 
             }
         }

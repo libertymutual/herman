@@ -1,22 +1,23 @@
 package com.libertymutualgroup.herman.aws.ecs.broker.rds;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.times;
-
 import com.amazonaws.services.rds.AmazonRDS;
 import com.amazonaws.services.rds.model.DescribeDBInstancesResult;
 import com.amazonaws.services.rds.model.Tag;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.times;
 
 public class OracleClientTest {
 
@@ -25,7 +26,7 @@ public class OracleClientTest {
     @Mock
     private EcsClusterMetadata clusterMetadata;
     @Mock
-    private BuildLogger logger;
+    private HermanLogger logger;
 
     @Before
     public void setup() {

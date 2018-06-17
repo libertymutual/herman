@@ -20,7 +20,12 @@ import com.atlassian.bamboo.variable.CustomVariableContext;
 import com.atlassian.bamboo.variable.VariableContext;
 import com.atlassian.bamboo.variable.VariableDefinitionContext;
 import com.libertymutualgroup.herman.aws.AwsExecException;
+import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
 import com.libertymutualgroup.herman.util.FileUtil;
+import org.fusesource.hawtbuf.ByteArrayInputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashSet;
@@ -29,9 +34,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.fusesource.hawtbuf.ByteArrayInputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TaskContextPropertyHandler implements PropertyHandler {
 
@@ -190,7 +192,7 @@ public class TaskContextPropertyHandler implements PropertyHandler {
     private void importPropFiles() {
         String env = deploymentTaskContext.getDeploymentContext().getEnvironmentName();
         FileUtil util = new FileUtil(deploymentTaskContext.getRootDirectory().getAbsolutePath(),
-            deploymentTaskContext.getBuildLogger());
+            new AtlassianBuildLogger(deploymentTaskContext.getBuildLogger()));
         String envProps = util.findFile(env + ".properties", true);
 
         if (props != null && envProps != null) {

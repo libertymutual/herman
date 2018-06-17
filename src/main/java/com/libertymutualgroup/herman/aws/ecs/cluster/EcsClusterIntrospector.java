@@ -32,8 +32,9 @@ import com.amazonaws.services.ec2.model.Filter;
 import com.amazonaws.services.ec2.model.SecurityGroup;
 import com.amazonaws.services.ec2.model.Subnet;
 import com.amazonaws.services.ec2.model.Vpc;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.libertymutualgroup.herman.aws.AwsExecException;
+import com.libertymutualgroup.herman.logging.HermanLogger;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -43,9 +44,9 @@ public class EcsClusterIntrospector {
 
     private AmazonCloudFormation cftClient;
     private AmazonEC2 ec2Client;
-    private BuildLogger logger;
+    private HermanLogger logger;
 
-    public EcsClusterIntrospector(AmazonCloudFormation cftClient, AmazonEC2 ec2Client, BuildLogger logger) {
+    public EcsClusterIntrospector(AmazonCloudFormation cftClient, AmazonEC2 ec2Client, HermanLogger logger) {
         this.cftClient = cftClient;
         this.ec2Client = ec2Client;
         this.logger = logger;
@@ -104,8 +105,8 @@ public class EcsClusterIntrospector {
         }
         ecsClusterMetadata.setAkamaiSecurityGroup(getAkamaiSecurityGroups(vpc));
 
-        logger.addBuildLogEntry("Introspection complete:");
-        logger.addBuildLogEntry(ecsClusterMetadata.toString());
+        logger.addLogEntry("Introspection complete:");
+        logger.addLogEntry(ecsClusterMetadata.toString());
         return ecsClusterMetadata;
     }
 
@@ -130,7 +131,7 @@ public class EcsClusterIntrospector {
     }
 
     private void updateClusterMetadataWithStackResourceValue(EcsClusterMetadata ecsClusterMetadata, StackResource r) {
-        logger.addBuildLogEntry("Resource: " + r.getLogicalResourceId() + " : " + r.getPhysicalResourceId());
+        logger.addLogEntry("Resource: " + r.getLogicalResourceId() + " : " + r.getPhysicalResourceId());
         if (r.getLogicalResourceId().contains("ELBSecurity")) {
             ecsClusterMetadata.getElbSecurityGroups().add(r.getPhysicalResourceId());
         } else if (r.getLogicalResourceId().contains("AppSecurity")) {
@@ -194,7 +195,7 @@ public class EcsClusterIntrospector {
         if (sgResult.getSecurityGroups().size() == 1) {
             secGroup = sgResult.getSecurityGroups().get(0);
         } else {
-            logger.addBuildLogEntry("Used: " + sgName);
+            logger.addLogEntry("Used: " + sgName);
 
             throw new AwsExecException("Error looking up SG :" + sgResult.getSecurityGroups().size());
         }
