@@ -16,7 +16,6 @@
 package com.libertymutualgroup.herman.task.lambda;
 
 import com.amazonaws.regions.Regions;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.atlassian.bamboo.deployments.execution.DeploymentTaskContext;
 import com.atlassian.bamboo.task.TaskResult;
 import com.atlassian.bamboo.task.TaskResultBuilder;
@@ -30,11 +29,13 @@ import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.TaskContextPropertyHandler;
 import com.libertymutualgroup.herman.aws.lambda.LambdaBroker;
 import com.libertymutualgroup.herman.aws.lambda.LambdaPushContext;
+import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
-import java.io.IOException;
-import java.io.InputStream;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.io.IOException;
+import java.io.InputStream;
 
 public class LambdaCreateTask extends AbstractDeploymentTask {
 
@@ -47,7 +48,7 @@ public class LambdaCreateTask extends AbstractDeploymentTask {
 
     @Override
     public TaskResult doExecute(final DeploymentTaskContext taskContext) {
-        final BuildLogger buildLogger = taskContext.getBuildLogger();
+        final AtlassianBuildLogger buildLogger = new AtlassianBuildLogger(taskContext.getBuildLogger());
         PropertyHandler handler = new TaskContextPropertyHandler(taskContext, getCustomVariableContext());
 
         LambdaPushContext context = new LambdaPushContext()

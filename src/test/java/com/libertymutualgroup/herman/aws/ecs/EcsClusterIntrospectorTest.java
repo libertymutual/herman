@@ -1,8 +1,5 @@
 package com.libertymutualgroup.herman.aws.ecs;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.when;
-
 import com.amazonaws.services.cloudformation.AmazonCloudFormation;
 import com.amazonaws.services.cloudformation.model.DescribeStackResourcesRequest;
 import com.amazonaws.services.cloudformation.model.DescribeStackResourcesResult;
@@ -21,18 +18,23 @@ import com.amazonaws.services.ec2.model.Filter;
 import com.amazonaws.services.ec2.model.SecurityGroup;
 import com.amazonaws.services.ec2.model.Subnet;
 import com.amazonaws.services.ec2.model.Vpc;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterIntrospector;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
-import java.util.List;
+import com.libertymutualgroup.herman.logging.HermanLogger;
+import com.libertymutualgroup.herman.logging.SysoutLogger;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.when;
+
 public class EcsClusterIntrospectorTest {
 
-    BuildLogger logger = new SysoutLogger();
+    HermanLogger logger = new SysoutLogger();
 
     @Mock
     AmazonCloudFormation cftClient;

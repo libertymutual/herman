@@ -16,7 +16,6 @@
 package com.libertymutualgroup.herman.task.ecs;
 
 import com.amazonaws.regions.Regions;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.atlassian.bamboo.deployments.execution.DeploymentTaskContext;
 import com.atlassian.bamboo.task.TaskResult;
 import com.atlassian.bamboo.task.TaskResultBuilder;
@@ -29,16 +28,19 @@ import com.libertymutualgroup.herman.aws.ecs.EcsPush;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushContext;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.TaskContextPropertyHandler;
+import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.util.FileUtil;
+import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
-import org.apache.commons.io.IOUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 public class ECSPushTask extends AbstractDeploymentTask {
 
@@ -52,7 +54,7 @@ public class ECSPushTask extends AbstractDeploymentTask {
 
     @Override
     public TaskResult doExecute(final DeploymentTaskContext taskContext) {
-        final BuildLogger buildLogger = taskContext.getBuildLogger();
+        final AtlassianBuildLogger buildLogger = new AtlassianBuildLogger(taskContext.getBuildLogger());
         int timeout = Integer.parseInt(taskContext.getConfigurationMap().getOrDefault("timeout",
             String.valueOf(ECSPushTaskConfigurator.DEFAULT_TIMEOUT)));
 
@@ -74,7 +76,7 @@ public class ECSPushTask extends AbstractDeploymentTask {
         EcsPush push = new EcsPush(context);
         push.push();
 
-        spitAscii(taskContext.getBuildLogger(), taskContext.getRootDirectory().getAbsolutePath());
+        spitAscii(buildLogger, taskContext.getRootDirectory().getAbsolutePath());
 
         return TaskResultBuilder.newBuilder(taskContext).success().build();
     }
@@ -90,7 +92,7 @@ public class ECSPushTask extends AbstractDeploymentTask {
         }
     }
 
-    private void spitAscii(BuildLogger logger, String rootPath) {
+    private void spitAscii(HermanLogger logger, String rootPath) {
         FileUtil fileUtil = new FileUtil(rootPath, logger);
 
         BufferedReader rdr;
@@ -105,11 +107,11 @@ public class ECSPushTask extends AbstractDeploymentTask {
         try {
             String line;
             while ((line = rdr.readLine()) != null) {
-                logger.addBuildLogEntry(line);
+                logger.addLogEntry(line);
             }
         } catch (IOException e1) {
             LOGGER.debug("Error parsing ascii", e1);
-            logger.addBuildLogEntry("...");
+            logger.addLogEntry("...");
         }
     }
 }

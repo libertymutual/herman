@@ -19,8 +19,8 @@ import com.amazonaws.services.elasticloadbalancing.AmazonElasticLoadBalancing;
 import com.amazonaws.services.elasticloadbalancing.model.DescribeLoadBalancersRequest;
 import com.amazonaws.services.elasticloadbalancing.model.LoadBalancerDescription;
 import com.amazonaws.services.elasticloadbalancing.model.LoadBalancerNotFoundException;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,9 +29,9 @@ public class ElbOrAlbDecider {
     private static final Logger LOGGER = LoggerFactory.getLogger(ElbOrAlbDecider.class);
 
     private AmazonElasticLoadBalancing elbClient;
-    private BuildLogger buildLogger;
+    private HermanLogger buildLogger;
 
-    public ElbOrAlbDecider(AmazonElasticLoadBalancing elbClient, BuildLogger buildLogger) {
+    public ElbOrAlbDecider(AmazonElasticLoadBalancing elbClient, HermanLogger buildLogger) {
         this.elbClient = elbClient;
         this.buildLogger = buildLogger;
     }
@@ -42,24 +42,24 @@ public class ElbOrAlbDecider {
             balancer = elbClient
                 .describeLoadBalancers(new DescribeLoadBalancersRequest().withLoadBalancerNames(serviceName))
                 .getLoadBalancerDescriptions().get(0);
-            buildLogger.addBuildLogEntry("ELB found: " + serviceName);
+            buildLogger.addLogEntry("ELB found: " + serviceName);
         } catch (LoadBalancerNotFoundException e) {
             LOGGER.debug("Error getting ELB " + serviceName, e);
         }
 
         if (balancer != null && "internet-facing".equalsIgnoreCase(balancer.getScheme())) {
-            buildLogger.addBuildLogEntry("Retaining ELB since app is existing and external - needs manual DNS work");
+            buildLogger.addLogEntry("Retaining ELB since app is existing and external - needs manual DNS work");
             return false;
         } else if (definition.getService().getHealthCheck().getTarget().toUpperCase().contains("TCP")) {
-            buildLogger.addBuildLogEntry(
+            buildLogger.addLogEntry(
                 "Using ELB as healthcheck is set to TCP; not supported by ALB and can't be used for blue-green");
             return false;
         } else if (definition.getService().getProtocol() != null && definition.getService().getProtocol().toUpperCase()
             .contains("TCP")) {
-            buildLogger.addBuildLogEntry("Using ELB as endpoint is set to TCP; not supported by ALB");
+            buildLogger.addLogEntry("Using ELB as endpoint is set to TCP; not supported by ALB");
             return false;
         } else if ("true".equalsIgnoreCase(definition.getUseElb())) {
-            buildLogger.addBuildLogEntry("Using ELB as override flag is set");
+            buildLogger.addLogEntry("Using ELB as override flag is set");
             return false;
         }
 

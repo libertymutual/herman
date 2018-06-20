@@ -38,7 +38,6 @@ import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
 import com.amazonaws.services.lambda.model.InvocationType;
 import com.amazonaws.services.lambda.model.InvokeRequest;
 import com.amazonaws.util.IOUtils;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.atlassian.bamboo.deployments.execution.DeploymentTaskContext;
 import com.atlassian.bamboo.task.TaskException;
 import com.atlassian.bamboo.variable.CustomVariableContext;
@@ -47,6 +46,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.TaskContextPropertyHandler;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.cft.CFTPushTaskProperties;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -77,7 +77,7 @@ public class CftPush {
     private static final int POLLING_INTERVAL_MS = 10000;
     private Properties props = new Properties();
     private Properties output = new Properties();
-    private BuildLogger buildLogger;
+    private HermanLogger buildLogger;
     private DeploymentTaskContext taskContext;
     private AmazonCloudFormation cftClient;
     private AWSLambda lambdaClient;
@@ -85,9 +85,9 @@ public class CftPush {
     private CustomVariableContext customVariableContext;
     private CFTPushTaskProperties taskProperties;
 
-    public CftPush(BuildLogger buildLogger, DeploymentTaskContext taskContext, AWSCredentials sessionCredentials,
-        ClientConfiguration config, Regions region, CustomVariableContext customVariableContext,
-        CFTPushTaskProperties taskProperties) {
+    public CftPush(HermanLogger buildLogger, DeploymentTaskContext taskContext, AWSCredentials sessionCredentials,
+                   ClientConfiguration config, Regions region, CustomVariableContext customVariableContext,
+                   CFTPushTaskProperties taskProperties) {
 
         this.buildLogger = buildLogger;
         this.taskContext = taskContext;
@@ -112,7 +112,7 @@ public class CftPush {
         String projecName = taskContext.getDeploymentContext().getDeploymentProjectName();
 
         if (!this.taskProperties.getCftPushVariableBrokerLambda().isEmpty()) {
-            buildLogger.addBuildLogEntry("Getting CFT variables from Lambda: " + this.taskProperties.getCftPushVariableBrokerLambda());
+            buildLogger.addLogEntry("Getting CFT variables from Lambda: " + this.taskProperties.getCftPushVariableBrokerLambda());
             introspectEnvironment();
         }
         injectBambooContext();
@@ -126,7 +126,7 @@ public class CftPush {
 
         createStack(stackName);
 
-        buildLogger.addBuildLogEntry("Stack triggered...");
+        buildLogger.addLogEntry("Stack triggered...");
         waitForCompletion(stackName);
         outputStack(stackName);
 
@@ -148,11 +148,11 @@ public class CftPush {
         try (FileReader stackRead = new FileReader(stackOut);) {
             if (stackOut.exists()) {
                 props.load(stackRead);
-                buildLogger.addBuildLogEntry("Loaded stackoutput.properties");
+                buildLogger.addLogEntry("Loaded stackoutput.properties");
             }
         } catch (IOException e) {
             LOGGER.debug("No stackoutput.properties", e);
-            buildLogger.addBuildLogEntry("No stackoutput.properties");
+            buildLogger.addLogEntry("No stackoutput.properties");
         }
 
         String root = taskContext.getRootDirectory().getAbsolutePath();
@@ -161,12 +161,12 @@ public class CftPush {
             // load second to allow env to override
             if (envProps.exists()) {
                 props.load(envFile);
-                buildLogger.addBuildLogEntry("Loaded " + envProps.getName());
-                buildLogger.addBuildLogEntry("Props: " + props.toString());
+                buildLogger.addLogEntry("Loaded " + envProps.getName());
+                buildLogger.addLogEntry("Props: " + props.toString());
             }
         } catch (IOException e) {
             LOGGER.debug("Property file not found for env: " + env, e);
-            buildLogger.addBuildLogEntry("No " + env + ".properties");
+            buildLogger.addLogEntry("No " + env + ".properties");
         }
     }
 
@@ -250,15 +250,15 @@ public class CftPush {
                 LOGGER.debug("Stack has no updates: " + name, noUpdateException);
 
                 if (noUpdateException.getMessage().contains("No updates are to be performed")) {
-                    buildLogger.addBuildLogEntry("No CFT Updates to apply, skipping CFT Push...");
+                    buildLogger.addLogEntry("No CFT Updates to apply, skipping CFT Push...");
                 } else {
-                    buildLogger.addBuildLogEntry(noUpdateException.toString());
+                    buildLogger.addLogEntry(noUpdateException.toString());
                     throw new AwsExecException();
                 }
             } catch (AmazonServiceException ase) {
                 LOGGER.debug("UpdateStackRequest threw an exception for " + name, ase);
 
-                buildLogger.addBuildLogEntry(ase.toString());
+                buildLogger.addLogEntry(ase.toString());
                 throw new AwsExecException();
             }
         }
@@ -288,13 +288,13 @@ public class CftPush {
         try {
             variables = new ObjectMapper().readValue(variableJson, new TypeReference<Map<String, String>>() {});
         } catch (IOException e) {
-            buildLogger.addBuildLogEntry(e.getMessage());
-            buildLogger.addBuildLogEntry("Unable to parse variables from " + variableJson);
+            buildLogger.addLogEntry(e.getMessage());
+            buildLogger.addLogEntry("Unable to parse variables from " + variableJson);
             throw new TaskException(e.getMessage(), e);
         }
 
         for (Map.Entry<String, String> entry : variables.entrySet()) {
-            buildLogger.addBuildLogEntry("Injecting " + entry.getKey() + " = " + entry.getValue());
+            buildLogger.addLogEntry("Injecting " + entry.getKey() + " = " + entry.getValue());
             props.put(entry.getKey(), entry.getValue());
         }
     }
@@ -310,8 +310,8 @@ public class CftPush {
         DescribeStackResourcesResult res = cftClient.describeStackResources(req);
 
         for (StackResource r : res.getStackResources()) {
-            buildLogger.addBuildLogEntry(r.getPhysicalResourceId());
-            buildLogger.addBuildLogEntry(r.getResourceType());
+            buildLogger.addLogEntry(r.getPhysicalResourceId());
+            buildLogger.addLogEntry(r.getResourceType());
             output.put("aws.stack." + r.getLogicalResourceId(), r.getPhysicalResourceId());
         }
 
@@ -333,7 +333,7 @@ public class CftPush {
         wait.setStackName(stackName);
         Boolean completed = false;
 
-        buildLogger.addBuildLogEntry("Waiting...");
+        buildLogger.addLogEntry("Waiting...");
 
         // Try waiting at the start to avoid a race before the stack starts updating
         sleep();
@@ -348,7 +348,7 @@ public class CftPush {
             }
         }
 
-        buildLogger.addBuildLogEntry("done");
+        buildLogger.addLogEntry("done");
     }
 
     private void sleep() {
@@ -356,7 +356,7 @@ public class CftPush {
             Thread.sleep(POLLING_INTERVAL_MS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            buildLogger.addBuildLogEntry(INTERRUPTED_WHILE_POLLING);
+            buildLogger.addLogEntry(INTERRUPTED_WHILE_POLLING);
             throw new AwsExecException(INTERRUPTED_WHILE_POLLING);
         }
     }
@@ -382,7 +382,7 @@ public class CftPush {
         if (reason != null) {
             status += " : " + reason;
         }
-        buildLogger.addBuildLogEntry(status);
+        buildLogger.addLogEntry(status);
     }
 
 }

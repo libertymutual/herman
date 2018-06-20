@@ -18,8 +18,9 @@ package com.libertymutualgroup.herman.aws.ecs.loadbalancing;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
 import com.amazonaws.services.identitymanagement.model.ListServerCertificatesResult;
 import com.amazonaws.services.identitymanagement.model.ServerCertificateMetadata;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.libertymutualgroup.herman.aws.AwsExecException;
+import com.libertymutualgroup.herman.logging.HermanLogger;
+
 import java.util.List;
 
 public class CertHandler {
@@ -28,10 +29,10 @@ public class CertHandler {
 
 
     private final AmazonIdentityManagement iamClient;
-    private final BuildLogger buildLogger;
+    private final HermanLogger buildLogger;
     private final List<SSLCertificate> sslCertificates;
 
-    public CertHandler(AmazonIdentityManagement iamClient, BuildLogger buildLogger,
+    public CertHandler(AmazonIdentityManagement iamClient, HermanLogger buildLogger,
         List<SSLCertificate> sslCertificates) {
         this.iamClient = iamClient;
         this.buildLogger = buildLogger;
@@ -51,7 +52,7 @@ public class CertHandler {
                     break;
                 }
             }
-            buildLogger.addBuildLogEntry("SSL cert found: " + deriveCertResult.getCertArn());
+            buildLogger.addLogEntry("SSL cert found: " + deriveCertResult.getCertArn());
         }
         return deriveCertResult;
     }

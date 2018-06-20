@@ -16,18 +16,19 @@
 package com.libertymutualgroup.herman.aws.ecs.logging;
 
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionResult;
-import com.atlassian.bamboo.build.logger.BuildLogger;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
+import org.springframework.util.Assert;
+
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.springframework.util.Assert;
 
 public class LoggingService {
 
-    private final BuildLogger logger;
+    private final HermanLogger logger;
     private SplunkInstance splunkInstance = null;
 
-    public LoggingService(BuildLogger logger) {
+    public LoggingService(HermanLogger logger) {
         this.logger = logger;
     }
 
@@ -65,11 +66,11 @@ public class LoggingService {
             .mapToObj(value -> "*")
             .collect(Collectors.joining());
 
-        logger.addBuildLogEntry("\n");
-        logger.addBuildLogEntry(dividerEntry);
-        logger.addBuildLogEntry(titleEntry);
-        logger.addBuildLogEntry(dividerEntry);
-        logger.addBuildLogEntry(link);
-        logger.addBuildLogEntry(dividerEntry);
+        logger.addLogEntry("\n");
+        logger.addLogEntry(dividerEntry);
+        logger.addLogEntry(titleEntry);
+        logger.addLogEntry(dividerEntry);
+        logger.addLogEntry(link);
+        logger.addLogEntry(dividerEntry);
     }
 }

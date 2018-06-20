@@ -1,25 +1,25 @@
 package com.libertymutualgroup.herman.aws.ecs.logging;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionResult;
 import com.amazonaws.services.ecs.model.TaskDefinition;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 import org.mockito.Matchers;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 public class LoggingServiceTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testConstructor_NullSplunkUrl() {
         // GIVEN
-        BuildLogger logger = mock(BuildLogger.class);
+        HermanLogger logger = mock(HermanLogger.class);
         String splunkUrl = null;
         ECSPushTaskProperties ecsPushTaskProperties = new ECSPushTaskProperties();
 
@@ -33,7 +33,7 @@ public class LoggingServiceTest {
     @Test
     public void provideSplunkLog() throws Exception {
         // GIVEN
-        BuildLogger logger = mock(BuildLogger.class);
+        HermanLogger logger = mock(HermanLogger.class);
 
         // Create Task Result
         final String family = "test-ecs-push";
@@ -63,8 +63,8 @@ public class LoggingServiceTest {
         loggingService.provideSplunkLog(taskResult);
 
         // THEN
-        verify(logger, times(1)).addBuildLogEntry(Matchers.contains("Splunk Logs"));
-        verify(logger, times(1)).addBuildLogEntry(Matchers.contains(splunkInstance.getWebUrl()));
-        verify(logger, times(1)).addBuildLogEntry(Matchers.contains(family + "-" + revision));
+        verify(logger, times(1)).addLogEntry(Matchers.contains("Splunk Logs"));
+        verify(logger, times(1)).addLogEntry(Matchers.contains(splunkInstance.getWebUrl()));
+        verify(logger, times(1)).addLogEntry(Matchers.contains(family + "-" + revision));
     }
 }

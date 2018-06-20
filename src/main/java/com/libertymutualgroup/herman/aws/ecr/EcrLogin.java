@@ -25,18 +25,19 @@ import com.amazonaws.services.ecr.model.AuthorizationData;
 import com.amazonaws.services.ecr.model.GetAuthorizationTokenRequest;
 import com.amazonaws.services.ecr.model.GetAuthorizationTokenResult;
 import com.amazonaws.util.Base64;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.libertymutualgroup.herman.aws.AwsExecException;
+import com.libertymutualgroup.herman.logging.HermanLogger;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
 public class EcrLogin {
 
-    private BuildLogger logger;
+    private HermanLogger logger;
     private AmazonECR client;
 
-    public EcrLogin(BuildLogger logger, AWSCredentials sessionCredentials, ClientConfiguration config, Regions region) {
+    public EcrLogin(HermanLogger logger, AWSCredentials sessionCredentials, ClientConfiguration config, Regions region) {
         client = AmazonECRClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(sessionCredentials))
             .withClientConfiguration(config).withRegion(region).build();
         this.logger = logger;
@@ -65,7 +66,7 @@ public class EcrLogin {
             while ((line = reader.readLine()) != null) {
                 buf.append(line + "\n");
             }
-            logger.addBuildLogEntry(buf.toString());
+            logger.addLogEntry(buf.toString());
         } catch (IOException e) {
             throw new AwsExecException(e);
         } catch (InterruptedException e) {

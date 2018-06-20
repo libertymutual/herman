@@ -15,8 +15,6 @@
  */
 package com.libertymutualgroup.herman.aws.ecs.broker.rds;
 
-import static com.libertymutualgroup.herman.aws.ecs.broker.rds.RdsBroker.pollingIntervalMs;
-
 import com.amazonaws.services.rds.AmazonRDS;
 import com.amazonaws.services.rds.model.AddTagsToResourceRequest;
 import com.amazonaws.services.rds.model.CreateDBInstanceRequest;
@@ -53,15 +51,18 @@ import com.amazonaws.services.rds.model.Parameter;
 import com.amazonaws.services.rds.model.RebootDBInstanceRequest;
 import com.amazonaws.services.rds.model.Tag;
 import com.amazonaws.services.rds.model.VpcSecurityGroupMembership;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
+import com.libertymutualgroup.herman.logging.HermanLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static com.libertymutualgroup.herman.aws.ecs.broker.rds.RdsBroker.pollingIntervalMs;
 
 public class StandardRdsClient implements RdsClient {
 
@@ -72,10 +73,10 @@ public class StandardRdsClient implements RdsClient {
     private RdsInstance rds;
     private EcsClusterMetadata clusterMetadata;
     private List<Tag> tags;
-    private BuildLogger buildLogger;
+    private HermanLogger buildLogger;
 
     StandardRdsClient(AmazonRDS client, RdsInstance rds, EcsClusterMetadata clusterMetadata, List<Tag> tags,
-        BuildLogger buildLogger) {
+        HermanLogger buildLogger) {
         this.client = client;
         this.rds = rds;
         this.clusterMetadata = clusterMetadata;
@@ -147,24 +148,24 @@ public class StandardRdsClient implements RdsClient {
             .withEnableIAMDatabaseAuthentication(rds.getIAMDatabaseAuthenticationEnabled())
             .withVpcSecurityGroupIds(clusterMetadata.getRdsSecurityGroup()).withApplyImmediately(true);
         DBInstance instance = client.modifyDBInstance(request);
-        buildLogger.addBuildLogEntry("... DB update applied");
+        buildLogger.addLogEntry("... DB update applied");
 
         this.applyTags(instance.getDBInstanceArn(), tags);
     }
 
     @Override
     public void waitForAvailableStatus(String instanceId) {
-        buildLogger.addBuildLogEntry("... Waiting for RDS instance to be available.");
+        buildLogger.addLogEntry("... Waiting for RDS instance to be available.");
         try {
             DBInstance rdsResult;
             do {
                 Thread.sleep(pollingIntervalMs);
                 rdsResult = this.getDbInstance(instanceId);
-                buildLogger.addBuildLogEntry("... Instance status: " + rdsResult.getDBInstanceStatus());
+                buildLogger.addLogEntry("... Instance status: " + rdsResult.getDBInstanceStatus());
             } while (!"available".equals(rdsResult.getDBInstanceStatus())
                 || rdsResult.getPendingModifiedValues().getMasterUserPassword() != null);
 
-            buildLogger.addBuildLogEntry("RDS Result: " + rdsResult);
+            buildLogger.addLogEntry("RDS Result: " + rdsResult);
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -184,7 +185,7 @@ public class StandardRdsClient implements RdsClient {
 
     @Override
     public void setDBParameterGroup(String instanceId, List<Parameter> parameters) {
-        buildLogger.addBuildLogEntry("Setting the DB parameter group");
+        buildLogger.addLogEntry("Setting the DB parameter group");
 
         DBParameterGroup dbParameterGroup;
         DBInstance rdsResult = getDbInstance(instanceId);
@@ -196,14 +197,14 @@ public class StandardRdsClient implements RdsClient {
         final String dbParameterGroupName = String
             .format("%s-%s", dbEngineVersion.getDBParameterGroupFamily().replaceAll("\\.", "-"),
                 rdsResult.getDBInstanceIdentifier());
-        buildLogger.addBuildLogEntry("... DB parameter group name = " + dbParameterGroupName);
+        buildLogger.addLogEntry("... DB parameter group name = " + dbParameterGroupName);
 
         try {
             DescribeDBParameterGroupsResult describeDBParameterGroupsResult = client.describeDBParameterGroups(
                 new DescribeDBParameterGroupsRequest().withDBParameterGroupName(dbParameterGroupName));
             dbParameterGroup = describeDBParameterGroupsResult.getDBParameterGroups().iterator().next();
 
-            buildLogger.addBuildLogEntry("... Updating parameters for DB parameter group " + dbParameterGroupName);
+            buildLogger.addLogEntry("... Updating parameters for DB parameter group " + dbParameterGroupName);
             client.modifyDBParameterGroup(new ModifyDBParameterGroupRequest()
                 .withDBParameterGroupName(dbParameterGroupName)
                 .withParameters(parameters));
@@ -211,7 +212,7 @@ public class StandardRdsClient implements RdsClient {
         } catch (DBParameterGroupNotFoundException ex) {
             LOGGER.debug("Error getting DB param group: " + dbParameterGroupName, ex);
 
-            buildLogger.addBuildLogEntry("... Creating DB parameter group " + dbParameterGroupName);
+            buildLogger.addLogEntry("... Creating DB parameter group " + dbParameterGroupName);
             dbParameterGroup = client.createDBParameterGroup(new CreateDBParameterGroupRequest()
                 .withDBParameterGroupFamily(dbEngineVersion.getDBParameterGroupFamily())
                 .withDBParameterGroupName(dbParameterGroupName)
@@ -219,7 +220,7 @@ public class StandardRdsClient implements RdsClient {
                     dbEngineVersion.getDBParameterGroupFamily()))
                 .withTags(tags));
 
-            buildLogger.addBuildLogEntry("... Updating parameters for DB parameter group " + dbParameterGroupName);
+            buildLogger.addLogEntry("... Updating parameters for DB parameter group " + dbParameterGroupName);
             client.modifyDBParameterGroup(new ModifyDBParameterGroupRequest()
                 .withDBParameterGroupName(dbParameterGroupName)
                 .withParameters(parameters));
@@ -228,7 +229,7 @@ public class StandardRdsClient implements RdsClient {
         boolean dbParameterGroupIsSet = rdsResult.getDBParameterGroups().stream()
             .anyMatch(aDBParameterGroup -> aDBParameterGroup.getDBParameterGroupName().equals(dbParameterGroupName));
         if (!dbParameterGroupIsSet) {
-            buildLogger.addBuildLogEntry(
+            buildLogger.addLogEntry(
                 "... Modifying DB instance to use parameter group " + dbParameterGroup.getDBParameterGroupName());
             client.modifyDBInstance(new ModifyDBInstanceRequest()
                 .withDBInstanceIdentifier(rdsResult.getDBInstanceIdentifier())
@@ -246,13 +247,13 @@ public class StandardRdsClient implements RdsClient {
     public void setOptionGroup(String instanceId, OptionGroup expectedOptionGroup) {
         if (this.rds.getEngine().contains("mysql") || this.rds.getEngine().contains("mariadb") || this.rds.getEngine()
             .contains("sqlserver") || this.rds.getEngine().contains("oracle")) {
-            buildLogger.addBuildLogEntry("Setting the DB option group");
+            buildLogger.addLogEntry("Setting the DB option group");
 
             DBInstance rdsResult = getDbInstance(instanceId);
             final String optionGroupName = String.format("%s-%s-%s", rdsResult.getEngine(),
                 expectedOptionGroup.getMajorEngineVersion().replaceAll("\\.", "-"),
                 rdsResult.getDBInstanceIdentifier());
-            buildLogger.addBuildLogEntry("... DB option group name = " + optionGroupName);
+            buildLogger.addLogEntry("... DB option group name = " + optionGroupName);
 
             OptionGroup optionGroup;
             try {
@@ -275,7 +276,7 @@ public class StandardRdsClient implements RdsClient {
                 List<OptionConfiguration> optionsToInclude = expectedOptionGroup.getOptions().stream()
                     .map(this::getOptionConfiguration).collect(
                         Collectors.toList());
-                buildLogger.addBuildLogEntry("... Updating options for DB option group " + optionGroupName);
+                buildLogger.addLogEntry("... Updating options for DB option group " + optionGroupName);
                 client.modifyOptionGroup(new ModifyOptionGroupRequest()
                     .withOptionGroupName(optionGroupName)
                     .withOptionsToRemove(optionsToRemove)
@@ -285,7 +286,7 @@ public class StandardRdsClient implements RdsClient {
             } catch (OptionGroupNotFoundException ex) {
                 LOGGER.debug("Error getting DB option group: " + optionGroupName, ex);
 
-                buildLogger.addBuildLogEntry("... Creating DB option group " + optionGroupName);
+                buildLogger.addLogEntry("... Creating DB option group " + optionGroupName);
                 client.createOptionGroup(new CreateOptionGroupRequest()
                     .withOptionGroupName(optionGroupName)
                     .withOptionGroupDescription(String
@@ -295,7 +296,7 @@ public class StandardRdsClient implements RdsClient {
                     .withMajorEngineVersion(expectedOptionGroup.getMajorEngineVersion())
                     .withTags(tags));
 
-                buildLogger.addBuildLogEntry("... Updating options for DB option group " + optionGroupName);
+                buildLogger.addLogEntry("... Updating options for DB option group " + optionGroupName);
                 List<OptionConfiguration> optionConfigurations = expectedOptionGroup.getOptions().stream()
                     .map(this::getOptionConfiguration)
                     .collect(Collectors.toList());
@@ -308,14 +309,14 @@ public class StandardRdsClient implements RdsClient {
             boolean optionGroupIsSet = rdsResult.getOptionGroupMemberships().stream()
                 .anyMatch(optionGroupMembership -> optionGroupName.equals(optionGroupMembership.getOptionGroupName()));
             if (!optionGroupIsSet) {
-                buildLogger.addBuildLogEntry("... Setting DB option group for RDS instance " + optionGroupName);
+                buildLogger.addLogEntry("... Setting DB option group for RDS instance " + optionGroupName);
                 client.modifyDBInstance(new ModifyDBInstanceRequest()
                     .withDBInstanceIdentifier(rdsResult.getDBInstanceIdentifier())
                     .withOptionGroupName(optionGroupName)
                     .withApplyImmediately(true));
             }
         } else {
-            buildLogger.addBuildLogEntry("DB Engine does not support option groups.");
+            buildLogger.addLogEntry("DB Engine does not support option groups.");
         }
     }
 
@@ -327,7 +328,7 @@ public class StandardRdsClient implements RdsClient {
         client.createDBSnapshot(request);
         try {
             DescribeDBSnapshotsResult result = getDescribeDBSnapshotsResult(snapshotId);
-            buildLogger.addBuildLogEntry("... RDS Snapshot Result: " + result.getDBSnapshots().get(0));
+            buildLogger.addLogEntry("... RDS Snapshot Result: " + result.getDBSnapshots().get(0));
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -346,10 +347,10 @@ public class StandardRdsClient implements RdsClient {
                 if (result.getDBSnapshots().size() == 1) {
                     status = result.getDBSnapshots().get(0).getStatus();
                 }
-                buildLogger.addBuildLogEntry("... Snapshot status: " + status);
+                buildLogger.addLogEntry("... Snapshot status: " + status);
             } catch (DBSnapshotNotFoundException e) {
                 LOGGER.debug("Error getting snapshot: " + snapshotId, e);
-                buildLogger.addBuildLogEntry("... Waiting for snapshot creation");
+                buildLogger.addLogEntry("... Waiting for snapshot creation");
             }
         } while (result == null || !"available".equals(status));
         return result;
@@ -364,7 +365,7 @@ public class StandardRdsClient implements RdsClient {
                 .equals(dbParameterGroupStatus.getParameterApplyStatus()))
             .findAny();
         if (statusOptional.isPresent()) {
-            buildLogger.addBuildLogEntry(String
+            buildLogger.addLogEntry(String
                 .format("... DB param group %s has a status of %s", statusOptional.get().getDBParameterGroupName(),
                     PENDING_REBOOT_STATUS));
             return true;
@@ -374,7 +375,7 @@ public class StandardRdsClient implements RdsClient {
     }
 
     void rebootDb(String instanceId) {
-        buildLogger.addBuildLogEntry("... Rebooting DB: " + instanceId);
+        buildLogger.addLogEntry("... Rebooting DB: " + instanceId);
         client.rebootDBInstance(new RebootDBInstanceRequest().withDBInstanceIdentifier(instanceId));
     }
 
@@ -395,7 +396,7 @@ public class StandardRdsClient implements RdsClient {
     private void applyTags(String instanceArn, List<Tag> tags) {
         client.addTagsToResource(
             new AddTagsToResourceRequest().withResourceName(instanceArn).withTags(tags));
-        buildLogger.addBuildLogEntry("... DB tags applied: " + instanceArn + " : " + tags);
+        buildLogger.addLogEntry("... DB tags applied: " + instanceArn + " : " + tags);
     }
 
     private DBInstance getDbInstance(String instanceId) {

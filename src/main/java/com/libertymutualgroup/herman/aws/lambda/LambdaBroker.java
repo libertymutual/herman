@@ -52,7 +52,6 @@ import com.amazonaws.services.lambda.model.UpdateFunctionConfigurationRequest;
 import com.amazonaws.services.lambda.model.UpdateFunctionConfigurationResult;
 import com.amazonaws.services.lambda.model.VpcConfig;
 import com.amazonaws.util.IOUtils;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -63,6 +62,7 @@ import com.libertymutualgroup.herman.aws.CredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecs.PushType;
 import com.libertymutualgroup.herman.aws.ecs.broker.iam.IAMBroker;
 import com.libertymutualgroup.herman.aws.ecs.broker.kms.KmsBroker;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
 import com.libertymutualgroup.herman.util.ArnUtil;
 import com.libertymutualgroup.herman.util.AwsNetworkingUtil;
@@ -94,7 +94,7 @@ public class LambdaBroker {
     private static final String LAMBDA_EXECUTION_PERMISSION = "lambda-execution-permission.json";
 
     private LambdaPushContext context;
-    private BuildLogger buildLogger;
+    private HermanLogger buildLogger;
 
     private FileUtil fileUtil;
     private LambdaInjectConfiguration configuration;
@@ -107,7 +107,7 @@ public class LambdaBroker {
 
     private ObjectMapper mapper = new ObjectMapper();
 
-    public LambdaBroker(LambdaPushContext context, BuildLogger buildLogger, Regions region) {
+    public LambdaBroker(LambdaPushContext context, HermanLogger buildLogger, Regions region) {
         this.context = context;
         this.buildLogger = buildLogger;
         this.fileUtil = new FileUtil(this.context.getRootPath(), this.buildLogger);
@@ -160,8 +160,7 @@ public class LambdaBroker {
             functionArn = null;
         }
 
-        this.buildLogger
-            .addBuildLogEntry("Brokering execution role with name: " + this.configuration.getFunctionName());
+        this.buildLogger.addLogEntry("Brokering execution role with name: " + this.configuration.getFunctionName());
 
         String iamPolicyFileName = Optional.ofNullable(this.configuration.getIamPolicy()).orElse("iam-policy.json");
         String defaultExecutionRole = IOUtils
@@ -190,7 +189,7 @@ public class LambdaBroker {
             functionCode = new FunctionCode().withZipFile(code);
             zipInputChannel.close();
         } catch (IOException ex) {
-            buildLogger.addBuildLogEntry("Failed to read zip file: " + this.configuration.getZipFileName());
+            buildLogger.addLogEntry("Failed to read zip file: " + this.configuration.getZipFileName());
             throw new AwsExecException(ex);
         }
 
@@ -219,12 +218,12 @@ public class LambdaBroker {
         }
         Environment environment = new Environment().withVariables(environmentMap);
 
-        this.buildLogger.addBuildLogEntry("... VPC Configuration: " + vpcConfig);
+        this.buildLogger.addLogEntry("... VPC Configuration: " + vpcConfig);
 
         String kmsKeyArn = brokerKms(tags);
 
         if (functionArn == null && functionCode != null) {
-            buildLogger.addBuildLogEntry("Pushing new Lambda");
+            buildLogger.addLogEntry("Pushing new Lambda");
 
             CreateFunctionRequest createRequest = new CreateFunctionRequest()
                 .withCode(functionCode)
@@ -240,9 +239,9 @@ public class LambdaBroker {
                 .withKMSKeyArn(kmsKeyArn);
 
             CreateFunctionResult result = lambdaClient.createFunction(createRequest);
-            buildLogger.addBuildLogEntry("Lambda created: " + result.getFunctionName());
+            buildLogger.addLogEntry("Lambda created: " + result.getFunctionName());
         } else if (functionArn != null && functionCode != null) {
-            buildLogger.addBuildLogEntry("Lambda exists, attempting update...");
+            buildLogger.addLogEntry("Lambda exists, attempting update...");
 
             UpdateFunctionCodeRequest updateFunctionCode = new UpdateFunctionCodeRequest()
                 .withFunctionName(this.configuration.getFunctionName())
@@ -263,17 +262,17 @@ public class LambdaBroker {
                 .withResource(functionArn)
                 .withTags(tagMap);
 
-            buildLogger.addBuildLogEntry("... Updating with configuration: " + updateFunctionConfiguration);
+            buildLogger.addLogEntry("... Updating with configuration: " + updateFunctionConfiguration);
             lambdaClient.updateFunctionCode(updateFunctionCode);
             UpdateFunctionConfigurationResult configurationResult = lambdaClient
                 .updateFunctionConfiguration(updateFunctionConfiguration);
             lambdaClient.tagResource(tagRequest);
 
-            buildLogger.addBuildLogEntry("Lambda updated: " + configurationResult.getFunctionName());
+            buildLogger.addLogEntry("Lambda updated: " + configurationResult.getFunctionName());
         }
 
         try {
-            buildLogger.addBuildLogEntry("... Resetting execution permissions");
+            buildLogger.addLogEntry("... Resetting execution permissions");
             List<String> sidsToRemove = getExistingExecutionPermissionSids();
 
             if (sidsToRemove != null) {
@@ -286,7 +285,7 @@ public class LambdaBroker {
             }
         } catch (ResourceNotFoundException ex) {
             LOGGER.debug("Function not found: " + this.configuration.getFunctionName(), ex);
-            buildLogger.addBuildLogEntry("Unable to reset permissions, skipping...");
+            buildLogger.addLogEntry("Unable to reset permissions, skipping...");
         }
 
         List<LambdaPermission> permissions = getExecutionPermission();
@@ -294,7 +293,7 @@ public class LambdaBroker {
         if (permissions != null) {
 
 
-            buildLogger.addBuildLogEntry("Adding new execution permission");
+            buildLogger.addLogEntry("Adding new execution permission");
 
             for (int i = 0; i < permissions.size(); i++) {
                 LambdaPermission permission = permissions.get(i);
@@ -313,19 +312,19 @@ public class LambdaBroker {
             }
         }
 
-        buildLogger.addBuildLogEntry("Lambda pushed");
+        buildLogger.addLogEntry("Lambda pushed");
         GetFunctionResult output = lambdaClient
             .getFunction(new GetFunctionRequest().withFunctionName(this.configuration.getFunctionName()));
         if (this.configuration.getUseKms()) {
-            buildLogger.addBuildLogEntry("Pushed lambda with kms key " + output.getConfiguration().getKMSKeyArn());
+            buildLogger.addLogEntry("Pushed lambda with kms key " + output.getConfiguration().getKMSKeyArn());
         }
-        buildLogger.addBuildLogEntry(output.getConfiguration().toString());
+        buildLogger.addLogEntry(output.getConfiguration().toString());
     }
 
     private List<String> getExistingExecutionPermissionSids() {
         final GetPolicyResult executionPolicyResult = lambdaClient.getPolicy(new GetPolicyRequest().withFunctionName(this.configuration.getFunctionName()));
         if (executionPolicyResult == null) {
-            buildLogger.addBuildLogEntry("Unable to find existing execution policy");
+            buildLogger.addLogEntry("Unable to find existing execution policy");
             return null;
         }
         try {
@@ -334,7 +333,7 @@ public class LambdaBroker {
             List<JsonNode> statements = mapper.readValue(executionStatements.toString(), listRef);
             return statements.stream().map(it -> it.get("Sid").textValue()).collect(Collectors.toList());
         } catch (IOException e) {
-            buildLogger.addBuildLogEntry("Unable to parse existing execution policy");
+            buildLogger.addLogEntry("Unable to parse existing execution policy");
             return null;
         }
     }
@@ -343,7 +342,7 @@ public class LambdaBroker {
         try {
             if (this.fileUtil.fileExists(LAMBDA_EXECUTION_PERMISSION)) {
                 this.buildLogger
-                    .addBuildLogEntry(String.format("... Using %s for execution permissions", LAMBDA_EXECUTION_PERMISSION));
+                    .addLogEntry(String.format("... Using %s for execution permissions", LAMBDA_EXECUTION_PERMISSION));
                 String template = fileUtil.findFile(LAMBDA_EXECUTION_PERMISSION, false);
                 String mappedPermissionString = this.context.getBambooPropertyHandler().mapInProperties(template);
                 final TypeReference<List<LambdaPermission>> listRef = new TypeReference<List<LambdaPermission>>(){};
@@ -390,11 +389,11 @@ public class LambdaBroker {
 
         try {
             if (new File(context.getRootPath() + File.separator + LAMBDA_TEMPLATE_JSON).exists()) {
-                buildLogger.addBuildLogEntry("... Using " + LAMBDA_TEMPLATE_JSON);
+                buildLogger.addLogEntry("... Using " + LAMBDA_TEMPLATE_JSON);
                 template = fileUtil.findFile(LAMBDA_TEMPLATE_JSON, false);
                 isJson = true;
             } else if (new File(context.getRootPath() + File.separator + LAMBDA_TEMPLATE_YML).exists()) {
-                buildLogger.addBuildLogEntry("... Using " + LAMBDA_TEMPLATE_YML);
+                buildLogger.addLogEntry("... Using " + LAMBDA_TEMPLATE_YML);
                 template = fileUtil.findFile(LAMBDA_TEMPLATE_YML, false);
                 isJson = false;
             } else {

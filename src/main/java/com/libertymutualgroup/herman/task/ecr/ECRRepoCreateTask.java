@@ -16,7 +16,6 @@
 package com.libertymutualgroup.herman.task.ecr;
 
 import com.amazonaws.regions.Regions;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.atlassian.bamboo.task.TaskContext;
 import com.atlassian.bamboo.task.TaskResult;
 import com.atlassian.bamboo.task.TaskResultBuilder;
@@ -25,6 +24,8 @@ import com.atlassian.bamboo.variable.VariableType;
 import com.libertymutualgroup.herman.aws.CredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecr.EcrCreate;
 import com.libertymutualgroup.herman.aws.ecr.EcrLogin;
+import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
+
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -33,7 +34,7 @@ public class ECRRepoCreateTask implements TaskType {
 
     @Override
     public TaskResult execute(final TaskContext taskContext) {
-        final BuildLogger buildLogger = taskContext.getBuildLogger();
+        final AtlassianBuildLogger buildLogger = new AtlassianBuildLogger(taskContext.getBuildLogger());
 
         EcrCreate create = new EcrCreate(buildLogger, CredentialsHandler.getCredentials(taskContext),
             CredentialsHandler.getConfiguration(),

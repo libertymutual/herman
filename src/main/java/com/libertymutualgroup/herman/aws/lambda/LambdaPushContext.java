@@ -16,8 +16,8 @@
 package com.libertymutualgroup.herman.aws.lambda;
 
 import com.amazonaws.auth.AWSCredentials;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
 
 public class LambdaPushContext {
@@ -25,7 +25,7 @@ public class LambdaPushContext {
     private AWSCredentials sessionCredentials;
     private String rootPath;
     private PropertyHandler bambooPropertyHandler;
-    private BuildLogger logger;
+    private HermanLogger logger;
     private CommonTaskProperties taskProperties;
 
     public AWSCredentials getSessionCredentials() {
@@ -52,11 +52,11 @@ public class LambdaPushContext {
         this.bambooPropertyHandler = bambooPropertyHandler;
     }
 
-    public BuildLogger getLogger() {
+    public HermanLogger getLogger() {
         return logger;
     }
 
-    public void setLogger(BuildLogger logger) {
+    public void setLogger(HermanLogger logger) {
         this.logger = logger;
     }
 
@@ -84,7 +84,7 @@ public class LambdaPushContext {
         return this;
     }
 
-    public LambdaPushContext withLogger(final BuildLogger logger) {
+    public LambdaPushContext withLogger(final HermanLogger logger) {
         this.logger = logger;
         return this;
     }

@@ -25,24 +25,25 @@ import com.amazonaws.services.identitymanagement.model.NoSuchEntityException;
 import com.amazonaws.services.identitymanagement.model.PutRolePolicyRequest;
 import com.amazonaws.services.identitymanagement.model.Role;
 import com.amazonaws.services.identitymanagement.model.UpdateAssumeRolePolicyRequest;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.PushType;
-import java.io.IOException;
-import java.io.InputStream;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.InputStream;
 
 public class IAMBroker {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(IAMBroker.class);
 
     private static final String POLICY_SUFFIX = "-policy";
-    private BuildLogger buildLogger;
+    private HermanLogger buildLogger;
 
-    public IAMBroker(BuildLogger buildLogger) {
+    public IAMBroker(HermanLogger buildLogger) {
         this.buildLogger = buildLogger;
     }
 
@@ -66,7 +67,7 @@ public class IAMBroker {
         }
 
         if (role == null) {
-            buildLogger.addBuildLogEntry("... Creating new role: " + definition.getAppName());
+            buildLogger.addLogEntry("... Creating new role: " + definition.getAppName());
 
             CreateRoleRequest createRoleRequest = new CreateRoleRequest()
                 .withPath("/aws-ecs/")
@@ -75,14 +76,14 @@ public class IAMBroker {
             client.createRole(createRoleRequest);
 
         } else {
-            buildLogger.addBuildLogEntry("... Using existing role: " + definition.getAppName());
+            buildLogger.addLogEntry("... Using existing role: " + definition.getAppName());
 
             client.updateAssumeRolePolicy(new UpdateAssumeRolePolicyRequest().withRoleName(definition.getAppName())
                 .withPolicyDocument(assumePolicy));
         }
 
         if (rolePolicy != null) {
-            buildLogger.addBuildLogEntry("... Updating the role policy");
+            buildLogger.addLogEntry("... Updating the role policy");
             String fullPolicy = propertyHandler.mapInProperties(rolePolicy);
             PutRolePolicyRequest putRolePolicyRequest = new PutRolePolicyRequest()
                 .withPolicyName(appName + POLICY_SUFFIX)
@@ -94,7 +95,7 @@ public class IAMBroker {
                     new GetRolePolicyRequest().withPolicyName(appName + POLICY_SUFFIX).withRoleName(appName));
                 client.deleteRolePolicy(
                     new DeleteRolePolicyRequest().withPolicyName(appName + POLICY_SUFFIX).withRoleName(appName));
-                buildLogger.addBuildLogEntry("... No policy specified. The role policy was deleted.");
+                buildLogger.addLogEntry("... No policy specified. The role policy was deleted.");
             } catch (NoSuchEntityException e) {
                 LOGGER.debug("Role policy does not exist: " + appName + POLICY_SUFFIX, e);
             }
@@ -108,7 +109,7 @@ public class IAMBroker {
             Thread.currentThread().interrupt();
             throw new AwsExecException(e);
         }
-        buildLogger.addBuildLogEntry("... App role ARN: " + role.getArn());
+        buildLogger.addLogEntry("... App role ARN: " + role.getArn());
         return role;
 
     }

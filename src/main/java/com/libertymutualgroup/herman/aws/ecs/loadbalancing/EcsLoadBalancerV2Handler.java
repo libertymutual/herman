@@ -44,16 +44,17 @@ import com.amazonaws.services.elasticloadbalancingv2.model.SetSecurityGroupsRequ
 import com.amazonaws.services.elasticloadbalancingv2.model.SetSubnetsRequest;
 import com.amazonaws.services.elasticloadbalancingv2.model.TargetGroup;
 import com.amazonaws.services.elasticloadbalancingv2.model.TargetGroupAttribute;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.EcsPortHandler;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
-import java.util.ArrayList;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class EcsLoadBalancerV2Handler {
 
@@ -62,12 +63,12 @@ public class EcsLoadBalancerV2Handler {
 
     private AmazonElasticLoadBalancing elbClient;
     private CertHandler certHandler;
-    private BuildLogger buildLogger;
+    private HermanLogger buildLogger;
     private DnsRegistrar dnsRegistrar;
     private CommonTaskProperties taskProperties;
 
     public EcsLoadBalancerV2Handler(AmazonElasticLoadBalancing elbClient, CertHandler certHandler,
-        DnsRegistrar dnsRegistrar, BuildLogger buildLogger, CommonTaskProperties taskProperties) {
+        DnsRegistrar dnsRegistrar, HermanLogger buildLogger, CommonTaskProperties taskProperties) {
         this.elbClient = elbClient;
         this.certHandler = certHandler;
         this.buildLogger = buildLogger;
@@ -133,7 +134,7 @@ public class EcsLoadBalancerV2Handler {
         com.amazonaws.services.elasticloadbalancingv2.model.LoadBalancer loadBalancer = findLoadBalancer(appName);
         TargetGroup grp;
         if (loadBalancer == null) {
-            buildLogger.addBuildLogEntry("Creating a new ALB: " + appName);
+            buildLogger.addLogEntry("Creating a new ALB: " + appName);
 
             CreateTargetGroupRequest ctgr = new CreateTargetGroupRequest().withName(appName)
                 .withHealthCheckIntervalSeconds(healthCheck.getInterval())
@@ -164,16 +165,16 @@ public class EcsLoadBalancerV2Handler {
 
         } else {
             String arn = loadBalancer.getLoadBalancerArn();
-            buildLogger.addBuildLogEntry("Updating existing ALB: " + arn);
+            buildLogger.addLogEntry("Updating existing ALB: " + arn);
 
-            buildLogger.addBuildLogEntry("... Reset SG");
+            buildLogger.addLogEntry("... Reset SG");
             elbClient.setSecurityGroups(
                 new SetSecurityGroupsRequest().withLoadBalancerArn(arn).withSecurityGroups(elbSecurityGroups));
 
-            buildLogger.addBuildLogEntry("... Reset subnets");
+            buildLogger.addLogEntry("... Reset subnets");
             elbClient.setSubnets(new SetSubnetsRequest().withLoadBalancerArn(arn).withSubnets(elbSubnets));
 
-            buildLogger.addBuildLogEntry("... Reset tags");
+            buildLogger.addLogEntry("... Reset tags");
             elbClient.addTags(new AddTagsRequest().withResourceArns(arn)
                 .withTags(tags));
 
@@ -198,19 +199,19 @@ public class EcsLoadBalancerV2Handler {
         modifyTargetGroupAttributes(definition, grp);
         modifyLoadBalancerAttributes(definition, loadBalancer.getLoadBalancerArn());
 
-        buildLogger.addBuildLogEntry("Updating DNS registration");
+        buildLogger.addLogEntry("Updating DNS registration");
         String registeredUrl = urlPrefix + "." + definition.getService().getUrlSuffix();
         if (isUsingInternalSubnets) {
             dnsRegistrar.registerDns(registeredUrl, loadBalancer.getDNSName(), appName,
                 clusterMetadata.getClusterCftStackTags());
-            buildLogger.addBuildLogEntry("... URL Registered: " + protocol.toLowerCase() + "://" + registeredUrl);
+            buildLogger.addLogEntry("... URL Registered: " + protocol.toLowerCase() + "://" + registeredUrl);
         } else {
-            buildLogger.addBuildLogEntry(
+            buildLogger.addLogEntry(
                 "... Raw ELB DNS for Akamai: " + protocol.toLowerCase() + "://" + loadBalancer.getDNSName());
-            buildLogger.addBuildLogEntry("... Expected Akamai url: " + protocol.toLowerCase() + "://" + registeredUrl);
+            buildLogger.addLogEntry("... Expected Akamai url: " + protocol.toLowerCase() + "://" + registeredUrl);
         }
 
-        buildLogger.addBuildLogEntry("ALB updates complete: " + loadBalancer.getLoadBalancerArn());
+        buildLogger.addLogEntry("ALB updates complete: " + loadBalancer.getLoadBalancerArn());
         return new LoadBalancer().withContainerName(containerName).withContainerPort(containerPort)
             .withTargetGroupArn(grp.getTargetGroupArn());
     }
@@ -227,7 +228,7 @@ public class EcsLoadBalancerV2Handler {
         }
         attrs.add(new TargetGroupAttribute().withKey("deregistration_delay.timeout_seconds").withValue("30"));
 
-        buildLogger.addBuildLogEntry("... Modifying target group attributes");
+        buildLogger.addLogEntry("... Modifying target group attributes");
         elbClient.modifyTargetGroupAttributes(new ModifyTargetGroupAttributesRequest()
             .withTargetGroupArn(grp.getTargetGroupArn()).withAttributes(attrs));
     }
@@ -241,7 +242,7 @@ public class EcsLoadBalancerV2Handler {
         }
 
         if (!attributes.isEmpty()) {
-            buildLogger.addBuildLogEntry("... Modifying load balancer attributes");
+            buildLogger.addLogEntry("... Modifying load balancer attributes");
             elbClient.modifyLoadBalancerAttributes(new ModifyLoadBalancerAttributesRequest()
                 .withLoadBalancerArn(loadBalancerArn)
                 .withAttributes(attributes));
@@ -296,7 +297,7 @@ public class EcsLoadBalancerV2Handler {
 
 
     private void waitForALBCreate(String arn) {
-        buildLogger.addBuildLogEntry("... Waiting for ALB create");
+        buildLogger.addLogEntry("... Waiting for ALB create");
         for (int i = 0; i < 60; i++) {
             List<com.amazonaws.services.elasticloadbalancingv2.model.LoadBalancer> balancer = elbClient
                 .describeLoadBalancers(
@@ -304,7 +305,7 @@ public class EcsLoadBalancerV2Handler {
                         .withLoadBalancerArns(arn)).getLoadBalancers();
             if (!balancer.isEmpty()) {
                 LoadBalancerState state = balancer.get(0).getState();
-                buildLogger.addBuildLogEntry("... ALB state is: " + state.getCode());
+                buildLogger.addLogEntry("... ALB state is: " + state.getCode());
                 if ("active".equalsIgnoreCase(state.getCode())) {
                     return;
                 }
@@ -315,7 +316,7 @@ public class EcsLoadBalancerV2Handler {
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                buildLogger.addBuildLogEntry("Interrupted while polling");
+                buildLogger.addLogEntry("Interrupted while polling");
                 throw new AwsExecException("Interrupted while polling");
             }
 

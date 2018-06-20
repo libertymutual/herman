@@ -15,30 +15,31 @@
  */
 package com.libertymutualgroup.herman.aws.ecs.loadbalancing;
 
-import static org.springframework.http.HttpStatus.Series.SUCCESSFUL;
-
 import com.amazonaws.services.cloudformation.model.Tag;
 import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.model.InvocationType;
 import com.amazonaws.services.lambda.model.InvokeRequest;
 import com.amazonaws.services.lambda.model.InvokeResult;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.libertymutualgroup.herman.aws.ecs.broker.domain.HermanBrokerStatus;
 import com.libertymutualgroup.herman.aws.ecs.broker.domain.HermanBrokerUpdate;
-import java.nio.charset.Charset;
-import java.util.List;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus.Series;
+
+import java.nio.charset.Charset;
+import java.util.List;
+
+import static org.springframework.http.HttpStatus.Series.SUCCESSFUL;
 
 public class DnsRegistrar {
 
     private AWSLambda lambdaClient;
-    private BuildLogger buildLogger;
+    private HermanLogger buildLogger;
     private String dnsLambda;
 
-    public DnsRegistrar(AWSLambda lambdaClient, BuildLogger buildLogger, String dnsLambda) {
+    public DnsRegistrar(AWSLambda lambdaClient, HermanLogger buildLogger, String dnsLambda) {
         this.lambdaClient = lambdaClient;
         this.buildLogger = buildLogger;
         this.dnsLambda = dnsLambda;
@@ -50,7 +51,7 @@ public class DnsRegistrar {
             .withFunctionName(dnsLambda)
             .withInvocationType(InvocationType.RequestResponse)
             .withPayload(payload);
-        buildLogger.addBuildLogEntry("... Invoke request sent to the DNS Broker");
+        buildLogger.addLogEntry("... Invoke request sent to the DNS Broker");
 
         InvokeResult invokeResult = this.lambdaClient.invoke(dnsBrokerInvokeRequest);
         if (SUCCESSFUL.equals(Series.valueOf(invokeResult.getStatusCode())) && StringUtils
@@ -66,7 +67,7 @@ public class DnsRegistrar {
 
             updates.stream().forEach(update -> {
                 buildLogger
-                    .addBuildLogEntry(
+                    .addLogEntry(
                         String.format("... DNS Broker: [%s] %s", update.getStatus(), update.getMessage()));
 
                 if (HermanBrokerStatus.ERROR.equals(update.getStatus())) {
@@ -74,7 +75,7 @@ public class DnsRegistrar {
                 }
             });
         } else {
-            buildLogger.addBuildLogEntry("... Error thrown by the DNS Broker given payload: " + payload);
+            buildLogger.addLogEntry("... Error thrown by the DNS Broker given payload: " + payload);
             throw new RuntimeException("Error invoking DNS Broker: " + invokeResult);
         }
     }

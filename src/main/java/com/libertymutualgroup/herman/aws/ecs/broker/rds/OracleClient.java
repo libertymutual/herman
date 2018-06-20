@@ -17,23 +17,24 @@ package com.libertymutualgroup.herman.aws.ecs.broker.rds;
 
 import com.amazonaws.services.rds.AmazonRDS;
 import com.amazonaws.services.rds.model.Tag;
-import com.atlassian.bamboo.build.logger.BuildLogger;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
+import com.libertymutualgroup.herman.logging.HermanLogger;
+
 import java.util.List;
 
 public class OracleClient extends StandardRdsClient {
 
-    private BuildLogger logger;
+    private HermanLogger logger;
 
     OracleClient(AmazonRDS client, RdsInstance rds, EcsClusterMetadata clusterMetadata, List<Tag> tags,
-        BuildLogger logger) {
+        HermanLogger logger) {
         super(client, rds, clusterMetadata, tags, logger);
         this.logger = logger;
     }
 
     @Override
     public void createNewDb(String instanceId, String masterUserPassword) {
-        logger.addBuildLogEntry("CREATE not implemented for Oracle");
+        logger.addErrorLogEntry("CREATE not implemented for Oracle");
         throw new UnsupportedOperationException();
     }
 }
