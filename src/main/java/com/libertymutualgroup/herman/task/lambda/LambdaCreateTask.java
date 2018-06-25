@@ -29,8 +29,8 @@ import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.TaskContextPropertyHandler;
 import com.libertymutualgroup.herman.aws.lambda.LambdaBroker;
 import com.libertymutualgroup.herman.aws.lambda.LambdaPushContext;
-import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
+import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 

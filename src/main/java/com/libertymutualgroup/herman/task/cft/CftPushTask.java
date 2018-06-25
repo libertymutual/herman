@@ -27,6 +27,7 @@ import com.libertymutualgroup.herman.aws.AbstractDeploymentTask;
 import com.libertymutualgroup.herman.aws.CredentialsHandler;
 import com.libertymutualgroup.herman.aws.cft.CftPush;
 import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
+import com.libertymutualgroup.herman.task.cft.CFTPushTaskProperties;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 

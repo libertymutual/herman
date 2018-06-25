@@ -15,14 +15,15 @@
  */
 package com.libertymutualgroup.herman.task.cft;
 
-import static com.libertymutualgroup.herman.util.AwsRegionUtil.getRegionList;
-
 import com.atlassian.bamboo.collections.ActionParametersMap;
 import com.atlassian.bamboo.task.AbstractTaskConfigurator;
 import com.atlassian.bamboo.task.TaskDefinition;
 import com.atlassian.util.concurrent.NotNull;
 import com.atlassian.util.concurrent.Nullable;
+
 import java.util.Map;
+
+import static com.libertymutualgroup.herman.util.AwsRegionUtil.getRegionList;
 
 public class CftPushTaskConfigurator extends AbstractTaskConfigurator {
 

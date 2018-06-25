@@ -30,11 +30,11 @@
     <resource location="images/whale2.png" name="icon" type="download"/>
   </taskType>
 
-  <taskType class="com.libertymutualgroup.herman.task.ecs.ECSPushTask" key="ecsPushTask"
-    name="Herman (LTS) - ECS Push">
+  <taskType class="com.libertymutualgroup.herman.task.bamboo.ecs.ECSPushTask" key="ecsPushTask"
+            name="Herman (LTS) - ECS Push">
     <description>Push an app to ECS based on your template</description>
     <resource location="images/whale2.png" name="icon" type="download"/>
-    <configuration class="com.libertymutualgroup.herman.task.ecs.ECSPushTaskConfigurator"/>
+    <configuration class="com.libertymutualgroup.herman.task.bamboo.ecs.ECSPushTaskConfigurator"/>
     <resource location="editEcsPushTask.ftl" name="edit" type="freemarker"/>
   </taskType>
 

@@ -13,15 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.libertymutualgroup.herman.task.ecs;
+package com.libertymutualgroup.herman.task.bamboo.ecs;
 
 import com.amazonaws.regions.Regions;
 import com.atlassian.bamboo.deployments.execution.DeploymentTaskContext;
 import com.atlassian.bamboo.task.TaskResult;
 import com.atlassian.bamboo.task.TaskResultBuilder;
 import com.atlassian.bamboo.variable.CustomVariableContext;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.libertymutualgroup.herman.aws.AbstractDeploymentTask;
 import com.libertymutualgroup.herman.aws.CredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecs.EcsPush;
@@ -30,8 +28,9 @@ import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.TaskContextPropertyHandler;
 import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
 import com.libertymutualgroup.herman.logging.HermanLogger;
+import com.libertymutualgroup.herman.task.ecs.ECSPushPropertyFactory;
+import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
 import com.libertymutualgroup.herman.util.FileUtil;
-import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +44,7 @@ import java.io.StringReader;
 public class ECSPushTask extends AbstractDeploymentTask {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ECSPushTask.class);
-    private final static String TASK_CONFIG_FILE = "/config/plugin-tasks.yml";
+
 
     @Autowired
     public ECSPushTask(CustomVariableContext customVariableContext) {
@@ -58,7 +57,7 @@ public class ECSPushTask extends AbstractDeploymentTask {
         int timeout = Integer.parseInt(taskContext.getConfigurationMap().getOrDefault("timeout",
             String.valueOf(ECSPushTaskConfigurator.DEFAULT_TIMEOUT)));
 
-        ECSPushTaskProperties taskProperties = getTaskProperties();
+        ECSPushTaskProperties taskProperties = ECSPushPropertyFactory.getTaskProperties();
 
         PropertyHandler handler = new TaskContextPropertyHandler(taskContext, getCustomVariableContext());
         handler.addProperty("herman.rdsCredentialBrokerImage", taskProperties.getRdsCredentialBrokerImage());
@@ -79,17 +78,6 @@ public class ECSPushTask extends AbstractDeploymentTask {
         spitAscii(buildLogger, taskContext.getRootDirectory().getAbsolutePath());
 
         return TaskResultBuilder.newBuilder(taskContext).success().build();
-    }
-
-    ECSPushTaskProperties getTaskProperties() {
-        try {
-            InputStream ecsPushTaskPropertiesStream = getClass().getResourceAsStream(TASK_CONFIG_FILE);
-            String ecsPushTaskPropertiesYml = IOUtils.toString(ecsPushTaskPropertiesStream);
-            ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-            return objectMapper.readValue(ecsPushTaskPropertiesYml, ECSPushTaskProperties.class);
-        } catch (Exception ex) {
-            throw new RuntimeException("Error getting ECS Push Task Properties from " + TASK_CONFIG_FILE, ex);
-        }
     }
 
     private void spitAscii(HermanLogger logger, String rootPath) {
