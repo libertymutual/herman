@@ -27,6 +27,7 @@ public class SqsQueue {
     private String kmsMasterKeyId;
     private String fifoQueue;
     private Boolean serverSideEncryption = true;
+    private RedrivePolicy redrivePolicy;
 
     public String getKmsMasterKeyId() {
         return kmsMasterKeyId;
@@ -108,19 +109,28 @@ public class SqsQueue {
         this.serverSideEncryption = serverSideEncryption;
     }
 
+    public RedrivePolicy getRedrivePolicy() {
+        return redrivePolicy;
+    }
+
+    public void setRedrivePolicy(RedrivePolicy redrivePolicy) {
+        this.redrivePolicy = redrivePolicy;
+    }
+
     @Override
     public String toString() {
         return "SqsQueue{" +
-            "name='" + name + '\'' +
-            ", policyName='" + policyName + '\'' +
-            ", delaySeconds='" + delaySeconds + '\'' +
-            ", maximumMessageSize='" + maximumMessageSize + '\'' +
-            ", messageRetentionPeriod='" + messageRetentionPeriod + '\'' +
-            ", receiveMessageWaitTimeSeconds='" + receiveMessageWaitTimeSeconds + '\'' +
-            ", visibilityTimeout='" + visibilityTimeout + '\'' +
-            ", kmsMasterKeyId='" + kmsMasterKeyId + '\'' +
-            ", fifoQueue='" + fifoQueue + '\'' +
-            ", serverSideEncryption=" + serverSideEncryption +
-            '}';
+                "name='" + name + '\'' +
+                ", policyName='" + policyName + '\'' +
+                ", delaySeconds='" + delaySeconds + '\'' +
+                ", maximumMessageSize='" + maximumMessageSize + '\'' +
+                ", messageRetentionPeriod='" + messageRetentionPeriod + '\'' +
+                ", receiveMessageWaitTimeSeconds='" + receiveMessageWaitTimeSeconds + '\'' +
+                ", visibilityTimeout='" + visibilityTimeout + '\'' +
+                ", kmsMasterKeyId='" + kmsMasterKeyId + '\'' +
+                ", fifoQueue='" + fifoQueue + '\'' +
+                ", serverSideEncryption=" + serverSideEncryption +
+                ", redrivePolicy=" + redrivePolicy +
+                '}';
     }
 }
