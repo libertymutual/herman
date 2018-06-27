@@ -123,7 +123,7 @@ public class S3CreateContext {
 
     public S3CreateContext fromECSPushContext(EcsPushContext pushContext) {
         this.logger = pushContext.getLogger();
-        this.bambooPropertyHandler = pushContext.getBambooPropertyHandler();
+        this.bambooPropertyHandler = pushContext.getPropertyHandler();
         this.sessionCredentials = pushContext.getSessionCredentials();
         this.region = pushContext.getRegion();
         this.rootPath = pushContext.getRootPath();

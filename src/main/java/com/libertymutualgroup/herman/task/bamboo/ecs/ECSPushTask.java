@@ -21,7 +21,7 @@ import com.atlassian.bamboo.task.TaskResult;
 import com.atlassian.bamboo.task.TaskResultBuilder;
 import com.atlassian.bamboo.variable.CustomVariableContext;
 import com.libertymutualgroup.herman.aws.AbstractDeploymentTask;
-import com.libertymutualgroup.herman.aws.CredentialsHandler;
+import com.libertymutualgroup.herman.aws.credentials.BambooCredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecs.EcsPush;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushContext;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
@@ -64,10 +64,10 @@ public class ECSPushTask extends AbstractDeploymentTask {
 
         EcsPushContext context = new EcsPushContext()
             .withLogger(buildLogger)
-            .withBambooPropertyHandler(handler)
+            .withPropertyHandler(handler)
             .withEnvName(taskContext.getDeploymentContext().getEnvironmentName())
-            .withSessionCredentials(CredentialsHandler.getCredentials(taskContext))
-            .withAwsClientConfig(CredentialsHandler.getConfiguration())
+            .withSessionCredentials(BambooCredentialsHandler.getCredentials(taskContext))
+            .withAwsClientConfig(BambooCredentialsHandler.getConfiguration())
             .withRegion(Regions.fromName(taskContext.getConfigurationMap().get("awsRegion")))
             .withTimeout(timeout)
             .withRootPath(taskContext.getRootDirectory().getAbsolutePath())

@@ -68,7 +68,7 @@ public class RdsBroker {
         EcsPushDefinition definition,
         EcsClusterMetadata clusterMetadata, EcsPushFactory pushFactory, FileUtil fileUtil) {
         this.logger = pushContext.getLogger();
-        this.propertyHandler = pushContext.getBambooPropertyHandler();
+        this.propertyHandler = pushContext.getPropertyHandler();
         this.client = client;
         this.kmsClient = kmsClient;
         this.targetKeyId = targetKeyId;

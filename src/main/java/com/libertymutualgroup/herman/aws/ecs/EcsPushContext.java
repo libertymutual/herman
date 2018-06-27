@@ -24,7 +24,7 @@ import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
 public class EcsPushContext {
 
     private HermanLogger logger;
-    private PropertyHandler bambooPropertyHandler;
+    private PropertyHandler propertyHandler;
     private String envName;
     private AWSCredentials sessionCredentials;
     private ClientConfiguration awsClientConfig;
@@ -41,12 +41,12 @@ public class EcsPushContext {
         this.logger = logger;
     }
 
-    public PropertyHandler getBambooPropertyHandler() {
-        return bambooPropertyHandler;
+    public PropertyHandler getPropertyHandler() {
+        return propertyHandler;
     }
 
-    public void setBambooPropertyHandler(PropertyHandler bambooPropertyHandler) {
-        this.bambooPropertyHandler = bambooPropertyHandler;
+    public void setPropertyHandler(PropertyHandler propertyHandler) {
+        this.propertyHandler = propertyHandler;
     }
 
     public String getEnvName() {
@@ -110,8 +110,8 @@ public class EcsPushContext {
         return this;
     }
 
-    public EcsPushContext withBambooPropertyHandler(final PropertyHandler bambooPropertyHandler) {
-        this.bambooPropertyHandler = bambooPropertyHandler;
+    public EcsPushContext withPropertyHandler(final PropertyHandler propertyHandler) {
+        this.propertyHandler = propertyHandler;
         return this;
     }
 
@@ -154,7 +154,7 @@ public class EcsPushContext {
     public String toString() {
         return "EcsPushContext{" +
             "logger=" + logger +
-            ", bambooPropertyHandler=" + bambooPropertyHandler +
+            ", propertyHandler=" + propertyHandler +
             ", envName='" + envName + '\'' +
             ", sessionCredentials=" + sessionCredentials +
             ", awsClientConfig=" + awsClientConfig +

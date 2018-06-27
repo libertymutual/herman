@@ -29,15 +29,12 @@ public class LambdaInjectConfiguration implements IamAppDefinition, KmsAppDefini
     private Integer memorySize = 128;
     private String runtime;
     private Integer timeout = 5;
-    private String vpcId;
+    private List<String> subnetIds;
+    private List<String> securityGroupIds;
     private String iamPolicy;
+    private String assumeRolePolicy;
     private String useKms = "false";
     private String kmsKeyName;
-
-    @Override
-    public String getAppName() {
-        return functionName;
-    }
 
     public String getFunctionName() {
         return functionName;
@@ -95,12 +92,20 @@ public class LambdaInjectConfiguration implements IamAppDefinition, KmsAppDefini
         this.timeout = timeout;
     }
 
-    public String getVpcId() {
-        return vpcId;
+    public List<String> getSubnetIds() {
+        return subnetIds;
     }
 
-    public void setVpcId(String vpcId) {
-        this.vpcId = vpcId;
+    public void setSubnetIds(List<String> subnetIds) {
+        this.subnetIds = subnetIds;
+    }
+
+    public List<String> getSecurityGroupIds() {
+        return securityGroupIds;
+    }
+
+    public void setSecurityGroupIds(List<String> securityGroupIds) {
+        this.securityGroupIds = securityGroupIds;
     }
 
     public String getIamPolicy() {
@@ -126,5 +131,98 @@ public class LambdaInjectConfiguration implements IamAppDefinition, KmsAppDefini
 
     public void setKmsKeyName(String kmsKeyName) {
         this.kmsKeyName = kmsKeyName;
+    }
+
+    public LambdaInjectConfiguration withFunctionName(final String functionName) {
+        this.functionName = functionName;
+        return this;
+    }
+
+    public LambdaInjectConfiguration withZipFileName(final String zipFileName) {
+        this.zipFileName = zipFileName;
+        return this;
+    }
+
+    public LambdaInjectConfiguration withEnvironment(
+        final List<KeyValuePair> environment) {
+        this.environment = environment;
+        return this;
+    }
+
+    public LambdaInjectConfiguration withHandler(final String handler) {
+        this.handler = handler;
+        return this;
+    }
+
+    public LambdaInjectConfiguration withMemorySize(final Integer memorySize) {
+        this.memorySize = memorySize;
+        return this;
+    }
+
+    public LambdaInjectConfiguration withRuntime(final String runtime) {
+        this.runtime = runtime;
+        return this;
+    }
+
+    public LambdaInjectConfiguration withTimeout(final Integer timeout) {
+        this.timeout = timeout;
+        return this;
+    }
+
+    public LambdaInjectConfiguration withSubnetIds(final List<String> subnetIds) {
+        this.subnetIds = subnetIds;
+        return this;
+    }
+
+    public LambdaInjectConfiguration withSecurityGroupIds(final List<String> securityGroupIds) {
+        this.securityGroupIds = securityGroupIds;
+        return this;
+    }
+
+    public LambdaInjectConfiguration withIamPolicy(final String iamPolicy) {
+        this.iamPolicy = iamPolicy;
+        return this;
+    }
+
+    public LambdaInjectConfiguration withUseKms(final String useKms) {
+        this.useKms = useKms;
+        return this;
+    }
+
+    public LambdaInjectConfiguration withKmsKeyName(final String kmsKeyName) {
+        this.kmsKeyName = kmsKeyName;
+        return this;
+    }
+
+    public String getAssumeRolePolicy() {
+        return assumeRolePolicy;
+    }
+
+    public void setAssumeRolePolicy(String assumeRolePolicy) {
+        this.assumeRolePolicy = assumeRolePolicy;
+    }
+
+    @Override
+    public String toString() {
+        return "LambdaInjectConfiguration{" +
+                "functionName='" + functionName + '\'' +
+                ", zipFileName='" + zipFileName + '\'' +
+                ", environment=" + environment +
+                ", handler='" + handler + '\'' +
+                ", memorySize=" + memorySize +
+                ", runtime='" + runtime + '\'' +
+                ", timeout=" + timeout +
+                ", subnetIds=" + subnetIds +
+                ", securityGroupIds=" + securityGroupIds +
+                ", iamPolicy='" + iamPolicy + '\'' +
+                ", assumeRolePolicy='" + assumeRolePolicy + '\'' +
+                ", useKms='" + useKms + '\'' +
+                ", kmsKeyName='" + kmsKeyName + '\'' +
+                '}';
+    }
+
+    @Override
+    public String getAppName() {
+        return functionName;
     }
 }

@@ -15,7 +15,11 @@
  */
 package com.libertymutualgroup.herman.task.cli.ecs;
 
+import com.amazonaws.regions.Regions;
+import com.libertymutualgroup.herman.aws.credentials.CredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecs.CliPropertyHandler;
+import com.libertymutualgroup.herman.aws.ecs.EcsPush;
+import com.libertymutualgroup.herman.aws.ecs.EcsPushContext;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushPropertyFactory;
@@ -30,10 +34,26 @@ public class ECSPushTask {
         this.logger = logger;
     }
 
-    public void doExecute(String rootPath, int timeout, String environmentName, Map<String, String> customVariables) {
+    public void doExecute(String rootPath, int timeout, String environmentName, Regions region, Map<String, String> customVariables) {
         ECSPushTaskProperties taskProperties = ECSPushPropertyFactory.getTaskProperties();
 
         PropertyHandler propertyHandler = new CliPropertyHandler(logger, environmentName, rootPath, customVariables);
+        propertyHandler.addProperty("herman.rdsCredentialBrokerImage", taskProperties.getRdsCredentialBrokerImage());
+
+        EcsPushContext context = new EcsPushContext()
+            .withLogger(logger)
+            .withPropertyHandler(propertyHandler)
+            .withEnvName(environmentName)
+            .withSessionCredentials(CredentialsHandler.getCredentials())
+            .withAwsClientConfig(CredentialsHandler.getConfiguration())
+            .withRegion(region)
+            .withTimeout(timeout)
+            .withRootPath(rootPath)
+            .withTaskProperties(taskProperties);
+        EcsPush push = new EcsPush(context);
+        push.push();
+
+        logger.addLogEntry("Done!");
     }
 
 

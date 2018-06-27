@@ -26,12 +26,11 @@ import com.libertymutualgroup.herman.aws.ecs.broker.domain.HermanBrokerStatus;
 import com.libertymutualgroup.herman.aws.ecs.broker.domain.HermanBrokerUpdate;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.http.HttpStatus.Series;
 
 import java.nio.charset.Charset;
 import java.util.List;
 
-import static org.springframework.http.HttpStatus.Series.SUCCESSFUL;
+import static com.libertymutualgroup.herman.util.HttpStatusUtil.isSuccessful;
 
 public class DnsRegistrar {
 
@@ -54,7 +53,7 @@ public class DnsRegistrar {
         buildLogger.addLogEntry("... Invoke request sent to the DNS Broker");
 
         InvokeResult invokeResult = this.lambdaClient.invoke(dnsBrokerInvokeRequest);
-        if (SUCCESSFUL.equals(Series.valueOf(invokeResult.getStatusCode())) && StringUtils
+        if (isSuccessful(invokeResult.getStatusCode()) && StringUtils
             .isEmpty(invokeResult.getFunctionError())) {
             String dnsBrokerUpdatesJson = new String(invokeResult.getPayload().array(), Charset.forName("UTF-8"));
             List<HermanBrokerUpdate> updates;

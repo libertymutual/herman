@@ -18,10 +18,10 @@ package com.libertymutualgroup.herman.aws.ecs;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.util.FileUtil;
-import org.fusesource.hawtbuf.ByteArrayInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashSet;
@@ -125,6 +125,9 @@ public class CliPropertyHandler implements PropertyHandler {
      */
     @Override
     public String lookupVariable(String key) {
+        if (this.props.containsKey(key)) {
+            return this.props.getProperty(key);
+        }
         return this.customVariables.getOrDefault(key, null);
     }
 

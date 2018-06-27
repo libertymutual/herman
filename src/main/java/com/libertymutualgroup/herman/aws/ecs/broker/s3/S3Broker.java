@@ -31,7 +31,7 @@ import com.amazonaws.util.IOUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.libertymutualgroup.herman.aws.AwsExecException;
-import com.libertymutualgroup.herman.aws.CredentialsHandler;
+import com.libertymutualgroup.herman.aws.credentials.BambooCredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
@@ -71,7 +71,7 @@ public class S3Broker {
         S3InjectConfiguration configuration = getS3Configuration();
         AmazonS3 client = AmazonS3ClientBuilder.standard()
             .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
-            .withClientConfiguration(CredentialsHandler.getConfiguration()).withRegion(context.getRegion()).build();
+            .withClientConfiguration(BambooCredentialsHandler.getConfiguration()).withRegion(context.getRegion()).build();
 
         TagSet tags = new TagSet();
         tags.setTag(taskProperties.getSbuTagKey(), configuration.getSbu());

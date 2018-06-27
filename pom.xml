@@ -23,6 +23,7 @@
     <plugin.testrunner.version>1.2.3</plugin.testrunner.version>
     <atlassian.spring.scanner.version>1.2.13</atlassian.spring.scanner.version>
     <aws-sdk.version>1.11.335</aws-sdk.version>
+    <spring.framework.version>5.0.7.RELEASE</spring.framework.version>
     <!-- This key is used to keep the consistency between the key in atlassian-plugin.xml
       and the key to generate bundle. -->
     <atlassian.plugin.key>${project.groupId}.${project.artifactId}</atlassian.plugin.key>
@@ -45,6 +46,17 @@
         <groupId>org.apache.httpcomponents</groupId>
         <artifactId>httpcore</artifactId>
         <version>4.4.4</version>
+      </dependency>
+      <dependency>
+        <groupId>com.atlassian.core</groupId>
+        <artifactId>atlassian-core</artifactId>
+        <version>5.0.2</version>
+        <exclusions>
+          <exclusion>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -213,6 +225,11 @@
       <version>3.4</version>
     </dependency>
     <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.6</version>
+    </dependency>
+    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-log4j12</artifactId>
       <version>1.7.16</version>
@@ -222,6 +239,13 @@
       <artifactId>jackson-dataformat-yaml</artifactId>
       <version>2.6.6</version>
     </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+      <version>${spring.framework.version}</version>
+    </dependency>
+
+
 
     <!-- JACOCO OFFLINE INSTRUMENTATION -->
     <dependency>
@@ -339,6 +363,29 @@
             <goals>
               <goal>testCompile</goal>
             </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- Maven Shade Plugin -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>2.3</version>
+        <executions>
+          <!-- Run shade goal on package phase -->
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <transformers>
+                <!-- add Main-Class to manifest file -->
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>com.libertymutualgroup.herman.cli.Cli</mainClass>
+                </transformer>
+              </transformers>
+            </configuration>
           </execution>
         </executions>
       </plugin>

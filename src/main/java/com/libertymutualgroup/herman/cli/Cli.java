@@ -15,6 +15,7 @@
  */
 package com.libertymutualgroup.herman.cli;
 
+import com.amazonaws.regions.Regions;
 import com.libertymutualgroup.herman.logging.SysoutLogger;
 import com.libertymutualgroup.herman.task.cli.ecs.ECSPushTask;
 import picocli.CommandLine;
@@ -41,6 +42,9 @@ public class Cli implements Callable<Void> {
     @Option(names = {"-t", "--timeout"}, description = "Task timeout (in minutes)", showDefaultValue = CommandLine.Help.Visibility.ALWAYS)
     private int timeout = 5;
 
+    @Option(names = {"-r", "--region"}, description = "AWS Region to perform tasks", showDefaultValue = CommandLine.Help.Visibility.ALWAYS, arity = "1")
+    private Regions region = Regions.US_EAST_1;
+
     @Option(names = {"-v", "-vars", "--variables"}, description = "Custom build variables to be injected. <KEY>==<VALUE>")
     private Map<String, String> customVariables = new HashMap<>();
 
@@ -59,7 +63,7 @@ public class Cli implements Callable<Void> {
             case ECS_PUSH:
                 logger.addLogEntry("Starting ECS Push");
                 ECSPushTask ecsPush = new ECSPushTask(logger);
-                ecsPush.doExecute(absPath, timeout, environmentName, customVariables);
+                ecsPush.doExecute(absPath, timeout, environmentName, region, customVariables);
                 break;
             case CFT_PUSH:
                 logger.addErrorLogEntry("Not yet implemented in CLI");

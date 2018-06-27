@@ -108,7 +108,6 @@ import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
 import com.libertymutualgroup.herman.util.ArnUtil;
 import com.libertymutualgroup.herman.util.FileUtil;
 import org.apache.logging.log4j.util.Strings;
-import org.springframework.util.StopWatch;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -151,7 +150,7 @@ public class EcsPush {
 
     public EcsPush(EcsPushContext context) {
         this.logger = context.getLogger();
-        this.bambooPropertyHandler = context.getBambooPropertyHandler();
+        this.bambooPropertyHandler = context.getPropertyHandler();
         this.taskProperties = context.getTaskProperties();
         this.pushContext = context;
 
@@ -224,9 +223,6 @@ public class EcsPush {
     }
 
     public void push() {
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-
         EcsPushDefinition definition = getEcsPushDefinition();
         logger.addLogEntry(definition.toString());
         logInvocationInCloudWatch(definition);
@@ -311,8 +307,7 @@ public class EcsPush {
             runTask(clusterMetadata, ecsClient, taskResult.getTaskDefinition(), definition.getContainerDefinitions());
         }
 
-        stopWatch.stop();
-        logResultInCloudWatch(definition, stopWatch.getTotalTimeSeconds());
+        logResultInCloudWatch(definition);
     }
 
     private void provideConsoleLink(LoggingService loggingService, RegisterTaskDefinitionResult task, String cluster) {
@@ -833,7 +828,7 @@ public class EcsPush {
         }
     }
 
-    private void logResultInCloudWatch(EcsPushDefinition definition, double totalTimeSeconds) {
+    private void logResultInCloudWatch(EcsPushDefinition definition) {
         try {
             MetricDatum d = new MetricDatum().withMetricName("Result")
                 .withDimensions(
@@ -848,8 +843,7 @@ public class EcsPush {
                             : "current-plugin"),
                     new Dimension().withName("engine").withValue(taskProperties.getEngine()),
                     new Dimension().withName("propKeysRequired").withValue(
-                        String.join(",", ((TaskContextPropertyHandler) bambooPropertyHandler).getPropertyKeysUsed())),
-                    new Dimension().withName("durationSeconds").withValue(String.format("%.2f", totalTimeSeconds)))
+                        String.join(",", ((TaskContextPropertyHandler) bambooPropertyHandler).getPropertyKeysUsed())))
                 .withUnit(StandardUnit.Count).withValue(1.0).withTimestamp(new Date());
 
             cloudWatchClient.putMetricData(new PutMetricDataRequest().withNamespace("Herman/Deploy").withMetricData(d));

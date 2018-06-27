@@ -19,11 +19,6 @@ import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.regions.Regions;
-import com.amazonaws.services.ec2.AmazonEC2;
-import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
-import com.amazonaws.services.ec2.model.SecurityGroup;
-import com.amazonaws.services.ec2.model.Subnet;
-import com.amazonaws.services.ec2.model.Vpc;
 import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientBuilder;
@@ -58,14 +53,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.libertymutualgroup.herman.aws.AwsExecException;
-import com.libertymutualgroup.herman.aws.CredentialsHandler;
+import com.libertymutualgroup.herman.aws.credentials.BambooCredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecs.PushType;
 import com.libertymutualgroup.herman.aws.ecs.broker.iam.IAMBroker;
 import com.libertymutualgroup.herman.aws.ecs.broker.kms.KmsBroker;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
 import com.libertymutualgroup.herman.util.ArnUtil;
-import com.libertymutualgroup.herman.util.AwsNetworkingUtil;
 import com.libertymutualgroup.herman.util.FileUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,7 +96,6 @@ public class LambdaBroker {
     private AWSLambda lambdaClient;
     private AWSKMS kmsClient;
     private AmazonIdentityManagement iamClient;
-    private AwsNetworkingUtil networkingUtil;
     private CommonTaskProperties taskProperties;
 
     private ObjectMapper mapper = new ObjectMapper();
@@ -115,7 +108,7 @@ public class LambdaBroker {
         this.taskProperties = context.getTaskProperties();
 
         AWSCredentials credentials = this.context.getSessionCredentials();
-        ClientConfiguration config = CredentialsHandler.getConfiguration();
+        ClientConfiguration config = BambooCredentialsHandler.getConfiguration();
 
         this.lambdaClient = AWSLambdaClientBuilder.standard()
             .withCredentials(new AWSStaticCredentialsProvider(credentials))
@@ -134,11 +127,6 @@ public class LambdaBroker {
             .withClientConfiguration(config)
             .withRegion(region)
             .build();
-
-        AmazonEC2 ec2Client = AmazonEC2ClientBuilder.standard()
-            .withCredentials(new AWSStaticCredentialsProvider(credentials)).withClientConfiguration(config)
-            .withRegion(region).build();
-        this.networkingUtil = new AwsNetworkingUtil(ec2Client);
     }
 
     public void brokerLambda() throws IOException {
@@ -169,6 +157,10 @@ public class LambdaBroker {
         if (policy == null) {
             policy = defaultExecutionRole;
         }
+
+        String customAssumeRolePolicyFileName = Optional.ofNullable(this.configuration.getAssumeRolePolicy()).orElse("assume-role-policy.json");
+        String customAssumeRolePolicy = fileUtil.findFile(customAssumeRolePolicyFileName, true);
+
         IAMBroker iamBroker = new IAMBroker(this.buildLogger);
         Role executionRole = iamBroker
             .brokerAppRole(this.iamClient, this.configuration, policy, this.context.getBambooPropertyHandler(),
@@ -194,20 +186,11 @@ public class LambdaBroker {
         }
 
         VpcConfig vpcConfig = new VpcConfig();
-        Vpc vpc;
-        if (this.configuration.getVpcId() != null) {
-            vpc = this.networkingUtil.getVpc(this.configuration.getVpcId());
-            if (vpc == null) {
-                throw new AwsExecException("Unable to find VPC");
-            }
-            List<Subnet> subnets = this.networkingUtil.getSubnets();
-            List<String> subnetIds = subnets.stream().map(Subnet::getSubnetId).collect(Collectors.toList());
-            List<String> securityGroupIds = this.networkingUtil
-                .findSecurityGroupsByClusterName(vpc, this.configuration.getVpcId())
-                .stream().map(SecurityGroup::getGroupId).collect(Collectors.toList());
-
-            vpcConfig.setSubnetIds(subnetIds);
-            vpcConfig.setSecurityGroupIds(securityGroupIds);
+        if (this.configuration.getSubnetIds() != null) {
+            vpcConfig.setSubnetIds(this.configuration.getSubnetIds());
+        }
+        if (this.configuration.getSecurityGroupIds() != null) {
+            vpcConfig.setSecurityGroupIds(this.configuration.getSecurityGroupIds());
         }
 
         HashMap<String, String> environmentMap = new HashMap<>();
