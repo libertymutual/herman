@@ -45,7 +45,7 @@ public class Cli implements Callable<Void> {
     @Option(names = {"-r", "--region"}, description = "AWS Region to perform tasks", showDefaultValue = CommandLine.Help.Visibility.ALWAYS, arity = "1")
     private Regions region = Regions.US_EAST_1;
 
-    @Option(names = {"-v", "-vars", "--variables"}, description = "Custom build variables to be injected. <KEY>==<VALUE>")
+    @Option(names = {"-v", "-vars", "--variables"}, description = "Custom build variables to be injected. <KEY>=<VALUE>", arity = "0...*")
     private Map<String, String> customVariables = new HashMap<>();
 
     public static void main(String[] args) {
@@ -54,9 +54,7 @@ public class Cli implements Callable<Void> {
 
     @Override public Void call() throws Exception {
         SysoutLogger logger = new SysoutLogger();
-        if (task.equals(Tasks.CFT_PUSH)) {
-            logger.addErrorLogEntry("CFT Push not yet implemented in CLI");
-        }
+
         String absPath = new File(this.rootPath).getAbsolutePath();
 
         switch (task) {
@@ -83,6 +81,10 @@ public class Cli implements Callable<Void> {
                 break;
             case S3_CREATE:
                 logger.addErrorLogEntry("Not yet implemented in CLI");
+                System.exit(1);
+                break;
+            default:
+                logger.addErrorLogEntry("Invalid task! Must be one of: " + String.join(", ", Tasks.getOptions()));
                 System.exit(1);
                 break;
         }
