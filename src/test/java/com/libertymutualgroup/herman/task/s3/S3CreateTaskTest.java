@@ -1,11 +1,11 @@
 package com.libertymutualgroup.herman.task.s3;
 
-import static org.mockito.Mockito.mock;
-
 import com.atlassian.bamboo.variable.CustomVariableContext;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.mockito.Mockito.mock;
 
 public class S3CreateTaskTest {
 

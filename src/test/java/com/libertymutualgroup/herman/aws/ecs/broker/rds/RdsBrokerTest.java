@@ -64,7 +64,7 @@ public class RdsBrokerTest {
 
         Mockito.when(pushContext.getTaskProperties()).thenReturn(taskProperties);
         Mockito.when(pushContext.getLogger()).thenReturn(logger);
-        Mockito.when(pushContext.getBambooPropertyHandler()).thenReturn(propertyHandler);
+        Mockito.when(pushContext.getPropertyHandler()).thenReturn(propertyHandler);
         DescribeDBInstancesResult result = new DescribeDBInstancesResult();
         result.setDBInstances(Arrays.asList(initDbInstance()));
         Mockito.when(client.describeDBInstances(Mockito.any())).thenReturn(result);

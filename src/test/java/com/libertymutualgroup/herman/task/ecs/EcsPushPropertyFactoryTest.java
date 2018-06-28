@@ -1,20 +1,14 @@
 package com.libertymutualgroup.herman.task.ecs;
 
-import static org.mockito.Mockito.mock;
-
-import com.atlassian.bamboo.variable.CustomVariableContext;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class ECSPushTaskTest {
+public class EcsPushPropertyFactoryTest {
 
     @Test
     public void getTaskProperties() {
-        // GIVEN
-        ECSPushTask task = new ECSPushTask(mock(CustomVariableContext.class));
-
         // WHEN
-        ECSPushTaskProperties ecsPushTaskProperties = task.getTaskProperties();
+        ECSPushTaskProperties ecsPushTaskProperties = ECSPushPropertyFactory.getTaskProperties();
 
         // THEN
         Assert.assertNotNull(ecsPushTaskProperties);

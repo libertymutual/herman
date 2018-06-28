@@ -27,7 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.libertymutualgroup.herman.aws.AbstractDeploymentTask;
 import com.libertymutualgroup.herman.aws.AwsExecException;
-import com.libertymutualgroup.herman.aws.CredentialsHandler;
+import com.libertymutualgroup.herman.aws.credentials.BambooCredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.TaskContextPropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.broker.newrelic.NewRelicBroker;
@@ -64,8 +64,8 @@ public class NewRelicBrokerTask extends AbstractDeploymentTask {
         buildLogger.addLogEntry(newRelicDefinition.toString());
 
         AWSLambda lambdaClient = AWSLambdaClientBuilder.standard()
-            .withCredentials(new AWSStaticCredentialsProvider(CredentialsHandler.getCredentials(taskContext)))
-            .withClientConfiguration(CredentialsHandler.getConfiguration())
+            .withCredentials(new AWSStaticCredentialsProvider(BambooCredentialsHandler.getCredentials(taskContext)))
+            .withClientConfiguration(BambooCredentialsHandler.getConfiguration())
             .withRegion(Regions.fromName(taskContext.getConfigurationMap().get("awsRegion")))
             .build();
 

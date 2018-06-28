@@ -16,6 +16,7 @@
 package com.libertymutualgroup.herman.aws.ecs.broker.kms;
 
 import com.amazonaws.services.kms.AWSKMS;
+import com.amazonaws.services.kms.model.AWSKMSException;
 import com.amazonaws.services.kms.model.AliasListEntry;
 import com.amazonaws.services.kms.model.CancelKeyDeletionRequest;
 import com.amazonaws.services.kms.model.CreateAliasRequest;
@@ -43,13 +44,18 @@ import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
 import com.libertymutualgroup.herman.util.FileUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 public class KmsBroker {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(KmsBroker.class);
 
     public static final String KMS_POLICY_JSON = "kms-policy.json";
     private static final String PREFIX = "alias/herman/";
@@ -154,9 +160,15 @@ public class KmsBroker {
             listKeysNextMarker = listKeysResult.getNextMarker();
 
             for (KeyListEntry key : listKeysResult.getKeys()) {
-                ListResourceTagsResult keyTags = client
-                    .listResourceTags(new ListResourceTagsRequest().withKeyId(key.getKeyId()));
-                for (Tag t : keyTags.getTags()) {
+                List<Tag> tags = Collections.emptyList();
+                try {
+                    ListResourceTagsResult keyTags = client
+                        .listResourceTags(new ListResourceTagsRequest().withKeyId(key.getKeyId()));
+                    tags = keyTags.getTags();
+                } catch (AWSKMSException ex) {
+                    LOGGER.debug("Error getting tags for " + key.getKeyId(), ex);
+                }
+                for (Tag t : tags) {
                     if (this.taskProperties.getAppTagKey().equals(t.getTagKey()) && t.getTagValue()
                         .equals(definition.getAppName())) {
                         DescribeKeyResult hiddenKey = client

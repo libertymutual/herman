@@ -24,7 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.libertymutualgroup.herman.aws.AbstractDeploymentTask;
 import com.libertymutualgroup.herman.aws.AwsExecException;
-import com.libertymutualgroup.herman.aws.CredentialsHandler;
+import com.libertymutualgroup.herman.aws.credentials.BambooCredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.TaskContextPropertyHandler;
 import com.libertymutualgroup.herman.aws.lambda.LambdaBroker;
@@ -52,7 +52,7 @@ public class LambdaCreateTask extends AbstractDeploymentTask {
         PropertyHandler handler = new TaskContextPropertyHandler(taskContext, getCustomVariableContext());
 
         LambdaPushContext context = new LambdaPushContext()
-            .withSessionCredentials(CredentialsHandler.getCredentials(taskContext))
+            .withSessionCredentials(BambooCredentialsHandler.getCredentials(taskContext))
             .withRootPath(taskContext.getRootDirectory().getAbsolutePath())
             .withBambooPropertyHandler(handler)
             .withLogger(buildLogger)

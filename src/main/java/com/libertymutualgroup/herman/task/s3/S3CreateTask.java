@@ -24,7 +24,7 @@ import com.atlassian.bamboo.variable.CustomVariableContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.libertymutualgroup.herman.aws.AbstractDeploymentTask;
-import com.libertymutualgroup.herman.aws.CredentialsHandler;
+import com.libertymutualgroup.herman.aws.credentials.BambooCredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.TaskContextPropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.BucketMeta;
@@ -58,7 +58,7 @@ public class S3CreateTask extends AbstractDeploymentTask {
             .withLogger(buildLogger)
             .withRegion(awsRegion)
             .withRootPath(taskContext.getRootDirectory().getAbsolutePath())
-            .withSessionCredentials(CredentialsHandler.getCredentials(taskContext))
+            .withSessionCredentials(BambooCredentialsHandler.getCredentials(taskContext))
             .withTaskProperties(getTaskProperties());
 
         S3Broker s3Broker = new S3Broker(s3CreateContext);

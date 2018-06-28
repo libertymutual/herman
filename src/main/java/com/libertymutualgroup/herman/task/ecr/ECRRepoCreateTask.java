@@ -21,7 +21,7 @@ import com.atlassian.bamboo.task.TaskResult;
 import com.atlassian.bamboo.task.TaskResultBuilder;
 import com.atlassian.bamboo.task.TaskType;
 import com.atlassian.bamboo.variable.VariableType;
-import com.libertymutualgroup.herman.aws.CredentialsHandler;
+import com.libertymutualgroup.herman.aws.credentials.BambooCredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecr.EcrCreate;
 import com.libertymutualgroup.herman.aws.ecr.EcrLogin;
 import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
@@ -36,8 +36,8 @@ public class ECRRepoCreateTask implements TaskType {
     public TaskResult execute(final TaskContext taskContext) {
         final AtlassianBuildLogger buildLogger = new AtlassianBuildLogger(taskContext.getBuildLogger());
 
-        EcrCreate create = new EcrCreate(buildLogger, CredentialsHandler.getCredentials(taskContext),
-            CredentialsHandler.getConfiguration(),
+        EcrCreate create = new EcrCreate(buildLogger, BambooCredentialsHandler.getCredentials(taskContext),
+            BambooCredentialsHandler.getConfiguration(),
             Regions.fromName(taskContext.getConfigurationMap().get("awsRegion")));
         String repo = create.createRepo(taskContext.getConfigurationMap().get("repoName"));
 
@@ -45,8 +45,8 @@ public class ECRRepoCreateTask implements TaskType {
         p.put("repository", repo);
         injectVariablesForBuild(p, taskContext);
 
-        EcrLogin login = new EcrLogin(buildLogger, CredentialsHandler.getCredentials(taskContext),
-            CredentialsHandler.getConfiguration(),
+        EcrLogin login = new EcrLogin(buildLogger, BambooCredentialsHandler.getCredentials(taskContext),
+            BambooCredentialsHandler.getConfiguration(),
             Regions.fromName(taskContext.getConfigurationMap().get("awsRegion")));
         login.login();
 

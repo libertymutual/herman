@@ -15,12 +15,8 @@
  */
 package com.libertymutualgroup.herman.aws.ecs;
 
-import com.atlassian.bamboo.deployments.execution.DeploymentTaskContext;
-import com.atlassian.bamboo.variable.CustomVariableContext;
-import com.atlassian.bamboo.variable.VariableContext;
-import com.atlassian.bamboo.variable.VariableDefinitionContext;
 import com.libertymutualgroup.herman.aws.AwsExecException;
-import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.util.FileUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,19 +31,25 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class TaskContextPropertyHandler implements PropertyHandler {
+public class CliPropertyHandler implements PropertyHandler {
 
     static final Pattern PROPERTY_PATTERN = Pattern.compile("\\$\\{([a-zA-Z0-9\\.\\_\\-]+)\\}");
-    private static final Logger LOGGER = LoggerFactory.getLogger(TaskContextPropertyHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CliPropertyHandler.class);
     private Properties props = new Properties();
-    private DeploymentTaskContext deploymentTaskContext;
-    private CustomVariableContext customVariableContext;
+
+
     private Set<String> propertyKeysUsed = new HashSet<>();
 
-    public TaskContextPropertyHandler(DeploymentTaskContext deploymentTaskContext,
-        CustomVariableContext customVariableContext) {
-        this.deploymentTaskContext = deploymentTaskContext;
-        this.customVariableContext = customVariableContext;
+    private HermanLogger logger;
+    private String environmentName;
+    private String rootDirectory;
+    private Map<String, String> customVariables;
+
+    public CliPropertyHandler(HermanLogger logger, String environmentName, String rootDirectory, Map<String, String> customVariables) {
+        this.logger = logger;
+        this.environmentName = environmentName;
+        this.rootDirectory = rootDirectory;
+        this.customVariables = customVariables;
     }
 
     /*
@@ -122,87 +124,24 @@ public class TaskContextPropertyHandler implements PropertyHandler {
      * @see com.libertymutualgroup.herman.aws.ecs.PropertyHandler#lookupVariable(java.lang.String)
      */
     @Override
-    public String lookupVariable(String inputKey) {
-        String key = inputKey.replace("bamboo.", "");
-
-        VariableContext commonVars = deploymentTaskContext.getCommonContext().getVariableContext();
-        VariableContext vars = deploymentTaskContext.getDeploymentContext().getVariableContext();
-
-        if ("deploy.environment".equals(key)) {
-            propertyKeysUsed.add(key);
-            return deploymentTaskContext.getDeploymentContext().getEnvironmentName();
+    public String lookupVariable(String key) {
+        if (this.props.containsKey(key)) {
+            return this.props.getProperty(key);
         }
-        if ("aws.region".equals(key)) {
-            propertyKeysUsed.add(key);
-            return deploymentTaskContext.getConfigurationMap().get("awsRegion");
-        }
-        if ("deploy.project".equals(key)) {
-            propertyKeysUsed.add(key);
-            return deploymentTaskContext.getDeploymentContext().getDeploymentProjectName();
-        }
-        if ("deploy.version".equals(key)) {
-            propertyKeysUsed.add(key);
-            return deploymentTaskContext.getDeploymentContext().getDeploymentVersion().getName();
-        }
-
-        String value = props.getProperty(key);
-        if (value == null) {
-            value = lookupVar(vars.getEffectiveVariables(), key);
-        }
-        if (value == null) {
-            value = lookupVar(vars.getResultVariables(), key);
-        }
-        // check sys env with .
-        if (value == null) {
-            value = lookupVar(vars.getOriginalVariables(), key);
-        }
-        // //check sysenv with _
-        if (value == null) {
-            value = lookupVar(commonVars.getEffectiveVariables(), key);
-        }
-        if (value == null) {
-            value = lookupVar(commonVars.getResultVariables(), key);
-        }
-
-        // Get value of a custom variable
-        if (value == null) {
-            for (Map.Entry<String, VariableDefinitionContext> entry : customVariableContext.getVariableContexts()
-                .entrySet()) {
-                if (key.equals(entry.getKey())) {
-                    propertyKeysUsed.add(key);
-                    value = entry.getValue().getValue();
-                    break;
-                }
-            }
-        }
-
-        return value;
-    }
-
-    private String lookupVar(Map<String, VariableDefinitionContext> map, String key) {
-        VariableDefinitionContext ctxt = map.get(key);
-        if (ctxt != null) {
-            propertyKeysUsed.add(key);
-            return ctxt.getValue();
-        } else {
-            return null;
-        }
+        return this.customVariables.getOrDefault(key, null);
     }
 
     private void importPropFiles() {
-        String env = deploymentTaskContext.getDeploymentContext().getEnvironmentName();
-        FileUtil util = new FileUtil(deploymentTaskContext.getRootDirectory().getAbsolutePath(),
-            new AtlassianBuildLogger(deploymentTaskContext.getBuildLogger()));
-        String envProps = util.findFile(env + ".properties", true);
+        FileUtil util = new FileUtil(this.rootDirectory, this.logger);
+        String envProps = util.findFile(this.environmentName + ".properties", true);
 
         if (props != null && envProps != null) {
             try {
                 InputStream propStream = new ByteArrayInputStream(envProps.getBytes());
                 props.load(propStream);
             } catch (IOException e) {
-                LOGGER.debug("Error loading properties file: " + env, e);
-                deploymentTaskContext.getBuildLogger()
-                    .addBuildLogEntry("Error loading " + env + ".properties: " + e.getMessage());
+                LOGGER.debug("Error loading properties file: " + this.environmentName, e);
+                this.logger.addLogEntry("Error loading " + this.environmentName + ".properties: " + e.getMessage());
             }
         }
     }

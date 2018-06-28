@@ -2,13 +2,13 @@ package com.libertymutualgroup.herman.util;
 
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.logging.HermanLogger;
-import org.fusesource.hawtbuf.ByteArrayInputStream;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;

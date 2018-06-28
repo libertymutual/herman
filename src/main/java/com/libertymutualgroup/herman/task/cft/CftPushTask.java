@@ -24,8 +24,8 @@ import com.atlassian.bamboo.variable.CustomVariableContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.libertymutualgroup.herman.aws.AbstractDeploymentTask;
-import com.libertymutualgroup.herman.aws.CredentialsHandler;
 import com.libertymutualgroup.herman.aws.cft.CftPush;
+import com.libertymutualgroup.herman.aws.credentials.BambooCredentialsHandler;
 import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,8 +45,8 @@ public class CftPushTask extends AbstractDeploymentTask {
     public TaskResult doExecute(final DeploymentTaskContext taskContext) throws TaskException {
         final AtlassianBuildLogger buildLogger = new AtlassianBuildLogger(taskContext.getBuildLogger());
 
-        CftPush push = new CftPush(buildLogger, taskContext, CredentialsHandler.getCredentials(taskContext),
-            CredentialsHandler.getConfiguration(), Regions.fromName(taskContext.getConfigurationMap().get("awsRegion")),
+        CftPush push = new CftPush(buildLogger, taskContext, BambooCredentialsHandler.getCredentials(taskContext),
+            BambooCredentialsHandler.getConfiguration(), Regions.fromName(taskContext.getConfigurationMap().get("awsRegion")),
             getCustomVariableContext(), getTaskProperties());
         push.push();
 
