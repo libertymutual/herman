@@ -158,9 +158,6 @@ public class LambdaBroker {
             policy = defaultExecutionRole;
         }
 
-        String customAssumeRolePolicyFileName = Optional.ofNullable(this.configuration.getAssumeRolePolicy()).orElse("assume-role-policy.json");
-        String customAssumeRolePolicy = fileUtil.findFile(customAssumeRolePolicyFileName, true);
-
         IAMBroker iamBroker = new IAMBroker(this.buildLogger);
         Role executionRole = iamBroker
             .brokerAppRole(this.iamClient, this.configuration, policy, this.context.getBambooPropertyHandler(),
