@@ -34,14 +34,11 @@ import com.amazonaws.services.ecr.model.ImageIdentifier;
 import com.amazonaws.services.ecr.model.Repository;
 import com.amazonaws.services.ecr.model.RepositoryAlreadyExistsException;
 import com.amazonaws.services.ecr.model.SetRepositoryPolicyRequest;
-import com.amazonaws.util.IOUtils;
-import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.logging.HermanLogger;
+import com.libertymutualgroup.herman.util.ConfigurationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -54,6 +51,7 @@ public class EcrCreate {
     private HermanLogger buildLogger;
     private AmazonECR client;
     private Regions region;
+    private AWSCredentials sessionCredentials;
 
     public EcrCreate(HermanLogger buildLogger, AWSCredentials sessionCredentials, ClientConfiguration config,
         Regions region) {
@@ -61,6 +59,7 @@ public class EcrCreate {
             .withClientConfiguration(config).withRegion(region).build();
         this.region = region;
         this.buildLogger = buildLogger;
+        this.sessionCredentials = sessionCredentials;
     }
 
     public String createRepo(String name) {
@@ -80,17 +79,11 @@ public class EcrCreate {
             repo = searchRes.getRepositories().get(0);
         }
 
-        try {
-            InputStream policyStream = getClass().getResourceAsStream("/iam/ecr-policy.json");
-            String policy = IOUtils.toString(policyStream);
-
-            SetRepositoryPolicyRequest setRepositoryPolicyRequest = new SetRepositoryPolicyRequest()
-                .withPolicyText(policy).withRegistryId(repo.getRegistryId())
-                .withRepositoryName(repo.getRepositoryName());
-            client.setRepositoryPolicy(setRepositoryPolicyRequest);
-        } catch (IOException e) {
-            throw new AwsExecException(e);
-        }
+        String ecrPolicy = ConfigurationUtil.getECRPolicyAsString(sessionCredentials, buildLogger, null);
+        SetRepositoryPolicyRequest setRepositoryPolicyRequest = new SetRepositoryPolicyRequest()
+            .withPolicyText(ecrPolicy).withRegistryId(repo.getRegistryId())
+            .withRepositoryName(repo.getRepositoryName());
+        client.setRepositoryPolicy(setRepositoryPolicyRequest);
         String result = repo.getRegistryId() + ".dkr.ecr." + region.getName() + ".amazonaws.com/" + name;
 
         try {

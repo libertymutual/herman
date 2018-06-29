@@ -15,6 +15,7 @@
  */
 package com.libertymutualgroup.herman.task.cft;
 
+import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.regions.Regions;
 import com.atlassian.bamboo.deployments.execution.DeploymentTaskContext;
 import com.atlassian.bamboo.task.TaskException;
@@ -27,14 +28,11 @@ import com.libertymutualgroup.herman.aws.AbstractDeploymentTask;
 import com.libertymutualgroup.herman.aws.cft.CftPush;
 import com.libertymutualgroup.herman.aws.credentials.BambooCredentialsHandler;
 import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
-import org.apache.commons.io.IOUtils;
+import com.libertymutualgroup.herman.logging.HermanLogger;
+import com.libertymutualgroup.herman.util.ConfigurationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.io.InputStream;
-
 public class CftPushTask extends AbstractDeploymentTask {
-
-    private final static String TASK_CONFIG_FILE = "/config/plugin-tasks.yml";
 
     @Autowired
     public CftPushTask(CustomVariableContext customVariableContext) {
@@ -44,23 +42,27 @@ public class CftPushTask extends AbstractDeploymentTask {
     @Override
     public TaskResult doExecute(final DeploymentTaskContext taskContext) throws TaskException {
         final AtlassianBuildLogger buildLogger = new AtlassianBuildLogger(taskContext.getBuildLogger());
+        final AWSCredentials sessionCredentials = BambooCredentialsHandler.getCredentials(taskContext);
 
-        CftPush push = new CftPush(buildLogger, taskContext, BambooCredentialsHandler.getCredentials(taskContext),
-            BambooCredentialsHandler.getConfiguration(), Regions.fromName(taskContext.getConfigurationMap().get("awsRegion")),
-            getCustomVariableContext(), getTaskProperties());
+        CftPush push = new CftPush(buildLogger,
+            taskContext,
+            BambooCredentialsHandler.getCredentials(taskContext),
+            BambooCredentialsHandler.getConfiguration(),
+            Regions.fromName(taskContext.getConfigurationMap().get("awsRegion")),
+            getCustomVariableContext(),
+            getTaskProperties(sessionCredentials, buildLogger));
         push.push();
 
         return TaskResultBuilder.newBuilder(taskContext).success().build();
     }
 
-    CFTPushTaskProperties getTaskProperties() {
+    CFTPushTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger) {
         try {
-            InputStream lambdaCreateTaskPropertiesStream = getClass().getResourceAsStream(TASK_CONFIG_FILE);
-            String lambdaCreateTaskPropertiesYml = IOUtils.toString(lambdaCreateTaskPropertiesStream);
+            String cftPushTaskPropertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, hermanLogger);
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-            return objectMapper.readValue(lambdaCreateTaskPropertiesYml, CFTPushTaskProperties.class);
+            return objectMapper.readValue(cftPushTaskPropertiesYml, CFTPushTaskProperties.class);
         } catch (Exception ex) {
-            throw new RuntimeException("Error getting Cft Push Task Properties from " + TASK_CONFIG_FILE, ex);
+            throw new RuntimeException("Error getting Cft Push Task Properties", ex);
         }
     }
 

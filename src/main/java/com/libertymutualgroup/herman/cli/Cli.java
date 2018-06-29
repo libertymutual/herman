@@ -31,6 +31,8 @@ import java.util.concurrent.Callable;
 @Command(description = "Runs Herman the AWS Task Helper", name = "herman", mixinStandardHelpOptions = true)
 public class Cli implements Callable<Void> {
 
+    private static final String CONFIG_BUCKET_TEMPLATE= "herman-configuration-<aws account #>-lts";
+
     @CommandLine.Parameters(paramLabel = "TASK", description = "Task to be executed", arity = "1")
     private Tasks task;
 
@@ -46,7 +48,10 @@ public class Cli implements Callable<Void> {
     @Option(names = {"-r", "--region"}, description = "AWS Region to perform tasks", showDefaultValue = CommandLine.Help.Visibility.ALWAYS, arity = "1")
     private Regions region = Regions.US_EAST_1;
 
-    @Option(names = {"-v", "-vars", "--variables"}, description = "Custom build variables to be injected. <KEY>=<VALUE>", arity = "0...*")
+    @Option(names = {"-c", "--config"}, description = "Configuration S3 bucket name", showDefaultValue = CommandLine.Help.Visibility.ALWAYS)
+    private String configurationBucket = CONFIG_BUCKET_TEMPLATE;
+
+    @Option(names = {"-v", "-vars", "--variables"}, description = "Custom build variables to be injected. <KEY>==<VALUE>")
     private Map<String, String> customVariables = new HashMap<>();
 
     public static void main(String[] args) {
@@ -66,7 +71,8 @@ public class Cli implements Callable<Void> {
                     .withTimeout(timeout)
                     .withEnvironmentName(environmentName)
                     .withRegion(region)
-                    .withCustomVariables(customVariables);
+                    .withCustomVariables(customVariables)
+                    .withCustomConfigurationBucket(getCustomConfigurationBucket());
 
                 ECSPushTask ecsPush = new ECSPushTask(logger);
                 ecsPush.runTask(config);
@@ -97,5 +103,13 @@ public class Cli implements Callable<Void> {
                 break;
         }
         return null;
+    }
+
+    private String getCustomConfigurationBucket() {
+        String customConfigurationBucket = null;
+        if (configurationBucket != null && !configurationBucket.equals(CONFIG_BUCKET_TEMPLATE)) {
+            customConfigurationBucket = configurationBucket;
+        }
+        return customConfigurationBucket;
     }
 }

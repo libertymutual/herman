@@ -15,6 +15,7 @@
  */
 package com.libertymutualgroup.herman.task.s3;
 
+import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.regions.Regions;
 import com.atlassian.bamboo.deployments.execution.DeploymentTaskContext;
 import com.atlassian.bamboo.task.TaskException;
@@ -31,15 +32,12 @@ import com.libertymutualgroup.herman.aws.ecs.broker.s3.BucketMeta;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3Broker;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3CreateContext;
 import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
+import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
-import org.apache.commons.io.IOUtils;
+import com.libertymutualgroup.herman.util.ConfigurationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.io.InputStream;
-
 public class S3CreateTask extends AbstractDeploymentTask {
-
-    private final static String TASK_CONFIG_FILE = "/config/plugin-tasks.yml";
 
     @Autowired
     public S3CreateTask(CustomVariableContext customVariableContext) {
@@ -49,6 +47,7 @@ public class S3CreateTask extends AbstractDeploymentTask {
     @Override
     public TaskResult doExecute(final DeploymentTaskContext taskContext) throws TaskException {
         final AtlassianBuildLogger buildLogger = new AtlassianBuildLogger(taskContext.getBuildLogger());
+        final AWSCredentials sessionCredentials = BambooCredentialsHandler.getCredentials(taskContext);
         Regions awsRegion = Regions.fromName(taskContext.getConfigurationMap().getOrDefault("awsRegion",
             String.valueOf(S3CreateTaskConfigurator.DEFAULT_REGION)));
         PropertyHandler handler = new TaskContextPropertyHandler(taskContext, getCustomVariableContext());
@@ -58,8 +57,8 @@ public class S3CreateTask extends AbstractDeploymentTask {
             .withLogger(buildLogger)
             .withRegion(awsRegion)
             .withRootPath(taskContext.getRootDirectory().getAbsolutePath())
-            .withSessionCredentials(BambooCredentialsHandler.getCredentials(taskContext))
-            .withTaskProperties(getTaskProperties());
+            .withSessionCredentials(sessionCredentials)
+            .withTaskProperties(getTaskProperties(sessionCredentials, buildLogger));
 
         S3Broker s3Broker = new S3Broker(s3CreateContext);
         BucketMeta meta = s3Broker.brokerFromConfigurationFile();
@@ -72,14 +71,13 @@ public class S3CreateTask extends AbstractDeploymentTask {
         return TaskResultBuilder.newBuilder(taskContext).success().build();
     }
 
-    CommonTaskProperties getTaskProperties() {
+    CommonTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger) {
         try {
-            InputStream lambdaCreateTaskPropertiesStream = getClass().getResourceAsStream(TASK_CONFIG_FILE);
-            String lambdaCreateTaskPropertiesYml = IOUtils.toString(lambdaCreateTaskPropertiesStream);
+            String lambdaCreateTaskPropertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, hermanLogger);
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
             return objectMapper.readValue(lambdaCreateTaskPropertiesYml, CommonTaskProperties.class);
         } catch (Exception ex) {
-            throw new RuntimeException("Error getting S3 Create Task Task Properties from " + TASK_CONFIG_FILE, ex);
+            throw new RuntimeException("Error getting S3 Create Task Task Properties", ex);
         }
     }
 }

@@ -35,15 +35,8 @@ containerDefinitions:
 
 #### Plugin Setup
 
-Teams must add organization-specific config values to a property file
-before deploying Herman as a Bamboo plugin: config/plugin-tasks.yml. 
+Teams must add organization-specific configuration files to an S3 bucket before using Herman in each unique AWS account.
 [See: Plugin configuration](docs/Plugin_Configuration.md)
-
-There are two other files that need to be updated:
--   ECR IAM Policy: [See: ECR Policy](src/main/resources/iam/ecr-policy.json).
-    This is the default IAM policy used when creating ECR repositories.
--   KMS IAM Policy: [See: KMS Policy](src/main/resources/iam/kms-policy.json).
-    This is the default IAM policy used when creating KMS keys.
     
 #### Broker Setup
 

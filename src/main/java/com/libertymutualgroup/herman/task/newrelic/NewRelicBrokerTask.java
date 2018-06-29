@@ -15,6 +15,8 @@
  */
 package com.libertymutualgroup.herman.task.newrelic;
 
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.lambda.AWSLambda;
@@ -35,18 +37,15 @@ import com.libertymutualgroup.herman.aws.ecs.broker.newrelic.NewRelicBrokerConfi
 import com.libertymutualgroup.herman.aws.ecs.broker.newrelic.NewRelicDefinition;
 import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
 import com.libertymutualgroup.herman.logging.HermanLogger;
+import com.libertymutualgroup.herman.util.ConfigurationUtil;
 import com.libertymutualgroup.herman.util.FileUtil;
-import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import java.io.InputStream;
 
 public class NewRelicBrokerTask extends AbstractDeploymentTask {
 
     private static final String NEWRELIC_TEMPLATE = "newrelic-template";
     private static final String JSON = ".json";
     private static final String YML = ".yml";
-    private final static String TASK_CONFIG_FILE = "/config/plugin-tasks.yml";
 
     @Autowired
     public NewRelicBrokerTask(CustomVariableContext customVariableContext) {
@@ -56,6 +55,8 @@ public class NewRelicBrokerTask extends AbstractDeploymentTask {
     @Override
     public TaskResult doExecute(final DeploymentTaskContext taskContext) {
         final AtlassianBuildLogger buildLogger = new AtlassianBuildLogger(taskContext.getBuildLogger());
+        final AWSCredentialsProvider awsCredentialsProvider = new AWSStaticCredentialsProvider(BambooCredentialsHandler.getCredentials(taskContext));
+
         final PropertyHandler bambooPropertyHandler = new TaskContextPropertyHandler(taskContext,
             getCustomVariableContext());
         final FileUtil fileUtil = new FileUtil(taskContext.getRootDirectory().getAbsolutePath(), buildLogger);
@@ -64,12 +65,14 @@ public class NewRelicBrokerTask extends AbstractDeploymentTask {
         buildLogger.addLogEntry(newRelicDefinition.toString());
 
         AWSLambda lambdaClient = AWSLambdaClientBuilder.standard()
-            .withCredentials(new AWSStaticCredentialsProvider(BambooCredentialsHandler.getCredentials(taskContext)))
+            .withCredentials(awsCredentialsProvider)
             .withClientConfiguration(BambooCredentialsHandler.getConfiguration())
             .withRegion(Regions.fromName(taskContext.getConfigurationMap().get("awsRegion")))
             .build();
 
-        NewRelicBrokerConfiguration newRelicBrokerConfiguration = getTaskProperties();
+        NewRelicBrokerConfiguration newRelicBrokerConfiguration = getTaskProperties(
+            awsCredentialsProvider.getCredentials(),
+            buildLogger);
         NewRelicBroker newRelicBroker = new NewRelicBroker(
             bambooPropertyHandler,
             buildLogger,
@@ -119,14 +122,13 @@ public class NewRelicBrokerTask extends AbstractDeploymentTask {
         return newRelicDefinition.withFormattedPolicyName();
     }
 
-    NewRelicBrokerConfiguration getTaskProperties() {
+    NewRelicBrokerConfiguration getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger) {
         try {
-            InputStream newRelicBrokerConfigurationStream = getClass().getResourceAsStream(TASK_CONFIG_FILE);
-            String newRelicBrokerConfigurationYml = IOUtils.toString(newRelicBrokerConfigurationStream);
+            String newRelicBrokerConfigurationYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, hermanLogger);
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
             return objectMapper.readValue(newRelicBrokerConfigurationYml, NewRelicBrokerConfiguration.class);
         } catch (Exception ex) {
-            throw new RuntimeException("Error getting NewRelic Broker Configuration from " + TASK_CONFIG_FILE, ex);
+            throw new RuntimeException("Error getting NewRelic Broker Configuration", ex);
         }
     }
 }

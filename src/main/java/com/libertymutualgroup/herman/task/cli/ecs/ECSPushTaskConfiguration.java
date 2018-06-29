@@ -15,6 +15,7 @@ public class ECSPushTaskConfiguration {
     private String environmentName;
     private Regions region;
     private Map<String, String> customVariables;
+    private String customConfigurationBucket;
 
     public String getRootPath() {
         return rootPath;
@@ -56,6 +57,14 @@ public class ECSPushTaskConfiguration {
         this.customVariables = customVariables;
     }
 
+    public String getCustomConfigurationBucket() {
+        return customConfigurationBucket;
+    }
+
+    public void setCustomConfigurationBucket(String customConfigurationBucket) {
+        this.customConfigurationBucket = customConfigurationBucket;
+    }
+
     public ECSPushTaskConfiguration withRootPath(final String rootPath) {
         this.rootPath = rootPath;
         return this;
@@ -79,5 +88,22 @@ public class ECSPushTaskConfiguration {
     public ECSPushTaskConfiguration withCustomVariables(final Map<String, String> customVariables) {
         this.customVariables = customVariables;
         return this;
+    }
+
+    public ECSPushTaskConfiguration withCustomConfigurationBucket(final String customConfigurationBucket) {
+        this.customConfigurationBucket = customConfigurationBucket;
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return "ECSPushTaskConfiguration{" +
+            "rootPath='" + rootPath + '\'' +
+            ", timeout=" + timeout +
+            ", environmentName='" + environmentName + '\'' +
+            ", region=" + region +
+            ", customVariables=" + customVariables +
+            ", customConfigurationBucket='" + customConfigurationBucket + '\'' +
+            '}';
     }
 }

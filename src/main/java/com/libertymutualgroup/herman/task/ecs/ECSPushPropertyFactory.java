@@ -15,23 +15,25 @@
  */
 package com.libertymutualgroup.herman.task.ecs;
 
+import com.amazonaws.auth.AWSCredentials;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.apache.commons.io.IOUtils;
-
-import java.io.InputStream;
+import com.libertymutualgroup.herman.logging.HermanLogger;
+import com.libertymutualgroup.herman.util.ConfigurationUtil;
 
 public class ECSPushPropertyFactory {
-    private final static String TASK_CONFIG_FILE = "/config/plugin-tasks.yml";
 
-    public static ECSPushTaskProperties getTaskProperties() {
+    public static ECSPushTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger) {
+        return getTaskProperties(sessionCredentials, hermanLogger, null);
+    }
+
+    public static ECSPushTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger, String customConfigurationBucket) {
         try {
-            InputStream ecsPushTaskPropertiesStream = ECSPushPropertyFactory.class.getResourceAsStream(TASK_CONFIG_FILE);
-            String ecsPushTaskPropertiesYml = IOUtils.toString(ecsPushTaskPropertiesStream);
+            String ecsPushTaskPropertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, hermanLogger, customConfigurationBucket);
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
             return objectMapper.readValue(ecsPushTaskPropertiesYml, ECSPushTaskProperties.class);
         } catch (Exception ex) {
-            throw new RuntimeException("Error getting ECS Push Task Properties from " + TASK_CONFIG_FILE, ex);
+            throw new RuntimeException("Error getting ECS Push Task Properties", ex);
         }
     }
 }

@@ -1,7 +1,17 @@
 # Plugin Configuration
 
-config/plugin-tasks.yml is the file that needs to be update to include
-organization-specific values.
+1. An S3 bucket needs to be created in each AWS account that is a target for Herman. 
+The standard name for this bucket is herman-configuration-<AWS account ID>-<version>. 
+Version is pulled from a property file [See: Version Properties File](src/main/resources/version.properties). 
+    * NOTE: The configuration bucket name can be overridden for the CLI option using the `--config` option.
+2. Add a properties.yml file to the config bucket (see "Herman Configuration" section below).
+[See: Sample Properties File](src/main/resources/config/samples/properties.yml) for the structure of this file.
+3. Add a ecr-policy.json file to the config bucket. The contents of this file is an ECR IAM policy, 
+used as the default IAM policy used when creating ECR repositories.
+4. Add a kms-policy.json file to the config bucket. The contents of this file is a KMS IAM policy, 
+used as the default IAM policy used when creating KMS keys.
+
+## Herman Configuration (properties.yml in the configuration S3 bucket)
 
 | Property                    | Valid Value                                                                                                                                                                                  |
 |-----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -16,7 +26,7 @@ organization-specific values.
 | splunkInstances             | See "Splunk Properties" below                                                                                                                                                                |
 | newRelic                    | See "New Relic Properties" below                                                                                                                                                             |
 
-## SSL Certificate Properties
+### SSL Certificate Properties
 
 ***"sslCertificates"*** is a list of objects that represent SSL
 certificates. There are four required property files for each
@@ -29,7 +39,7 @@ certificate:
 | pathSuffix        | String - Path for the SSL cert in IAM                                                                                                      |
 | internetFacingUrl | true if the URL is externally-facing                                                                                                       |
 
-## Splunk Properties
+### Splunk Properties
 
 ***"splunkInstances"*** is a list of objects that represent Splunk
 instances:
@@ -39,7 +49,7 @@ instances:
 | httpEventCollectorUrl    | String - URL for the Splunk event collector for the Splunk instance. This is set for the ECS cluster.         |
 | webUrl                   | String - Web UI URL for the instance. This is used to print out a link to the logs for a specific deployment. |
 
-## New Relic Properties
+### New Relic Properties
 
 | New Relic Property             | Valid Value                                                                                             |
 |--------------------------------|---------------------------------------------------------------------------------------------------------|
