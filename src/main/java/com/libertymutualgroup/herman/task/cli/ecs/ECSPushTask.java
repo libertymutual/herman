@@ -46,7 +46,8 @@ public class ECSPushTask {
             .withRegion(configuration.getRegion())
             .withTimeout(configuration.getTimeout())
             .withRootPath(configuration.getRootPath())
-            .withTaskProperties(taskProperties);
+            .withTaskProperties(taskProperties)
+            .withCustomConfigurationBucket(configuration.getCustomConfigurationBucket());
         EcsPush push = new EcsPush(context);
         push.push();
 

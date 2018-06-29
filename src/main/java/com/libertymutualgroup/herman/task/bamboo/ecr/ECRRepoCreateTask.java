@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.libertymutualgroup.herman.task.ecr;
+package com.libertymutualgroup.herman.task.bamboo.ecr;
 
 import com.amazonaws.regions.Regions;
 import com.atlassian.bamboo.task.TaskContext;

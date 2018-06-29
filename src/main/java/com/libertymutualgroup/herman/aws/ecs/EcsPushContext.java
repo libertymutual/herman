@@ -32,6 +32,7 @@ public class EcsPushContext {
     private int timeout;
     private String rootPath;
     private ECSPushTaskProperties taskProperties;
+    private String customConfigurationBucket;
 
     public HermanLogger getLogger() {
         return logger;
@@ -105,6 +106,14 @@ public class EcsPushContext {
         this.taskProperties = taskProperties;
     }
 
+    public String getCustomConfigurationBucket() {
+        return customConfigurationBucket;
+    }
+
+    public void setCustomConfigurationBucket(String customConfigurationBucket) {
+        this.customConfigurationBucket = customConfigurationBucket;
+    }
+
     public EcsPushContext withLogger(final HermanLogger logger) {
         this.logger = logger;
         return this;
@@ -150,6 +159,11 @@ public class EcsPushContext {
         return this;
     }
 
+    public EcsPushContext withCustomConfigurationBucket(final String customConfigurationBucket) {
+        this.customConfigurationBucket = customConfigurationBucket;
+        return this;
+    }
+
     @Override
     public String toString() {
         return "EcsPushContext{" +
@@ -162,6 +176,7 @@ public class EcsPushContext {
             ", timeout=" + timeout +
             ", rootPath='" + rootPath + '\'' +
             ", taskProperties=" + taskProperties +
+            ", customConfigurationBucket='" + customConfigurationBucket + '\'' +
             '}';
     }
 }
