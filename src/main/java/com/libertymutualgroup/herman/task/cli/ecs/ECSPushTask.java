@@ -15,7 +15,6 @@
  */
 package com.libertymutualgroup.herman.task.cli.ecs;
 
-import com.amazonaws.regions.Regions;
 import com.libertymutualgroup.herman.aws.credentials.CredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecs.CliPropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.EcsPush;
@@ -25,8 +24,6 @@ import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushPropertyFactory;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
 
-import java.util.Map;
-
 public class ECSPushTask {
     private HermanLogger logger;
 
@@ -34,21 +31,21 @@ public class ECSPushTask {
         this.logger = logger;
     }
 
-    public void doExecute(String rootPath, int timeout, String environmentName, Regions region, Map<String, String> customVariables) {
+    public void runTask(ECSPushTaskConfiguration configuration) {
         ECSPushTaskProperties taskProperties = ECSPushPropertyFactory.getTaskProperties();
 
-        PropertyHandler propertyHandler = new CliPropertyHandler(logger, environmentName, rootPath, customVariables);
+        PropertyHandler propertyHandler = new CliPropertyHandler(logger, configuration.getEnvironmentName(), configuration.getRootPath(), configuration.getCustomVariables());
         propertyHandler.addProperty("herman.rdsCredentialBrokerImage", taskProperties.getRdsCredentialBrokerImage());
 
         EcsPushContext context = new EcsPushContext()
             .withLogger(logger)
             .withPropertyHandler(propertyHandler)
-            .withEnvName(environmentName)
+            .withEnvName(configuration.getEnvironmentName())
             .withSessionCredentials(CredentialsHandler.getCredentials())
             .withAwsClientConfig(CredentialsHandler.getConfiguration())
-            .withRegion(region)
-            .withTimeout(timeout)
-            .withRootPath(rootPath)
+            .withRegion(configuration.getRegion())
+            .withTimeout(configuration.getTimeout())
+            .withRootPath(configuration.getRootPath())
             .withTaskProperties(taskProperties);
         EcsPush push = new EcsPush(context);
         push.push();

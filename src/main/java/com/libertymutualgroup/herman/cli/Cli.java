@@ -18,6 +18,7 @@ package com.libertymutualgroup.herman.cli;
 import com.amazonaws.regions.Regions;
 import com.libertymutualgroup.herman.logging.SysoutLogger;
 import com.libertymutualgroup.herman.task.cli.ecs.ECSPushTask;
+import com.libertymutualgroup.herman.task.cli.ecs.ECSPushTaskConfiguration;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -60,8 +61,15 @@ public class Cli implements Callable<Void> {
         switch (task) {
             case ECS_PUSH:
                 logger.addLogEntry("Starting ECS Push");
+                ECSPushTaskConfiguration config = new ECSPushTaskConfiguration()
+                    .withRootPath(absPath)
+                    .withTimeout(timeout)
+                    .withEnvironmentName(environmentName)
+                    .withRegion(region)
+                    .withCustomVariables(customVariables);
+
                 ECSPushTask ecsPush = new ECSPushTask(logger);
-                ecsPush.doExecute(absPath, timeout, environmentName, region, customVariables);
+                ecsPush.runTask(config);
                 break;
             case CFT_PUSH:
                 logger.addErrorLogEntry("Not yet implemented in CLI");
