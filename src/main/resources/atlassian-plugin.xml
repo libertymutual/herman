@@ -22,10 +22,10 @@
     <context>aws-ecs-tasks</context>
   </web-resource>
 
-  <taskType class="com.libertymutualgroup.herman.task.ecr.ECRRepoCreateTask" key="ecsRepoCreateTask"
-    name="Herman (LTS) - Repo Create, Docker Login">
+  <taskType class="com.libertymutualgroup.herman.task.bamboo.ecr.ECRRepoCreateTask" key="ecsRepoCreateTask"
+            name="Herman (LTS) - Repo Create, Docker Login">
     <description>Create an ECS repository with proper permissions and login</description>
-    <configuration class="com.libertymutualgroup.herman.task.ecr.ECRRepoCreateTaskConfigurator"/>
+    <configuration class="com.libertymutualgroup.herman.task.bamboo.ecr.ECRRepoCreateTaskConfigurator"/>
     <resource location="editEcsRepoCreateTask.ftl" name="edit" type="freemarker"/>
     <resource location="images/whale2.png" name="icon" type="download"/>
   </taskType>
