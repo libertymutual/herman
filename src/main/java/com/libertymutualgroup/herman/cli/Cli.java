@@ -16,100 +16,72 @@
 package com.libertymutualgroup.herman.cli;
 
 import com.amazonaws.regions.Regions;
+import com.libertymutualgroup.herman.cli.command.ECRLoginCommand;
+import com.libertymutualgroup.herman.cli.command.ECRRepoCreateCommand;
+import com.libertymutualgroup.herman.cli.command.ECRRepoTrimCommand;
+import com.libertymutualgroup.herman.cli.command.ECSPushCommand;
 import com.libertymutualgroup.herman.logging.SysoutLogger;
-import com.libertymutualgroup.herman.task.cli.ecs.ECSPushTask;
-import com.libertymutualgroup.herman.task.cli.ecs.ECSPushTaskConfiguration;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.Callable;
 
-@Command(description = "Runs Herman the AWS Task Helper", name = "herman", mixinStandardHelpOptions = true)
-public class Cli implements Callable<Void> {
+import static picocli.CommandLine.Help;
+import static picocli.CommandLine.IVersionProvider;
+import static picocli.CommandLine.Option;
+import static picocli.CommandLine.RunAll;
 
+@Command(description = "Runs Herman the AWS Task Helper", name = "herman", mixinStandardHelpOptions = true, versionProvider = Cli.ManifestVersionProvider.class,
+    subcommands = {
+        ECSPushCommand.class,
+        ECRRepoCreateCommand.class,
+        ECRLoginCommand.class,
+        ECRRepoTrimCommand.class
+})
+public class Cli implements Callable<Void> {
     private static final String CONFIG_BUCKET_TEMPLATE= "herman-configuration-<aws account #>-lts";
 
-    @CommandLine.Parameters(paramLabel = "TASK", description = "Task to be executed", arity = "1")
-    private Tasks task;
+    private SysoutLogger logger = new SysoutLogger();
 
-    @Option(names = {"-d", "--directory"}, description = "Path to configuration files", showDefaultValue = CommandLine.Help.Visibility.ALWAYS)
-    private String rootPath = System.getProperty("user.dir");
-
-    @Option(names = {"-e", "-env", "--environment"}, description = "Environment to deploy")
-    private String environmentName;
-
-    @Option(names = {"-t", "--timeout"}, description = "Task timeout (in minutes)", showDefaultValue = CommandLine.Help.Visibility.ALWAYS)
-    private int timeout = 5;
-
-    @Option(names = {"-r", "--region"}, description = "AWS Region to perform tasks", showDefaultValue = CommandLine.Help.Visibility.ALWAYS, arity = "1")
-    private Regions region = Regions.US_EAST_1;
-
-    @Option(names = {"-c", "--config"}, description = "Configuration S3 bucket name", showDefaultValue = CommandLine.Help.Visibility.ALWAYS)
-    private String configurationBucket = CONFIG_BUCKET_TEMPLATE;
-
-    @Option(names = {"-v", "-vars", "--variables"}, description = "Custom build variables to be injected. <KEY>==<VALUE>")
-    private Map<String, String> customVariables = new HashMap<>();
-
-    public static void main(String[] args) {
-        CommandLine.call(new Cli(), args);
+    public SysoutLogger getLogger() {
+        return logger;
     }
 
-    @Override public Void call() throws Exception {
-        SysoutLogger logger = new SysoutLogger();
+    @Option(names = {"-r", "--region"}, description = "AWS Region to perform tasks", showDefaultValue = Help.Visibility.ALWAYS, arity = "1")
+    private Regions region = Regions.US_EAST_1;
 
-        String absPath = new File(this.rootPath).getAbsolutePath();
+    @Option(names = {"-c", "--config"}, description = "Configuration S3 bucket name", showDefaultValue = Help.Visibility.ALWAYS)
+    private String configurationBucket = CONFIG_BUCKET_TEMPLATE;
 
-        switch (task) {
-            case ECS_PUSH:
-                logger.addLogEntry("Starting ECS Push");
-                ECSPushTaskConfiguration config = new ECSPushTaskConfiguration()
-                    .withRootPath(absPath)
-                    .withTimeout(timeout)
-                    .withEnvironmentName(environmentName)
-                    .withRegion(region)
-                    .withCustomVariables(customVariables)
-                    .withCustomConfigurationBucket(getCustomConfigurationBucket());
+    public static void main(String[] args) {
+        CommandLine cmd = new CommandLine(new Cli());
+        cmd.parseWithHandler(new RunAll(), args);
+    }
 
-                ECSPushTask ecsPush = new ECSPushTask(logger);
-                ecsPush.runTask(config);
-                break;
-            case CFT_PUSH:
-                logger.addErrorLogEntry("Not yet implemented in CLI");
-                System.exit(1);
-                break;
-            case ECR_REPO_CREATE:
-                logger.addErrorLogEntry("Not yet implemented in CLI");
-                System.exit(1);
-                break;
-            case LAMBDA_CREATE:
-                logger.addErrorLogEntry("Not yet implemented in CLI");
-                System.exit(1);
-                break;
-            case NEW_RELIC_DEPLOYMENT:
-                logger.addErrorLogEntry("Not yet implemented in CLI");
-                System.exit(1);
-                break;
-            case S3_CREATE:
-                logger.addErrorLogEntry("Not yet implemented in CLI");
-                System.exit(1);
-                break;
-            default:
-                logger.addErrorLogEntry("Invalid task! Must be one of: " + String.join(", ", Tasks.getOptions()));
-                System.exit(1);
-                break;
-        }
+    @Override public Void call() {
         return null;
     }
 
-    private String getCustomConfigurationBucket() {
+    public Regions getRegion() {
+        return this.region;
+    }
+
+    public String getCustomConfigurationBucket() {
         String customConfigurationBucket = null;
         if (configurationBucket != null && !configurationBucket.equals(CONFIG_BUCKET_TEMPLATE)) {
             customConfigurationBucket = configurationBucket;
         }
         return customConfigurationBucket;
+    }
+
+    static class ManifestVersionProvider implements IVersionProvider {
+
+        @Override public String[] getVersion() {
+            String version = getClass().getPackage().getImplementationVersion();
+            if (version != null) {
+                return new String[] {getClass().getPackage().getImplementationVersion()};
+            }
+            return new String[] { "No version information found in manifest!"};
+        }
     }
 }
