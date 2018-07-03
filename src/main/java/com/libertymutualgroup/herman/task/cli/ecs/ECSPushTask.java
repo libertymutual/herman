@@ -15,6 +15,7 @@
  */
 package com.libertymutualgroup.herman.task.cli.ecs;
 
+import com.amazonaws.auth.AWSCredentials;
 import com.libertymutualgroup.herman.aws.credentials.CredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecs.CliPropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.EcsPush;
@@ -32,7 +33,8 @@ public class ECSPushTask {
     }
 
     public void runTask(ECSPushTaskConfiguration configuration) {
-        ECSPushTaskProperties taskProperties = ECSPushPropertyFactory.getTaskProperties();
+        final AWSCredentials sessionCredentials = CredentialsHandler.getCredentials();
+        ECSPushTaskProperties taskProperties = ECSPushPropertyFactory.getTaskProperties(sessionCredentials, logger, configuration.getCustomConfigurationBucket());
 
         PropertyHandler propertyHandler = new CliPropertyHandler(logger, configuration.getEnvironmentName(), configuration.getRootPath(), configuration.getCustomVariables());
         propertyHandler.addProperty("herman.rdsCredentialBrokerImage", taskProperties.getRdsCredentialBrokerImage());

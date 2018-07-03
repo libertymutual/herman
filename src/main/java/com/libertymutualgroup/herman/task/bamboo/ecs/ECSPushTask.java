@@ -15,6 +15,7 @@
  */
 package com.libertymutualgroup.herman.task.bamboo.ecs;
 
+import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.regions.Regions;
 import com.atlassian.bamboo.deployments.execution.DeploymentTaskContext;
 import com.atlassian.bamboo.task.TaskResult;
@@ -45,7 +46,6 @@ public class ECSPushTask extends AbstractDeploymentTask {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ECSPushTask.class);
 
-
     @Autowired
     public ECSPushTask(CustomVariableContext customVariableContext) {
         super(customVariableContext);
@@ -54,10 +54,11 @@ public class ECSPushTask extends AbstractDeploymentTask {
     @Override
     public TaskResult doExecute(final DeploymentTaskContext taskContext) {
         final AtlassianBuildLogger buildLogger = new AtlassianBuildLogger(taskContext.getBuildLogger());
+        final AWSCredentials sessionCredentials = BambooCredentialsHandler.getCredentials(taskContext);
         int timeout = Integer.parseInt(taskContext.getConfigurationMap().getOrDefault("timeout",
             String.valueOf(ECSPushTaskConfigurator.DEFAULT_TIMEOUT)));
 
-        ECSPushTaskProperties taskProperties = ECSPushPropertyFactory.getTaskProperties();
+        ECSPushTaskProperties taskProperties = ECSPushPropertyFactory.getTaskProperties(sessionCredentials, buildLogger);
 
         PropertyHandler handler = new TaskContextPropertyHandler(taskContext, getCustomVariableContext());
         handler.addProperty("herman.rdsCredentialBrokerImage", taskProperties.getRdsCredentialBrokerImage());
@@ -66,7 +67,7 @@ public class ECSPushTask extends AbstractDeploymentTask {
             .withLogger(buildLogger)
             .withPropertyHandler(handler)
             .withEnvName(taskContext.getDeploymentContext().getEnvironmentName())
-            .withSessionCredentials(BambooCredentialsHandler.getCredentials(taskContext))
+            .withSessionCredentials(sessionCredentials)
             .withAwsClientConfig(BambooCredentialsHandler.getConfiguration())
             .withRegion(Regions.fromName(taskContext.getConfigurationMap().get("awsRegion")))
             .withTimeout(timeout)

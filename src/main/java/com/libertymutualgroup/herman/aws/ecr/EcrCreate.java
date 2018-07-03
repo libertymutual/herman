@@ -28,14 +28,10 @@ import com.amazonaws.services.ecr.model.DescribeRepositoriesResult;
 import com.amazonaws.services.ecr.model.Repository;
 import com.amazonaws.services.ecr.model.RepositoryAlreadyExistsException;
 import com.amazonaws.services.ecr.model.SetRepositoryPolicyRequest;
-import com.amazonaws.util.IOUtils;
-import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.logging.HermanLogger;
+import com.libertymutualgroup.herman.util.ConfigurationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.io.InputStream;
 
 public class EcrCreate {
 
@@ -74,17 +70,11 @@ public class EcrCreate {
             repo = searchRes.getRepositories().get(0);
         }
 
-        try {
-            InputStream policyStream = getClass().getResourceAsStream("/iam/ecr-policy.json");
-            String policy = IOUtils.toString(policyStream);
-
-            SetRepositoryPolicyRequest setRepositoryPolicyRequest = new SetRepositoryPolicyRequest()
-                .withPolicyText(policy).withRegistryId(repo.getRegistryId())
-                .withRepositoryName(repo.getRepositoryName());
-            client.setRepositoryPolicy(setRepositoryPolicyRequest);
-        } catch (IOException e) {
-            throw new AwsExecException(e);
-        }
+        String ecrPolicy = ConfigurationUtil.getECRPolicyAsString(sessionCredentials, buildLogger, null);
+        SetRepositoryPolicyRequest setRepositoryPolicyRequest = new SetRepositoryPolicyRequest()
+            .withPolicyText(ecrPolicy).withRegistryId(repo.getRegistryId())
+            .withRepositoryName(repo.getRepositoryName());
+        client.setRepositoryPolicy(setRepositoryPolicyRequest);
         String result = repo.getRegistryId() + ".dkr.ecr." + region.getName() + ".amazonaws.com/" + name;
 
         try {
@@ -97,7 +87,4 @@ public class EcrCreate {
         return result;
 
     }
-
-
-
 }
