@@ -21,16 +21,10 @@ import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ecr.AmazonECR;
 import com.amazonaws.services.ecr.AmazonECRClientBuilder;
-import com.amazonaws.services.ecr.model.BatchDeleteImageRequest;
-import com.amazonaws.services.ecr.model.BatchDeleteImageResult;
 import com.amazonaws.services.ecr.model.CreateRepositoryRequest;
 import com.amazonaws.services.ecr.model.CreateRepositoryResult;
-import com.amazonaws.services.ecr.model.DescribeImagesRequest;
-import com.amazonaws.services.ecr.model.DescribeImagesResult;
 import com.amazonaws.services.ecr.model.DescribeRepositoriesRequest;
 import com.amazonaws.services.ecr.model.DescribeRepositoriesResult;
-import com.amazonaws.services.ecr.model.ImageDetail;
-import com.amazonaws.services.ecr.model.ImageIdentifier;
 import com.amazonaws.services.ecr.model.Repository;
 import com.amazonaws.services.ecr.model.RepositoryAlreadyExistsException;
 import com.amazonaws.services.ecr.model.SetRepositoryPolicyRequest;
@@ -38,13 +32,6 @@ import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.util.ConfigurationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 
 public class EcrCreate {
 
