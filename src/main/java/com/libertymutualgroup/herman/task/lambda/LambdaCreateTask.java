@@ -58,7 +58,7 @@ public class LambdaCreateTask extends AbstractDeploymentTask {
             .withRootPath(taskContext.getRootDirectory().getAbsolutePath())
             .withBambooPropertyHandler(handler)
             .withLogger(buildLogger)
-            .withTaskProperties(getTaskProperties(sessionCredentials, buildLogger));
+            .withTaskProperties(getTaskProperties(sessionCredentials, buildLogger, region));
 
         LambdaBroker lambdaBroker = new LambdaBroker(context,
             buildLogger,
@@ -72,9 +72,9 @@ public class LambdaCreateTask extends AbstractDeploymentTask {
         return TaskResultBuilder.newBuilder(taskContext).success().build();
     }
 
-    CommonTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger) {
+    CommonTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger, Regions region) {
         try {
-            String lambdaCreateTaskPropertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, hermanLogger);
+            String lambdaCreateTaskPropertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, hermanLogger, region);
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
             return objectMapper.readValue(lambdaCreateTaskPropertiesYml, CommonTaskProperties.class);
         } catch (Exception ex) {

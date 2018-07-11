@@ -48,7 +48,7 @@ public class S3CreateTask extends AbstractDeploymentTask {
     public TaskResult doExecute(final DeploymentTaskContext taskContext) throws TaskException {
         final AtlassianBuildLogger buildLogger = new AtlassianBuildLogger(taskContext.getBuildLogger());
         final AWSCredentials sessionCredentials = BambooCredentialsHandler.getCredentials(taskContext);
-        Regions awsRegion = Regions.fromName(taskContext.getConfigurationMap().getOrDefault("awsRegion",
+        final Regions awsRegion = Regions.fromName(taskContext.getConfigurationMap().getOrDefault("awsRegion",
             String.valueOf(S3CreateTaskConfigurator.DEFAULT_REGION)));
         PropertyHandler handler = new TaskContextPropertyHandler(taskContext, getCustomVariableContext());
 
@@ -58,7 +58,7 @@ public class S3CreateTask extends AbstractDeploymentTask {
             .withRegion(awsRegion)
             .withRootPath(taskContext.getRootDirectory().getAbsolutePath())
             .withSessionCredentials(sessionCredentials)
-            .withTaskProperties(getTaskProperties(sessionCredentials, buildLogger));
+            .withTaskProperties(getTaskProperties(sessionCredentials, buildLogger, awsRegion));
 
         S3Broker s3Broker = new S3Broker(s3CreateContext);
         BucketMeta meta = s3Broker.brokerFromConfigurationFile();
@@ -71,11 +71,11 @@ public class S3CreateTask extends AbstractDeploymentTask {
         return TaskResultBuilder.newBuilder(taskContext).success().build();
     }
 
-    CommonTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger) {
+    CommonTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger, Regions region) {
         try {
-            String lambdaCreateTaskPropertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, hermanLogger);
+            String s3CreateTaskPropertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, hermanLogger, region);
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-            return objectMapper.readValue(lambdaCreateTaskPropertiesYml, CommonTaskProperties.class);
+            return objectMapper.readValue(s3CreateTaskPropertiesYml, CommonTaskProperties.class);
         } catch (Exception ex) {
             throw new RuntimeException("Error getting S3 Create Task Task Properties", ex);
         }

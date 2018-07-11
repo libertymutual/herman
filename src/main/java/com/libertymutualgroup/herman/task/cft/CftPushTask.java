@@ -44,21 +44,23 @@ public class CftPushTask extends AbstractDeploymentTask {
         final AtlassianBuildLogger buildLogger = new AtlassianBuildLogger(taskContext.getBuildLogger());
         final AWSCredentials sessionCredentials = BambooCredentialsHandler.getCredentials(taskContext);
 
+        final Regions awsRegion = Regions.fromName(taskContext.getConfigurationMap().get("awsRegion"));
+
         CftPush push = new CftPush(buildLogger,
             taskContext,
             BambooCredentialsHandler.getCredentials(taskContext),
             BambooCredentialsHandler.getConfiguration(),
-            Regions.fromName(taskContext.getConfigurationMap().get("awsRegion")),
+            awsRegion,
             getCustomVariableContext(),
-            getTaskProperties(sessionCredentials, buildLogger));
+            getTaskProperties(sessionCredentials, buildLogger, awsRegion));
         push.push();
 
         return TaskResultBuilder.newBuilder(taskContext).success().build();
     }
 
-    CFTPushTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger) {
+    CFTPushTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger, Regions region) {
         try {
-            String cftPushTaskPropertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, hermanLogger);
+            String cftPushTaskPropertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, hermanLogger, region);
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
             return objectMapper.readValue(cftPushTaskPropertiesYml, CFTPushTaskProperties.class);
         } catch (Exception ex) {

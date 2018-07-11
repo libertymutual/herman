@@ -60,6 +60,7 @@ public class NewRelicBrokerTask extends AbstractDeploymentTask {
         final PropertyHandler bambooPropertyHandler = new TaskContextPropertyHandler(taskContext,
             getCustomVariableContext());
         final FileUtil fileUtil = new FileUtil(taskContext.getRootDirectory().getAbsolutePath(), buildLogger);
+        final Regions region = Regions.fromName(taskContext.getConfigurationMap().get("awsRegion"));
 
         NewRelicDefinition newRelicDefinition = getNewRelicDefinition(bambooPropertyHandler, buildLogger, fileUtil);
         buildLogger.addLogEntry(newRelicDefinition.toString());
@@ -67,12 +68,10 @@ public class NewRelicBrokerTask extends AbstractDeploymentTask {
         AWSLambda lambdaClient = AWSLambdaClientBuilder.standard()
             .withCredentials(awsCredentialsProvider)
             .withClientConfiguration(BambooCredentialsHandler.getConfiguration())
-            .withRegion(Regions.fromName(taskContext.getConfigurationMap().get("awsRegion")))
+            .withRegion(region)
             .build();
 
-        NewRelicBrokerConfiguration newRelicBrokerConfiguration = getTaskProperties(
-            awsCredentialsProvider.getCredentials(),
-            buildLogger);
+        NewRelicBrokerConfiguration newRelicBrokerConfiguration = getTaskProperties(awsCredentialsProvider.getCredentials(), buildLogger, region);
         NewRelicBroker newRelicBroker = new NewRelicBroker(
             bambooPropertyHandler,
             buildLogger,
@@ -122,9 +121,9 @@ public class NewRelicBrokerTask extends AbstractDeploymentTask {
         return newRelicDefinition.withFormattedPolicyName();
     }
 
-    NewRelicBrokerConfiguration getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger) {
+    NewRelicBrokerConfiguration getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger, Regions region) {
         try {
-            String newRelicBrokerConfigurationYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, hermanLogger);
+            String newRelicBrokerConfigurationYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, hermanLogger, region);
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
             return objectMapper.readValue(newRelicBrokerConfigurationYml, NewRelicBrokerConfiguration.class);
         } catch (Exception ex) {

@@ -55,10 +55,11 @@ public class ECSPushTask extends AbstractDeploymentTask {
     public TaskResult doExecute(final DeploymentTaskContext taskContext) {
         final AtlassianBuildLogger buildLogger = new AtlassianBuildLogger(taskContext.getBuildLogger());
         final AWSCredentials sessionCredentials = BambooCredentialsHandler.getCredentials(taskContext);
+        final Regions awsRegion = Regions.fromName(taskContext.getConfigurationMap().get("awsRegion"));
         int timeout = Integer.parseInt(taskContext.getConfigurationMap().getOrDefault("timeout",
             String.valueOf(ECSPushTaskConfigurator.DEFAULT_TIMEOUT)));
 
-        ECSPushTaskProperties taskProperties = ECSPushPropertyFactory.getTaskProperties(sessionCredentials, buildLogger);
+        ECSPushTaskProperties taskProperties = ECSPushPropertyFactory.getTaskProperties(sessionCredentials, buildLogger, awsRegion);
 
         PropertyHandler handler = new TaskContextPropertyHandler(taskContext, getCustomVariableContext());
         handler.addProperty("herman.rdsCredentialBrokerImage", taskProperties.getRdsCredentialBrokerImage());
@@ -69,7 +70,7 @@ public class ECSPushTask extends AbstractDeploymentTask {
             .withEnvName(taskContext.getDeploymentContext().getEnvironmentName())
             .withSessionCredentials(sessionCredentials)
             .withAwsClientConfig(BambooCredentialsHandler.getConfiguration())
-            .withRegion(Regions.fromName(taskContext.getConfigurationMap().get("awsRegion")))
+            .withRegion(awsRegion)
             .withTimeout(timeout)
             .withRootPath(taskContext.getRootDirectory().getAbsolutePath())
             .withTaskProperties(taskProperties);
