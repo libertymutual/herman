@@ -1,0 +1,21 @@
+language: java
+jdk: oraclejdk8
+sudo: false
+
+cache:
+  directories:
+  - $HOME/.m2
+
+before_install:
+  - export TZ=America/New_York
+  - date
+
+before_script:
+  - mvn org.codehaus.mojo:versions-maven-plugin:2.2:set -DnewVersion=${TRAVIS_COMMIT::7}  -DprocessParent=true
+
+script: mvn clean package
+
+after_script: ls target
+
+notifications:
+  email: false
