@@ -16,6 +16,7 @@
 package com.libertymutualgroup.herman.task.ecs;
 
 import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.regions.Regions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.libertymutualgroup.herman.logging.HermanLogger;
@@ -23,13 +24,13 @@ import com.libertymutualgroup.herman.util.ConfigurationUtil;
 
 public class ECSPushPropertyFactory {
 
-    public static ECSPushTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger) {
-        return getTaskProperties(sessionCredentials, hermanLogger, null);
+    public static ECSPushTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger, Regions region) {
+        return getTaskProperties(sessionCredentials, hermanLogger, null, region);
     }
 
-    public static ECSPushTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger, String customConfigurationBucket) {
+    public static ECSPushTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger, String customConfigurationBucket, Regions region) {
         try {
-            String ecsPushTaskPropertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, hermanLogger, customConfigurationBucket);
+            String ecsPushTaskPropertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, hermanLogger, customConfigurationBucket, region);
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
             return objectMapper.readValue(ecsPushTaskPropertiesYml, ECSPushTaskProperties.class);
         } catch (Exception ex) {

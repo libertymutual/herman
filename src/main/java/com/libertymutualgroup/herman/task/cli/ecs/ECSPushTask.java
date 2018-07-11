@@ -34,7 +34,7 @@ public class ECSPushTask {
 
     public void runTask(ECSPushTaskConfiguration configuration) {
         final AWSCredentials sessionCredentials = CredentialsHandler.getCredentials();
-        ECSPushTaskProperties taskProperties = ECSPushPropertyFactory.getTaskProperties(sessionCredentials, logger, configuration.getCustomConfigurationBucket());
+        ECSPushTaskProperties taskProperties = ECSPushPropertyFactory.getTaskProperties(sessionCredentials, logger, configuration.getCustomConfigurationBucket(), configuration.getRegion());
 
         PropertyHandler propertyHandler = new CliPropertyHandler(logger, configuration.getEnvironmentName(), configuration.getRootPath(), configuration.getCustomVariables());
         propertyHandler.addProperty("herman.rdsCredentialBrokerImage", taskProperties.getRdsCredentialBrokerImage());

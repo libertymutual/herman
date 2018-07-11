@@ -70,7 +70,7 @@ public class EcrCreate {
             repo = searchRes.getRepositories().get(0);
         }
 
-        String ecrPolicy = ConfigurationUtil.getECRPolicyAsString(sessionCredentials, buildLogger, null);
+        String ecrPolicy = ConfigurationUtil.getECRPolicyAsString(sessionCredentials, buildLogger, null, this.region);
         SetRepositoryPolicyRequest setRepositoryPolicyRequest = new SetRepositoryPolicyRequest()
             .withPolicyText(ecrPolicy).withRegistryId(repo.getRegistryId())
             .withRepositoryName(repo.getRepositoryName());
