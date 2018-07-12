@@ -63,13 +63,14 @@ public class ConfigurationUtil {
         }
     }
 
-    public static String getKMSPolicyAsString(AWSCredentials sessionCredentials, HermanLogger hermanLogger, String customConfigurationBucket) {
+    public static String getKMSPolicyAsString(AWSCredentials sessionCredentials, HermanLogger hermanLogger, String customConfigurationBucket, Regions region) {
         try {
             String configBucket = getConfigurationBucketName(sessionCredentials, customConfigurationBucket);
             hermanLogger.addLogEntry(String.format("... Using KMS policy file from S3 bucket %s: %s", configBucket, KMS_POLICY_FILE));
 
             AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
                 .withCredentials(new AWSStaticCredentialsProvider(sessionCredentials))
+                .withRegion(region)
                 .withClientConfiguration(BambooCredentialsHandler.getConfiguration()).build();
             S3Object fullObject = s3Client.getObject(new GetObjectRequest(configBucket, KMS_POLICY_FILE));
             return IOUtils.toString(fullObject.getObjectContent(), StandardCharsets.UTF_8.name());

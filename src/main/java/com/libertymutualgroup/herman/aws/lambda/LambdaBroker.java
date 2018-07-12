@@ -98,6 +98,7 @@ public class LambdaBroker {
     private AmazonIdentityManagement iamClient;
     private CommonTaskProperties taskProperties;
     private AWSCredentials credentials;
+    private Regions region;
 
     private ObjectMapper mapper = new ObjectMapper();
 
@@ -107,6 +108,7 @@ public class LambdaBroker {
         this.fileUtil = new FileUtil(this.context.getRootPath(), this.buildLogger);
         this.configuration = getLambdaInjectConfiguration(this.context, fileUtil);
         this.taskProperties = context.getTaskProperties();
+        this.region = region;
 
         credentials = this.context.getSessionCredentials();
         ClientConfiguration config = BambooCredentialsHandler.getConfiguration();
@@ -350,7 +352,7 @@ public class LambdaBroker {
 
     private String brokerKms(List<Tag> tags) {
         KmsBroker kmsBroker = new KmsBroker(this.context.getLogger(), this.context.getBambooPropertyHandler(),
-            this.fileUtil, this.context.getTaskProperties(), credentials, null);
+            this.fileUtil, this.context.getTaskProperties(), credentials, null, this.region);
         String keyArn = "";
         if (this.configuration.getUseKms()) {
             String keyId = kmsBroker.brokerKey(kmsClient, this.configuration, tags);

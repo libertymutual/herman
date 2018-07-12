@@ -684,7 +684,7 @@ public class EcsPush {
 
     private String brokerKms(EcsPushDefinition definition, EcsClusterMetadata clusterMetadata) {
         KmsBroker broker = new KmsBroker(logger, bambooPropertyHandler, fileUtil, taskProperties,
-            this.pushContext.getSessionCredentials(), this.pushContext.getCustomConfigurationBucket());
+            this.pushContext.getSessionCredentials(), this.pushContext.getCustomConfigurationBucket(), this.pushContext.getRegion());
 
         List<Tag> tags = new ArrayList<>();
         tags.add(new Tag().withTagKey(taskProperties.getSbuTagKey()).withTagValue(clusterMetadata.getNewrelicSbuTag()));

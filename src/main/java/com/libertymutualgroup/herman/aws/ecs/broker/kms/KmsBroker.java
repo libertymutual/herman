@@ -16,6 +16,7 @@
 package com.libertymutualgroup.herman.aws.ecs.broker.kms;
 
 import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kms.AWSKMS;
 import com.amazonaws.services.kms.model.AWSKMSException;
 import com.amazonaws.services.kms.model.AliasListEntry;
@@ -44,11 +45,12 @@ import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
 import com.libertymutualgroup.herman.util.ConfigurationUtil;
 import com.libertymutualgroup.herman.util.FileUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class KmsBroker {
 
@@ -62,15 +64,17 @@ public class KmsBroker {
     private CommonTaskProperties taskProperties;
     private AWSCredentials sessionCredentials;
     private String customConfigurationBucket;
+    private Regions region;
 
     public KmsBroker(HermanLogger hermanLogger, PropertyHandler handler, FileUtil fileUtil,
-        CommonTaskProperties taskProperties, AWSCredentials sessionCredentials, String customConfigurationBucket) {
+        CommonTaskProperties taskProperties, AWSCredentials sessionCredentials, String customConfigurationBucket, Regions region) {
         this.hermanLogger = hermanLogger;
         this.handler = handler;
         this.fileUtil = fileUtil;
         this.taskProperties = taskProperties;
         this.sessionCredentials = sessionCredentials;
         this.customConfigurationBucket = customConfigurationBucket;
+        this.region = region;
     }
 
     public boolean isActive(EcsPushDefinition definition) {
@@ -216,7 +220,7 @@ public class KmsBroker {
             policy = customPolicy;
         } else {
             hermanLogger.addLogEntry("... Using default KMS policy");
-            policy = ConfigurationUtil.getKMSPolicyAsString(sessionCredentials, hermanLogger, customConfigurationBucket);
+            policy = ConfigurationUtil.getKMSPolicyAsString(sessionCredentials, hermanLogger, customConfigurationBucket, this.region);
         }
         return policy;
     }
