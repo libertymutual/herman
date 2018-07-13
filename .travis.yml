@@ -15,7 +15,6 @@ before_install:
 
 before_deploy:
   - ls target
-  - git tag "v$BUILD_VERSION"
 
 notifications:
   email: false
@@ -28,3 +27,4 @@ deploy:
   on:
     repo: libertymutual/herman
     branch: master
+    tag: true
