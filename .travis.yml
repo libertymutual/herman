@@ -1,21 +1,23 @@
 language: java
 jdk: oraclejdk8
 sudo: false
-
 cache:
   directories:
-  - $HOME/.m2
-
+  - "$HOME/.m2"
 before_install:
-  - export TZ=America/New_York
-  - date
-
+- export TZ=America/New_York
+- date
 before_script:
-  - mvn org.codehaus.mojo:versions-maven-plugin:2.2:set -DnewVersion=${TRAVIS_COMMIT::7}  -DprocessParent=true
-
+- mvn org.codehaus.mojo:versions-maven-plugin:2.2:set -DnewVersion=${TRAVIS_COMMIT::7}  -DprocessParent=true
 script: mvn clean package
-
 after_script: ls target
-
 notifications:
   email: false
+deploy:
+  provider: releases
+  api_key:
+    secure: NsmqY75N2mNvtc/OgxboGAJ/heuQRcnhUOPdG0yTGrEZO0D/nSuCUxj+N5LvwLJBudUhT+W/UWzfiiofWLfS6kTcVSw2MVruEuazO5QAfFmd0to0t0D0wkHiRzI/orbafx15K95xGanuSZJR3fNguTJhBH6+FfL5Tu0Xs4HOBVhpDItrViMub8ROPRekjd93XWVxs6jruD37USyOTs+L2XL4J65b/ieL0zh2OBkLxJSKZ2cQ/v+dNd9ebXn8zd7PHSbxG52lHo7UZkROnaIGKjAcMkRrcb6LB76B/mw2BwxeycAjYO8KgTsrWfDz5yYzGQJc4LaWhV3q3Unwb+6Cu63244YM9UBGS6589prGaYr4JEb5/8+HCZbB3xN9/jBSk+7hWXjZpTlrKCEyasrbFurcXF+YxIe5hE2KGhmolFbuw8jH6ZSjgI/Ifbzq7cRF6K9VarnZZzdbDrKjV7p1UpTDoP1fwIn0vF5+p+dnHkwneKSHQkMoX0HE1Z5uNGHrTnMK34ibCmKMqzvllJHp+mnRlqfYJn+fv0X+gsKCpupMROM2D/ghBQ4GanSyQuGFIcciSW+Nc+nn3DHSk/2tipN/uiRKt8JVheNgWn52LYhZttnAGLJz07jcuR4J1Nah2ppB9GMkkYPsx9F/QhVkvx0E6zvx9OSdlWlfHz6lEaA=
+  file: target/herman-bamboo-plugin-${TRAVIS_COMMIT::7}.jar
+  skip_cleanup: true
+  on:
+    repo: libertymutual/herman
