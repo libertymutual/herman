@@ -5,16 +5,19 @@ cache:
   directories:
   - "$HOME/.m2"
 before_install:
-- export TZ=America/New_York
-- date
-script: mvn clean org.codehaus.mojo:versions-maven-plugin:2.2:set -DnewVersion=${TRAVIS_COMMIT::7} -DprocessParent=true package
+  - export TZ=America/New_York
+  - date
+  - export BUILD_VERSION="1.0.$TRAVIS_BUILD_NUMBER"
+install: true
+script: mvn clean org.codehaus.mojo:versions-maven-plugin:2.2:set -DnewVersion=$BUILD_VERSION -DprocessParent=true package
 after_script: ls target
 notifications:
   email: false
+before_deploy: git tag "$BUILD_VERSION"
 deploy:
   provider: releases
   api_key: $GH_DEPLOY_TOKEN
-  file: target/herman-bamboo-plugin-${TRAVIS_COMMIT::7}.jar
+  file: target/herman-bamboo-plugin-$BUILD_VERSION.jar
   skip_cleanup: true
   on:
     repo: libertymutual/herman
