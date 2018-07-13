@@ -4,15 +4,18 @@ sudo: false
 cache:
   directories:
   - "$HOME/.m2"
+branches:
+  except:
+    - /^v[0-9]/
 before_install:
   - export TZ=America/New_York
   - date
   - export BUILD_VERSION="1.0.$TRAVIS_BUILD_NUMBER"
   - mvn org.codehaus.mojo:versions-maven-plugin:2.2:set -DnewVersion=$BUILD_VERSION
 
-after_script:
+before_deploy:
   - ls target
-  - git tag $BUILD_VERSION
+  - git tag "v$BUILD_VERSION"
 
 notifications:
   email: false
@@ -24,4 +27,4 @@ deploy:
   skip_cleanup: true
   on:
     repo: libertymutual/herman
-    tags: true
+    branch: master
