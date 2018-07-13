@@ -27,7 +27,7 @@
     <!-- This key is used to keep the consistency between the key in atlassian-plugin.xml
       and the key to generate bundle. -->
     <atlassian.plugin.key>${project.groupId}.${project.artifactId}</atlassian.plugin.key>
-
+    <surefire.version>2.22.0</surefire.version>
     <jacoco.version>0.8.0</jacoco.version>
     <coverage.reports.dir>${basedir}/target/coverage-reports</coverage.reports.dir>
     <sonar.jacoco.reportPath>${coverage.reports.dir}/jacoco-unit.exec</sonar.jacoco.reportPath>
@@ -274,6 +274,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
+        <version>${surefire.version}</version>
         <configuration>
           <includes>
             <include>**/*Test.java</include>
