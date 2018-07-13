@@ -26,5 +26,4 @@ deploy:
   skip_cleanup: true
   on:
     repo: libertymutual/herman
-    branch: master
-    tag: true
+    tags: true
