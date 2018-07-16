@@ -1,8 +1,8 @@
 {
   "package": {
-    "name": "herman",
+    "name": "herman-bamboo-plugin",
     "repo": "Herman",
-    "vcs_url": "https://github.com/libertymutual/herman.git",
+    "vcs_url": "https://github.com/libertymutual/herman",
     "licenses": ["Apache-2.0"]
   },
   "version": {
