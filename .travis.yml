@@ -15,6 +15,7 @@ before_install:
 
 before_deploy:
   - ls target
+  - sed -i "s~<BUILD_VERSION>~$BUILD_VERSION~g" bintray-descriptor.json
 
 notifications:
   email: false
@@ -28,10 +29,9 @@ deploy:
       repo: libertymutual/herman
       tags: true
   - provider: bintray
-    file: target/herman-bamboo-plugin-$BUILD_VERSION.jar
+    file: bintray-descriptor.json
     user: $BINTRAY_DEPLOY_USER
     key: $BINTRAY_DEPLOY_KEY
     skip_cleanup: true
     on:
       repo: libertymutual/herman
-      tags: true

@@ -1,0 +1,16 @@
+{
+  "package": {
+    "name": "herman",
+    "repo": "Herman",
+    "vcs_url": "https://github.com/libertymutual/herman.git",
+    "licenses": ["Apache-2.0"]
+  },
+  "version": {
+    "name": "<BUILD_VERSION>"
+  },
+  "files":
+  [
+    {"includePattern": "target/(herman-bamboo-plugin-[\d]*.jar)", "uploadPattern": "$1"}
+  ],
+  "publish": true
+}
