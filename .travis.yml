@@ -20,10 +20,18 @@ notifications:
   email: false
 
 deploy:
-  provider: releases
-  api_key: $GH_DEPLOY_TOKEN
-  file: target/herman-bamboo-plugin-$BUILD_VERSION.jar
-  skip_cleanup: true
-  on:
-    repo: libertymutual/herman
-    tags: true
+  - provider: releases
+    api_key: $GH_DEPLOY_TOKEN
+    file: target/herman-bamboo-plugin-$BUILD_VERSION.jar
+    skip_cleanup: true
+    on:
+      repo: libertymutual/herman
+      tags: true
+  - provider: bintray
+    file: target/herman-bamboo-plugin-$BUILD_VERSION.jar
+    user: $BINTRAY_DEPLOY_USER
+    key: $BINTRAY_DEPLOY_KEY
+    skip_cleanup: true
+    on:
+      repo: libertymutual/herman
+      tags: true
