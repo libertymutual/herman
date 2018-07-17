@@ -35,4 +35,3 @@ deploy:
     skip_cleanup: true
     on:
       repo: libertymutual/herman
-      tags: true
