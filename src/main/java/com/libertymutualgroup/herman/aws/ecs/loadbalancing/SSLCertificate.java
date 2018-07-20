@@ -15,11 +15,14 @@
  */
 package com.libertymutualgroup.herman.aws.ecs.loadbalancing;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class SSLCertificate {
 
     private String urlSuffix;
     private String urlPrefix;
-    private String pathSuffix;
+    private String arn;
     private boolean internetFacingUrl;
 
     public String getUrlSuffix() {
@@ -38,12 +41,12 @@ public class SSLCertificate {
         this.urlPrefix = urlPrefix;
     }
 
-    public String getPathSuffix() {
-        return pathSuffix;
+    public String getArn() {
+        return arn;
     }
 
-    public void setPathSuffix(String pathSuffix) {
-        this.pathSuffix = pathSuffix;
+    public void setArn(String arn) {
+        this.arn = arn;
     }
 
     public boolean isInternetFacingUrl() {
@@ -64,13 +67,13 @@ public class SSLCertificate {
         return this;
     }
 
-    public SSLCertificate withPathSuffix(final String pathSuffix) {
-        this.pathSuffix = pathSuffix;
+    public SSLCertificate withInternetFacingUrl(final boolean internetFacingUrl) {
+        this.internetFacingUrl = internetFacingUrl;
         return this;
     }
 
-    public SSLCertificate withInternetFacingUrl(final boolean internetFacingUrl) {
-        this.internetFacingUrl = internetFacingUrl;
+    public SSLCertificate withArn(final String arn) {
+        this.arn = arn;
         return this;
     }
 
@@ -79,7 +82,7 @@ public class SSLCertificate {
         return "SSLCertificate{" +
             "urlSuffix='" + urlSuffix + '\'' +
             ", urlPrefix='" + urlPrefix + '\'' +
-            ", pathSuffix='" + pathSuffix + '\'' +
+            ", arn='" + arn + '\'' +
             ", internetFacingUrl=" + internetFacingUrl +
             '}';
     }

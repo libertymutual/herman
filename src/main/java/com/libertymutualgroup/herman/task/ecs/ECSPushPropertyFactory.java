@@ -24,6 +24,10 @@ import com.libertymutualgroup.herman.util.ConfigurationUtil;
 
 public class ECSPushPropertyFactory {
 
+    private ECSPushPropertyFactory() {
+        throw new IllegalAccessError("Utility class");
+    }
+
     public static ECSPushTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger, Regions region) {
         return getTaskProperties(sessionCredentials, hermanLogger, null, region);
     }

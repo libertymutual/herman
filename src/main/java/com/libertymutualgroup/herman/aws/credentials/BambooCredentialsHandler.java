@@ -26,6 +26,10 @@ import java.util.Map;
 
 public class BambooCredentialsHandler extends CredentialsHandler {
 
+    private BambooCredentialsHandler() {
+        throw new IllegalAccessError("Utility class");
+    }
+
     public static AWSCredentials getCredentials(CommonTaskContext context) {
         if (lookupVar("custom.aws.accessKeyId", context) != null) {
             return new BasicSessionCredentials(lookupVar("custom.aws.accessKeyId", context),

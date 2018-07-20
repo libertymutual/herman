@@ -268,7 +268,7 @@ public class EcsPush {
             boolean useAlb = decider.shouldUseAlb(definition.getAppName(), definition);
 
             DnsRegistrar dnsRegistrar = new DnsRegistrar(lambdaClient, logger, taskProperties.getDnsBrokerLambda());
-            CertHandler certHandler = new CertHandler(iamClient, logger, taskProperties.getSslCertificates());
+            CertHandler certHandler = new CertHandler(logger, taskProperties.getSslCertificates());
             if (useAlb) {
                 EcsLoadBalancerV2Handler loadBalancerV2Handler = new EcsLoadBalancerV2Handler(elbV2Client,
                     certHandler, dnsRegistrar, logger, taskProperties);

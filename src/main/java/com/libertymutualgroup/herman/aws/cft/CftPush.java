@@ -37,7 +37,6 @@ import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
 import com.amazonaws.services.lambda.model.InvocationType;
 import com.amazonaws.services.lambda.model.InvokeRequest;
-import com.amazonaws.util.IOUtils;
 import com.atlassian.bamboo.deployments.execution.DeploymentTaskContext;
 import com.atlassian.bamboo.task.TaskException;
 import com.atlassian.bamboo.variable.CustomVariableContext;
@@ -48,22 +47,22 @@ import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.TaskContextPropertyHandler;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.cft.CFTPushTaskProperties;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.libertymutualgroup.herman.util.FileUtil;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CftPush {
 
@@ -75,6 +74,7 @@ public class CftPush {
     private static final String MAVEN_VERS = "maven.version";
     private static final int RANDOM_PASSWORD_LENGTH = 20;
     private static final int POLLING_INTERVAL_MS = 10000;
+    private static final List<String> CFT_FILE_NAMES = Arrays.asList("cft.template", "cft.yml", "cft.json");
     private Properties props = new Properties();
     private Properties output = new Properties();
     private HermanLogger buildLogger;
@@ -86,8 +86,8 @@ public class CftPush {
     private CFTPushTaskProperties taskProperties;
 
     public CftPush(HermanLogger buildLogger, DeploymentTaskContext taskContext, AWSCredentials sessionCredentials,
-                   ClientConfiguration config, Regions region, CustomVariableContext customVariableContext,
-                   CFTPushTaskProperties taskProperties) {
+        ClientConfiguration config, Regions region, CustomVariableContext customVariableContext,
+        CFTPushTaskProperties taskProperties) {
 
         this.buildLogger = buildLogger;
         this.taskContext = taskContext;
@@ -112,7 +112,8 @@ public class CftPush {
         String projecName = taskContext.getDeploymentContext().getDeploymentProjectName();
 
         if (!this.taskProperties.getCftPushVariableBrokerLambda().isEmpty()) {
-            buildLogger.addLogEntry("Getting CFT variables from Lambda: " + this.taskProperties.getCftPushVariableBrokerLambda());
+            buildLogger.addLogEntry(
+                "Getting CFT variables from Lambda: " + this.taskProperties.getCftPushVariableBrokerLambda());
             introspectEnvironment();
         }
         injectBambooContext();
@@ -199,16 +200,7 @@ public class CftPush {
     }
 
     private void createStack(String name) {
-        String root = taskContext.getRootDirectory().getAbsolutePath();
-        File file = new File(root + File.separator + "cft.template");
-
-        String template;
-        try {
-            template = IOUtils.toString(new FileInputStream(file));
-        } catch (IOException e1) {
-            throw new AwsExecException(e1);
-        }
-
+        String template = getTemplate();
         List<Parameter> parameters = convertPropsToCftParams(template);
 
         String deployEnvironment = taskContext.getDeploymentContext().getEnvironmentName();
@@ -265,9 +257,28 @@ public class CftPush {
 
     }
 
+    private String getTemplate() {
+        String root = taskContext.getRootDirectory().getAbsolutePath();
+        FileUtil fileUtil = new FileUtil(root, buildLogger);
+
+        String template = null;
+        for (String fileName: CFT_FILE_NAMES) {
+            boolean fileExists = fileUtil.fileExists(fileName);
+            if (fileExists) {
+                template = fileUtil.findFile(fileName, false);
+                buildLogger.addLogEntry("Template used: " + fileName);
+            }
+        }
+        if (template == null) {
+            throw new AwsExecException("CloudFormation template not found. Valid file names: "
+                + String.join(", ", CFT_FILE_NAMES));
+        }
+        return template;
+    }
+
     private List<Parameter> convertPropsToCftParams(String template) {
         List<Parameter> parameters = new ArrayList<>();
-        for (Object key : props.keySet()) {
+        for (Object key: props.keySet()) {
             if (template.contains((String) key)) {
                 parameters.add(new Parameter().withParameterKey((String) key)
                     .withParameterValue(props.getProperty((String) key)));
@@ -293,7 +304,7 @@ public class CftPush {
             throw new TaskException(e.getMessage(), e);
         }
 
-        for (Map.Entry<String, String> entry : variables.entrySet()) {
+        for (Map.Entry<String, String> entry: variables.entrySet()) {
             buildLogger.addLogEntry("Injecting " + entry.getKey() + " = " + entry.getValue());
             props.put(entry.getKey(), entry.getValue());
         }
@@ -309,14 +320,14 @@ public class CftPush {
 
         DescribeStackResourcesResult res = cftClient.describeStackResources(req);
 
-        for (StackResource r : res.getStackResources()) {
+        for (StackResource r: res.getStackResources()) {
             buildLogger.addLogEntry(r.getPhysicalResourceId());
             buildLogger.addLogEntry(r.getResourceType());
             output.put("aws.stack." + r.getLogicalResourceId(), r.getPhysicalResourceId());
         }
 
         List<String> resources = new ArrayList<>();
-        for (StackResource r : res.getStackResources()) {
+        for (StackResource r: res.getStackResources()) {
             if ("AWS::ECS::TaskDefinition".equals(r.getResourceType())) {
                 String id = r.getPhysicalResourceId();
                 String task = id.split("/")[1];
@@ -362,7 +373,7 @@ public class CftPush {
     }
 
     private Boolean reportStatusAndCheckCompletionOf(List<Stack> stacks) {
-        for (Stack stack : stacks) {
+        for (Stack stack: stacks) {
             reportStatusOf(stack);
             if (stack.getStackStatus().contains("IN_PROGRESS")) {
                 return false;

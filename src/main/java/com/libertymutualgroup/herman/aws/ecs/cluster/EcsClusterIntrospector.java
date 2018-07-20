@@ -24,18 +24,12 @@ import com.amazonaws.services.cloudformation.model.Parameter;
 import com.amazonaws.services.cloudformation.model.StackResource;
 import com.amazonaws.services.cloudformation.model.Tag;
 import com.amazonaws.services.ec2.AmazonEC2;
-import com.amazonaws.services.ec2.model.DescribeSecurityGroupsRequest;
-import com.amazonaws.services.ec2.model.DescribeSecurityGroupsResult;
 import com.amazonaws.services.ec2.model.DescribeSubnetsResult;
 import com.amazonaws.services.ec2.model.DescribeVpcsResult;
-import com.amazonaws.services.ec2.model.Filter;
-import com.amazonaws.services.ec2.model.SecurityGroup;
 import com.amazonaws.services.ec2.model.Subnet;
 import com.amazonaws.services.ec2.model.Vpc;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.logging.HermanLogger;
-
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -60,7 +54,7 @@ public class EcsClusterIntrospector {
 
         DescribeStackResourcesResult clusterStackResult = cftClient.describeStackResources(req);
 
-        for (StackResource r : clusterStackResult.getStackResources()) {
+        for (StackResource r: clusterStackResult.getStackResources()) {
             updateClusterMetadataWithStackResourceValue(ecsClusterMetadata, r);
         }
 
@@ -76,7 +70,7 @@ public class EcsClusterIntrospector {
         DescribeVpcsResult res = ec2Client.describeVpcs();
 
         Vpc vpc = null;
-        for (Vpc v : res.getVpcs()) {
+        for (Vpc v: res.getVpcs()) {
             if (isProperVpc(v)) {
                 vpc = v;
             }
@@ -90,9 +84,9 @@ public class EcsClusterIntrospector {
 
         DescribeSubnetsResult sub = ec2Client.describeSubnets();
 
-        for (Subnet net : sub.getSubnets()) {
+        for (Subnet net: sub.getSubnets()) {
             if (subnetMatches(vpc, net)) {
-                for (com.amazonaws.services.ec2.model.Tag t : net.getTags()) {
+                for (com.amazonaws.services.ec2.model.Tag t: net.getTags()) {
                     if ("Name".equals(t.getKey())) {
                         if (t.getValue().contains("private-elb")) {
                             elbSubnets.add(net.getSubnetId());
@@ -103,7 +97,6 @@ public class EcsClusterIntrospector {
                 }
             }
         }
-        ecsClusterMetadata.setAkamaiSecurityGroup(getAkamaiSecurityGroups(vpc));
 
         logger.addLogEntry("Introspection complete:");
         logger.addLogEntry(ecsClusterMetadata.toString());
@@ -150,10 +143,12 @@ public class EcsClusterIntrospector {
     }
 
     private boolean isProperVpc(Vpc vpc) {
-        String[] defaultIds = {"sandbox-vpc", "dev-vpc", "nonprod-vpc", "prod-vpc"};
+        String[] defaultIds = {"sandbox", "dev", "nonprod", "prod"};
 
-        for (com.amazonaws.services.ec2.model.Tag t : vpc.getTags()) {
-            if ("Name".equals(t.getKey()) && Arrays.asList(defaultIds).contains(t.getValue())) {
+        for (com.amazonaws.services.ec2.model.Tag t: vpc.getTags()) {
+            if ("Name".equals(t.getKey())
+                    && Arrays.asList(defaultIds).stream()
+                        .filter(defaultId -> t.getValue().contains(defaultId)).findAny().isPresent()) {
                 return true;
             }
         }
@@ -162,43 +157,5 @@ public class EcsClusterIntrospector {
 
     private boolean subnetMatches(Vpc vpc, Subnet subnet) {
         return vpc != null && subnet != null && subnet.getVpcId() != null && subnet.getVpcId().equals(vpc.getVpcId());
-    }
-
-
-    private List<String> getAkamaiSecurityGroups(Vpc vpc) {
-        String region = null;
-        for (com.amazonaws.services.ec2.model.Tag t : vpc.getTags()) {
-            if ("Name".equals(t.getKey())) {
-                String name = t.getValue();
-                region = name.replaceAll("-vpc", "");
-            }
-        }
-
-        List<String> groups = new ArrayList<>();
-        String prefix = "aws-shared-external-elb-" + region;
-        SecurityGroup groupOne = getSecurityGroup(prefix + "-1");
-        SecurityGroup groupTwo = getSecurityGroup(prefix + "-2");
-        groups.add(groupOne.getGroupId());
-        groups.add(groupTwo.getGroupId());
-
-        return groups;
-    }
-
-
-    private SecurityGroup getSecurityGroup(String sgName) {
-        Filter filter = new Filter().withName("tag:Name").withValues(sgName);
-        DescribeSecurityGroupsRequest secReq = new DescribeSecurityGroupsRequest().withFilters(filter);
-
-        DescribeSecurityGroupsResult sgResult = ec2Client.describeSecurityGroups(secReq);
-
-        SecurityGroup secGroup;
-        if (sgResult.getSecurityGroups().size() == 1) {
-            secGroup = sgResult.getSecurityGroups().get(0);
-        } else {
-            logger.addLogEntry("Used: " + sgName);
-
-            throw new AwsExecException("Error looking up SG :" + sgResult.getSecurityGroups().size());
-        }
-        return secGroup;
     }
 }

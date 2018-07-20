@@ -20,6 +20,11 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 
 public class CredentialsHandler {
+
+    CredentialsHandler() {
+        throw new IllegalAccessError("Utility class");
+    }
+
     public static AWSCredentials getCredentials() {
         return new DefaultAWSCredentialsProviderChain().getCredentials();
     }

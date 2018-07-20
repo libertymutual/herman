@@ -1,6 +1,10 @@
 package com.libertymutualgroup.herman.aws.ecs.loadbalancing;
 
-import com.amazonaws.services.cloudformation.AmazonCloudFormation;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.amazonaws.services.elasticloadbalancing.AmazonElasticLoadBalancing;
 import com.amazonaws.services.elasticloadbalancing.model.AddTagsRequest;
 import com.amazonaws.services.elasticloadbalancing.model.ApplySecurityGroupsToLoadBalancerRequest;
@@ -14,7 +18,6 @@ import com.amazonaws.services.elasticloadbalancing.model.DuplicateLoadBalancerNa
 import com.amazonaws.services.elasticloadbalancing.model.Listener;
 import com.amazonaws.services.elasticloadbalancing.model.LoadBalancerDescription;
 import com.amazonaws.services.elasticloadbalancing.model.Tag;
-import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
 import com.libertymutualgroup.herman.aws.ecs.EcsDefinitionParser;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
@@ -22,23 +25,17 @@ import com.libertymutualgroup.herman.aws.ecs.TaskContextPropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.logging.SysoutLogger;
-import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
-import org.apache.commons.io.FileUtils;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-
+import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import org.apache.commons.io.FileUtils;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 public class EcsLoadBalancerHandlerTest {
 
@@ -46,10 +43,6 @@ public class EcsLoadBalancerHandlerTest {
 
     @Mock
     AmazonElasticLoadBalancing elbClient;
-    @Mock
-    AmazonIdentityManagement iamClient;
-    @Mock
-    AmazonCloudFormation cftClient;
     @Mock
     CertHandler certHandler;
     @Mock
@@ -61,14 +54,14 @@ public class EcsLoadBalancerHandlerTest {
     public void setup() {
         MockitoAnnotations.initMocks(this);
 
-        CommonTaskProperties taskProperties = new CommonTaskProperties()
+        ECSPushTaskProperties taskProperties = new ECSPushTaskProperties()
             .withCompany("lm")
             .withOrg("LMB")
             .withSbu("CI");
 
         handler = new EcsLoadBalancerHandler(elbClient, certHandler, dnsRegistrar, logger, taskProperties);
         when(certHandler.deriveCert("HTTPS", "np-lmb.lmig.com", "my-app-dev"))
-            .thenReturn(new DeriveCertResult().withCertArn("arn:somecert"));
+            .thenReturn(new SSLCertificate().withArn("arn:somecert"));
     }
 
     @Test
@@ -77,7 +70,10 @@ public class EcsLoadBalancerHandlerTest {
         EcsClusterMetadata meta = generateMetadata();
         EcsPushDefinition pushDef = loadTemplate("template.yml");
 
-        LoadBalancerDescription balancerDescription = new LoadBalancerDescription().withDNSName("https://some.aws.url");
+        LoadBalancerDescription balancerDescription = new LoadBalancerDescription()
+            .withDNSName("https://some.aws.url")
+            .withCanonicalHostedZoneNameID("123")
+            .withScheme("internal");
         DescribeLoadBalancersResult elbResult = new DescribeLoadBalancersResult()
             .withLoadBalancerDescriptions(balancerDescription);
         when(elbClient
@@ -90,8 +86,10 @@ public class EcsLoadBalancerHandlerTest {
         // THEN
         // DNS Registered
         verify(dnsRegistrar).registerDns(
-            pushDef.getService().getUrlPrefixOverride() + "." + pushDef.getService().getUrlSuffix(),
-            "https://some.aws.url", pushDef.getService().getUrlPrefixOverride(), meta.getClusterCftStackTags());
+            pushDef.getAppName(),
+            "classic",
+            "HTTPS",
+            pushDef.getService().getUrlPrefixOverride() + "." + pushDef.getService().getUrlSuffix());
         // Create ELB
         List<Tag> elbTags = new ArrayList<>();
         elbTags.add(new Tag().withKey("lm_cluster").withValue("some-cluster"));
@@ -116,7 +114,10 @@ public class EcsLoadBalancerHandlerTest {
         EcsPushDefinition pushDef = loadTemplate("template.yml");
 
         when(elbClient.createLoadBalancer(any())).thenThrow(new DuplicateLoadBalancerNameException("exists"));
-        LoadBalancerDescription balancerDescription = new LoadBalancerDescription().withDNSName("https://some.aws.url");
+        LoadBalancerDescription balancerDescription = new LoadBalancerDescription()
+            .withDNSName("https://some.aws.url")
+            .withCanonicalHostedZoneNameID("123")
+            .withScheme("internal");
         DescribeLoadBalancersResult elbResult = new DescribeLoadBalancersResult()
             .withLoadBalancerDescriptions(balancerDescription);
         when(elbClient
@@ -129,8 +130,10 @@ public class EcsLoadBalancerHandlerTest {
         // THEN
         // DNS Registered
         verify(dnsRegistrar).registerDns(
-            pushDef.getService().getUrlPrefixOverride() + "." + pushDef.getService().getUrlSuffix(),
-            "https://some.aws.url", pushDef.getService().getUrlPrefixOverride(), meta.getClusterCftStackTags());
+            pushDef.getAppName(),
+            "classic",
+            "HTTPS",
+            pushDef.getService().getUrlPrefixOverride() + "." + pushDef.getService().getUrlSuffix());
 
         // Update ELB
         verify(elbClient).deleteLoadBalancerListeners(any());

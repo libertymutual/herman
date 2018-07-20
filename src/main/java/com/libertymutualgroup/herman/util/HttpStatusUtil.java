@@ -16,6 +16,11 @@
 package com.libertymutualgroup.herman.util;
 
 public class HttpStatusUtil {
+
+    private HttpStatusUtil() {
+        throw new IllegalAccessError("Utility class");
+    }
+
     public static boolean isSuccessful(int statusCode) {
         return statusCode >= 200 && statusCode < 300;
     }

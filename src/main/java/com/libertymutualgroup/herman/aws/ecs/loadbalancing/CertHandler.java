@@ -15,9 +15,6 @@
  */
 package com.libertymutualgroup.herman.aws.ecs.loadbalancing;
 
-import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
-import com.amazonaws.services.identitymanagement.model.ListServerCertificatesResult;
-import com.amazonaws.services.identitymanagement.model.ServerCertificateMetadata;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 
@@ -27,34 +24,21 @@ public class CertHandler {
 
     private static final String HTTPS = "HTTPS";
 
-
-    private final AmazonIdentityManagement iamClient;
     private final HermanLogger buildLogger;
     private final List<SSLCertificate> sslCertificates;
 
-    public CertHandler(AmazonIdentityManagement iamClient, HermanLogger buildLogger,
-        List<SSLCertificate> sslCertificates) {
-        this.iamClient = iamClient;
+    public CertHandler(HermanLogger buildLogger, List<SSLCertificate> sslCertificates) {
         this.buildLogger = buildLogger;
         this.sslCertificates = sslCertificates;
     }
 
-    public DeriveCertResult deriveCert(String protocol, String urlSuffix, String urlPrefix) {
-        DeriveCertResult deriveCertResult = new DeriveCertResult();
+    public SSLCertificate deriveCert(String protocol, String urlSuffix, String urlPrefix) {
+        SSLCertificate sslCertificate = null;
         if (HTTPS.equals(protocol)) {
-            SSLCertificate sslCertificate = getSSLCertificateByUrl(urlPrefix, urlSuffix);
-            deriveCertResult.setSslCertificate(sslCertificate);
-
-            ListServerCertificatesResult certResult = iamClient.listServerCertificates();
-            for (ServerCertificateMetadata meta : certResult.getServerCertificateMetadataList()) {
-                if (meta.getArn().endsWith(sslCertificate.getPathSuffix())) {
-                    deriveCertResult.setCertArn(meta.getArn());
-                    break;
-                }
-            }
-            buildLogger.addLogEntry("SSL cert found: " + deriveCertResult.getCertArn());
+            sslCertificate = getSSLCertificateByUrl(urlPrefix, urlSuffix);
+            buildLogger.addLogEntry("SSL cert found: " + sslCertificate.getArn());
         }
-        return deriveCertResult;
+        return sslCertificate;
     }
 
     public SSLCertificate getSSLCertificateByUrl(String prefix, String suffix) {

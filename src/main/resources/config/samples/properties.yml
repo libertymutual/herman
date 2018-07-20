@@ -6,8 +6,6 @@ ecsConsoleLinkPattern: # URL pattern to access the AWS console
 rdsCredentialBrokerImage: # RDS Cred Broker image location
 cftPushVariableBrokerLambda: # CFT Push Variable Broker Lambda name
 dnsBrokerLambda: # DNS Broker Lambda name
-awsAccount:
-  prod: # Prod AWS account
 newRelic:
   accountId: # New Relic Account ID
   nrLambda:  # New Relic Broker Lambda name

@@ -1,14 +1,35 @@
 package com.libertymutualgroup.herman.aws.ecs.loadbalancing;
 
-import com.amazonaws.services.cloudformation.model.Tag;
-import java.util.List;
-
 public class DnsBrokerRequest {
 
+    private String elbName;
+    private String elbType;
+    private String protocol;
     private String vanityUrl;
-    private String awsUrl;
-    private String appName;
-    private List<Tag> tags;
+
+    public String getElbName() {
+        return elbName;
+    }
+
+    public void setElbName(String elbName) {
+        this.elbName = elbName;
+    }
+
+    public String getElbType() {
+        return elbType;
+    }
+
+    public void setElbType(String elbType) {
+        this.elbType = elbType;
+    }
+
+    public String getProtocol() {
+        return protocol;
+    }
+
+    public void setProtocol(String protocol) {
+        this.protocol = protocol;
+    }
 
     public String getVanityUrl() {
         return vanityUrl;
@@ -18,28 +39,19 @@ public class DnsBrokerRequest {
         this.vanityUrl = vanityUrl;
     }
 
-    public String getAwsUrl() {
-        return awsUrl;
+    public DnsBrokerRequest withElbName(final String elbName) {
+        this.elbName = elbName;
+        return this;
     }
 
-    public void setAwsUrl(String awsUrl) {
-        this.awsUrl = awsUrl;
+    public DnsBrokerRequest withElbType(final String elbType) {
+        this.elbType = elbType;
+        return this;
     }
 
-    public String getAppName() {
-        return appName;
-    }
-
-    public void setAppName(String appName) {
-        this.appName = appName;
-    }
-
-    public List<Tag> getTags() {
-        return tags;
-    }
-
-    public void setTags(List<Tag> tags) {
-        this.tags = tags;
+    public DnsBrokerRequest withProtocol(final String protocol) {
+        this.protocol = protocol;
+        return this;
     }
 
     public DnsBrokerRequest withVanityUrl(final String vanityUrl) {
@@ -47,28 +59,13 @@ public class DnsBrokerRequest {
         return this;
     }
 
-    public DnsBrokerRequest withAwsUrl(final String awsUrl) {
-        this.awsUrl = awsUrl;
-        return this;
-    }
-
-    public DnsBrokerRequest withAppName(final String appName) {
-        this.appName = appName;
-        return this;
-    }
-
-    public DnsBrokerRequest withTags(final List<Tag> tags) {
-        this.tags = tags;
-        return this;
-    }
-
     @Override
     public String toString() {
         return "DnsBrokerRequest{" +
-            "vanityUrl='" + vanityUrl + '\'' +
-            ", awsUrl='" + awsUrl + '\'' +
-            ", appName='" + appName + '\'' +
-            ", tags=" + tags +
+            "elbName='" + elbName + '\'' +
+            ", elbType='" + elbType + '\'' +
+            ", protocol='" + protocol + '\'' +
+            ", vanityUrl='" + vanityUrl + '\'' +
             '}';
     }
 }

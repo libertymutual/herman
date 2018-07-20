@@ -49,12 +49,11 @@ import com.libertymutualgroup.herman.aws.ecs.EcsPortHandler;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
 import com.libertymutualgroup.herman.logging.HermanLogger;
-import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class EcsLoadBalancerV2Handler {
 
@@ -65,10 +64,10 @@ public class EcsLoadBalancerV2Handler {
     private CertHandler certHandler;
     private HermanLogger buildLogger;
     private DnsRegistrar dnsRegistrar;
-    private CommonTaskProperties taskProperties;
+    private ECSPushTaskProperties taskProperties;
 
     public EcsLoadBalancerV2Handler(AmazonElasticLoadBalancing elbClient, CertHandler certHandler,
-        DnsRegistrar dnsRegistrar, HermanLogger buildLogger, CommonTaskProperties taskProperties) {
+        DnsRegistrar dnsRegistrar, HermanLogger buildLogger, ECSPushTaskProperties taskProperties) {
         this.elbClient = elbClient;
         this.certHandler = certHandler;
         this.buildLogger = buildLogger;
@@ -92,31 +91,28 @@ public class EcsLoadBalancerV2Handler {
         }
         String urlSuffix = definition.getService().getUrlSuffix();
 
-        DeriveCertResult deriveCertResult = certHandler.deriveCert(protocol, urlSuffix, urlPrefix);
+        SSLCertificate sslCertificate = certHandler.deriveCert(protocol, urlSuffix, urlPrefix);
 
         ContainerDefinition webContainer = portHandler.findContainerWithExposedPort(definition, true);
         Integer containerPort = webContainer.getPortMappings().get(0).getContainerPort();
         String containerName = webContainer.getName();
 
         // Set scheme and subnets
-        boolean isInternetFacingUrlScheme = certHandler.isInternetFacingUrlScheme(deriveCertResult.getSslCertificate(),
+        boolean isInternetFacingUrlScheme = certHandler.isInternetFacingUrlScheme(sslCertificate,
             definition.getService().getUrlSchemeOverride());
-        boolean isUsingInternalSubnets = true;
         String elbScheme;
         List<String> elbSubnets;
         if (isInternetFacingUrlScheme || "internet-facing".equals(definition.getService().getElbSchemeOverride())) {
             elbScheme = "internet-facing";
-            isUsingInternalSubnets = false;
             elbSubnets = clusterMetadata.getPublicSubnets();
         } else {
             elbScheme = "internal";
             elbSubnets = clusterMetadata.getElbSubnets();
         }
 
-        // Set security groups - Akamai groups set for internet-facing apps
         List<String> elbSecurityGroups = new ArrayList<>();
-        if (isInternetFacingUrlScheme && HTTPS.equals(protocol)) {
-            elbSecurityGroups.addAll(clusterMetadata.getAkamaiSecurityGroup());
+        if ("internet-facing".equals(elbScheme) && HTTPS.equals(protocol)) {
+            elbSecurityGroups.addAll(taskProperties.getExternalElbSecurityGroups());
         } else {
             elbSecurityGroups.addAll(clusterMetadata.getElbSecurityGroups());
         }
@@ -157,24 +153,29 @@ public class EcsLoadBalancerV2Handler {
             loadBalancer = res.getLoadBalancers().get(0);
 
             elbClient.createListener(new CreateListenerRequest().withLoadBalancerArn(loadBalancer.getLoadBalancerArn())
-                .withCertificates(new Certificate().withCertificateArn(deriveCertResult.getCertArn()))
+                .withCertificates(new Certificate().withCertificateArn(sslCertificate.getArn()))
                 .withProtocol(ProtocolEnum.HTTPS)
                 .withPort(443).withDefaultActions(
                     new Action().withTargetGroupArn(grp.getTargetGroupArn()).withType(ActionTypeEnum.Forward)));
             waitForALBCreate(loadBalancer.getLoadBalancerArn());
 
         } else {
+            if (!elbScheme.equals(loadBalancer.getScheme())) {
+                throw new AwsExecException(String.format("Expected scheme (%s) and actual scheme (%s) do not match. "
+                    + "Load balancer %s must be re-created.", elbScheme, loadBalancer.getScheme(), appName));
+            }
+
             String arn = loadBalancer.getLoadBalancerArn();
             buildLogger.addLogEntry("Updating existing ALB: " + arn);
 
-            buildLogger.addLogEntry("... Reset SG");
+            buildLogger.addLogEntry("... Resetting security groups: " + String.join(", ", elbSecurityGroups));
             elbClient.setSecurityGroups(
                 new SetSecurityGroupsRequest().withLoadBalancerArn(arn).withSecurityGroups(elbSecurityGroups));
 
-            buildLogger.addLogEntry("... Reset subnets");
+            buildLogger.addLogEntry("... Resetting subnets: " + String.join(", ", elbSubnets));
             elbClient.setSubnets(new SetSubnetsRequest().withLoadBalancerArn(arn).withSubnets(elbSubnets));
 
-            buildLogger.addLogEntry("... Reset tags");
+            buildLogger.addLogEntry("... Resetting tags");
             elbClient.addTags(new AddTagsRequest().withResourceArns(arn)
                 .withTags(tags));
 
@@ -193,7 +194,7 @@ public class EcsLoadBalancerV2Handler {
             Listener lis = elbClient.describeListeners(new DescribeListenersRequest().withLoadBalancerArn(arn))
                 .getListeners().get(0);
             elbClient.modifyListener(new ModifyListenerRequest().withListenerArn(lis.getListenerArn())
-                .withCertificates(new Certificate().withCertificateArn(deriveCertResult.getCertArn())));
+                .withCertificates(new Certificate().withCertificateArn(sslCertificate.getArn())));
         }
 
         modifyTargetGroupAttributes(definition, grp);
@@ -201,15 +202,7 @@ public class EcsLoadBalancerV2Handler {
 
         buildLogger.addLogEntry("Updating DNS registration");
         String registeredUrl = urlPrefix + "." + definition.getService().getUrlSuffix();
-        if (isUsingInternalSubnets) {
-            dnsRegistrar.registerDns(registeredUrl, loadBalancer.getDNSName(), appName,
-                clusterMetadata.getClusterCftStackTags());
-            buildLogger.addLogEntry("... URL Registered: " + protocol.toLowerCase() + "://" + registeredUrl);
-        } else {
-            buildLogger.addLogEntry(
-                "... Raw ELB DNS for Akamai: " + protocol.toLowerCase() + "://" + loadBalancer.getDNSName());
-            buildLogger.addLogEntry("... Expected Akamai url: " + protocol.toLowerCase() + "://" + registeredUrl);
-        }
+        dnsRegistrar.registerDns(appName, "application", protocol, registeredUrl);
 
         buildLogger.addLogEntry("ALB updates complete: " + loadBalancer.getLoadBalancerArn());
         return new LoadBalancer().withContainerName(containerName).withContainerPort(containerPort)
@@ -280,7 +273,7 @@ public class EcsLoadBalancerV2Handler {
     private List<com.amazonaws.services.elasticloadbalancingv2.model.Tag> getElbTagList(List<Tag> tags,
         String appName) {
         List<com.amazonaws.services.elasticloadbalancingv2.model.Tag> result = new ArrayList<>();
-        for (Tag cftTag : tags) {
+        for (Tag cftTag: tags) {
             if ("Name".equals(cftTag.getKey())) {
                 result.add(new com.amazonaws.services.elasticloadbalancingv2.model.Tag()
                     .withKey(this.taskProperties.getClusterTagKey())
@@ -319,9 +312,6 @@ public class EcsLoadBalancerV2Handler {
                 buildLogger.addLogEntry("Interrupted while polling");
                 throw new AwsExecException("Interrupted while polling");
             }
-
-
         }
     }
-
 }

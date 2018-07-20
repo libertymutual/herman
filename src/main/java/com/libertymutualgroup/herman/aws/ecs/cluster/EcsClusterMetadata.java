@@ -24,7 +24,6 @@ public class EcsClusterMetadata {
     private String rdsSecurityGroup;
     private String appSecurityGroup;
     private List<String> elbSecurityGroups = new ArrayList<>();
-    private List<String> akamaiSecurityGroup;
     private String clusterId;
     private List<String> elbSubnets = new ArrayList<>();
     private List<String> publicSubnets = new ArrayList<>();
@@ -61,14 +60,6 @@ public class EcsClusterMetadata {
 
     public void setElbSecurityGroups(List<String> elbSecurityGroups) {
         this.elbSecurityGroups = elbSecurityGroups;
-    }
-
-    public List<String> getAkamaiSecurityGroup() {
-        return akamaiSecurityGroup;
-    }
-
-    public void setAkamaiSecurityGroup(List<String> akamaiSecurityGroup) {
-        this.akamaiSecurityGroup = akamaiSecurityGroup;
     }
 
     public String getClusterId() {
@@ -181,7 +172,6 @@ public class EcsClusterMetadata {
             "rdsSecurityGroup='" + rdsSecurityGroup + '\'' +
             ", appSecurityGroup='" + appSecurityGroup + '\'' +
             ", elbSecurityGroups=" + elbSecurityGroups +
-            ", akamaiSecurityGroup=" + akamaiSecurityGroup +
             ", clusterId='" + clusterId + '\'' +
             ", elbSubnets=" + elbSubnets +
             ", publicSubnets=" + publicSubnets +
