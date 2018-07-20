@@ -19,6 +19,15 @@ import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.services.ec2.AmazonEC2;
+import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
+import com.amazonaws.services.ec2.model.AmazonEC2Exception;
+import com.amazonaws.services.ec2.model.CreateSecurityGroupRequest;
+import com.amazonaws.services.ec2.model.CreateSecurityGroupResult;
+import com.amazonaws.services.ec2.model.CreateTagsRequest;
+import com.amazonaws.services.ec2.model.DescribeSecurityGroupsRequest;
+import com.amazonaws.services.ec2.model.DescribeSecurityGroupsResult;
+import com.amazonaws.services.ec2.model.Filter;
 import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientBuilder;
@@ -71,6 +80,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -96,6 +106,7 @@ public class LambdaBroker {
     private AWSLambda lambdaClient;
     private AWSKMS kmsClient;
     private AmazonIdentityManagement iamClient;
+    private AmazonEC2 ec2Client;
     private CommonTaskProperties taskProperties;
     private AWSCredentials credentials;
     private Regions region;
@@ -130,6 +141,12 @@ public class LambdaBroker {
             .withClientConfiguration(config)
             .withRegion(region)
             .build();
+
+        this.ec2Client = AmazonEC2ClientBuilder.standard()
+            .withCredentials(new AWSStaticCredentialsProvider(credentials))
+            .withClientConfiguration(config)
+            .withRegion(region)
+            .build();
     }
 
     public void brokerLambda() throws IOException {
@@ -139,6 +156,9 @@ public class LambdaBroker {
         tags.add(
             new Tag().withTagKey(this.taskProperties.getAppTagKey()).withTagValue(this.configuration.getAppName()));
         Map<String, String> tagMap = tags.stream().collect(Collectors.toMap(Tag::getTagKey, Tag::getTagValue));
+
+        // Create/Update custom security group if needed
+        String customSecurityGroupId = getCustomSecurityGroupId(tagMap);
 
         String functionArn;
         try {
@@ -185,26 +205,9 @@ public class LambdaBroker {
             throw new AwsExecException(ex);
         }
 
-        VpcConfig vpcConfig = new VpcConfig();
-        if (this.configuration.getSubnetIds() != null) {
-            vpcConfig.setSubnetIds(this.configuration.getSubnetIds());
-        }
-        if (this.configuration.getSecurityGroupIds() != null) {
-            vpcConfig.setSecurityGroupIds(this.configuration.getSecurityGroupIds());
-        }
-
-        HashMap<String, String> environmentMap = new HashMap<>();
-        if (this.configuration.getEnvironment() != null) {
-            for (KeyValuePair envVar : this.configuration.getEnvironment()) {
-                environmentMap.put(envVar.getName(), envVar.getValue());
-            }
-        }
-        Environment environment = new Environment().withVariables(environmentMap);
-
-        this.buildLogger.addLogEntry("... VPC Configuration: " + vpcConfig);
-
+        VpcConfig vpcConfig = getVpcConfig(customSecurityGroupId);
+        Environment environment = getEnvironment();
         String kmsKeyArn = brokerKms(tags);
-
         if (functionArn == null && functionCode != null) {
             buildLogger.addLogEntry("Pushing new Lambda");
 
@@ -257,8 +260,7 @@ public class LambdaBroker {
         try {
             buildLogger.addLogEntry("... Resetting execution permissions");
             List<String> sidsToRemove = getExistingExecutionPermissionSids();
-
-            if (sidsToRemove != null) {
+            if (!sidsToRemove.isEmpty()) {
                 for (String sid: sidsToRemove) {
                     RemovePermissionRequest removeExistingPerms = new RemovePermissionRequest()
                         .withFunctionName(this.configuration.getFunctionName())
@@ -272,16 +274,14 @@ public class LambdaBroker {
         }
 
         List<LambdaPermission> permissions = getExecutionPermission();
-
-        if (permissions != null) {
-
-
+        if (!permissions.isEmpty()) {
             buildLogger.addLogEntry("Adding new execution permission");
 
             for (int i = 0; i < permissions.size(); i++) {
                 LambdaPermission permission = permissions.get(i);
                 if (permission != null) {
-                    String sid = Optional.ofNullable(permission.getSid()).orElse(this.configuration.getFunctionName() + "-InvokePermission-" + i);
+                    String sid = Optional.ofNullable(permission.getSid())
+                        .orElse(this.configuration.getFunctionName() + "-InvokePermission-" + i);
                     AddPermissionRequest permissionRequest = new AddPermissionRequest()
                         .withFunctionName(this.configuration.getFunctionName())
                         .withAction(permission.getAction())
@@ -304,20 +304,88 @@ public class LambdaBroker {
         buildLogger.addLogEntry(output.getConfiguration().toString());
     }
 
+    private Environment getEnvironment() {
+        HashMap<String, String> environmentMap = new HashMap<>();
+        if (this.configuration.getEnvironment() != null) {
+            for (KeyValuePair envVar: this.configuration.getEnvironment()) {
+                environmentMap.put(envVar.getName(), envVar.getValue());
+            }
+        }
+        return new Environment().withVariables(environmentMap);
+    }
+
+    private VpcConfig getVpcConfig(String customSecurityGroupId) {
+        VpcConfig vpcConfig = new VpcConfig();
+        if (this.configuration.getSubnetIds() != null) {
+            vpcConfig.setSubnetIds(this.configuration.getSubnetIds());
+        }
+        if (customSecurityGroupId != null) {
+            vpcConfig.setSecurityGroupIds(Arrays.asList(customSecurityGroupId));
+        } else if (this.configuration.getSecurityGroupIds() != null) {
+            vpcConfig.setSecurityGroupIds(this.configuration.getSecurityGroupIds());
+        }
+        this.buildLogger.addLogEntry("VPC Configuration: " + vpcConfig);
+        return vpcConfig;
+    }
+
+    private String getCustomSecurityGroupId(Map<String, String> tagMap) {
+        // Create a custom security group if needed
+        String customSecurityGroupId = null;
+        if (this.configuration.getCustomSecurityGroup() != null) {
+            try {
+                DescribeSecurityGroupsResult describeSecurityGroupsResult = ec2Client
+                    .describeSecurityGroups(new DescribeSecurityGroupsRequest()
+                        .withFilters(
+                            new Filter("vpc-id").withValues(this.configuration.getCustomSecurityGroup().getVpcId()),
+                            new Filter("group-name").withValues(this.configuration.getFunctionName())));
+                if (describeSecurityGroupsResult.getSecurityGroups().size() == 1) {
+                    customSecurityGroupId = describeSecurityGroupsResult.getSecurityGroups().get(0).getGroupId();
+                    this.buildLogger.addLogEntry("Security group found: " + customSecurityGroupId);
+                } else {
+                    this.buildLogger.addLogEntry(
+                        "Creating security group with name " + this.configuration.getFunctionName());
+
+                    CreateSecurityGroupResult createSecurityGroupResult = ec2Client.createSecurityGroup(
+                        new CreateSecurityGroupRequest().withGroupName(this.configuration.getFunctionName())
+                            .withDescription(
+                                "Security group for the " + this.configuration.getFunctionName() + " Lambda function")
+                            .withVpcId(this.configuration.getCustomSecurityGroup().getVpcId()));
+
+                    customSecurityGroupId = createSecurityGroupResult.getGroupId();
+                    this.buildLogger.addLogEntry("... Security group created. ID = " + customSecurityGroupId);
+                }
+            } catch (AmazonEC2Exception ex) {
+                throw new AwsExecException("Error getting security group", ex);
+            }
+
+            this.buildLogger.addLogEntry("... Updating tags");
+            ec2Client.createTags(new CreateTagsRequest()
+                .withResources(customSecurityGroupId)
+                .withTags(tagMap.entrySet().stream()
+                    .map(entry -> new com.amazonaws.services.ec2.model.Tag().withKey(entry.getKey())
+                        .withValue(entry.getValue()))
+                    .collect(Collectors.toList())));
+        }
+        return customSecurityGroupId;
+    }
+
     private List<String> getExistingExecutionPermissionSids() {
-        final GetPolicyResult executionPolicyResult = lambdaClient.getPolicy(new GetPolicyRequest().withFunctionName(this.configuration.getFunctionName()));
+        final GetPolicyResult executionPolicyResult = lambdaClient
+            .getPolicy(new GetPolicyRequest().withFunctionName(this.configuration.getFunctionName()));
         if (executionPolicyResult == null) {
             buildLogger.addLogEntry("Unable to find existing execution policy");
-            return null;
+            return Collections.emptyList();
         }
         try {
-            final JsonNode executionStatements = this.mapper.readTree(executionPolicyResult.getPolicy()).get("Statement");
-            final TypeReference<List<JsonNode>> listRef = new TypeReference<List<JsonNode>>(){};
+            final JsonNode executionStatements = this.mapper.readTree(executionPolicyResult.getPolicy())
+                .get("Statement");
+            final TypeReference<List<JsonNode>> listRef = new TypeReference<List<JsonNode>>() {};
             List<JsonNode> statements = mapper.readValue(executionStatements.toString(), listRef);
             return statements.stream().map(it -> it.get("Sid").textValue()).collect(Collectors.toList());
         } catch (IOException e) {
+            LOGGER.debug("Unable to parse existing execution policy", e);
             buildLogger.addLogEntry("Unable to parse existing execution policy");
-            return null;
+            return Collections.emptyList();
         }
     }
 
@@ -328,26 +396,26 @@ public class LambdaBroker {
                     .addLogEntry(String.format("... Using %s for execution permissions", LAMBDA_EXECUTION_PERMISSION));
                 String template = fileUtil.findFile(LAMBDA_EXECUTION_PERMISSION, false);
                 String mappedPermissionString = this.context.getBambooPropertyHandler().mapInProperties(template);
-                final TypeReference<List<LambdaPermission>> listRef = new TypeReference<List<LambdaPermission>>(){};
+                final TypeReference<List<LambdaPermission>> listRef = new TypeReference<List<LambdaPermission>>() {};
                 try {
                     return this.mapper.readValue(mappedPermissionString, listRef);
-                }
-                catch (JsonMappingException jsonEx) {
-                    buildLogger.addErrorLogEntry("DEPRECATION WARNING: Singleton permissions are deprecated, please pass execution permissions as an array.");
-                    LambdaPermission singletonPermission = this.mapper.readValue(mappedPermissionString, LambdaPermission.class);
+                } catch (JsonMappingException jsonEx) {
+                    buildLogger.addErrorLogEntry(
+                        "DEPRECATION WARNING: Singleton permissions are deprecated, please pass execution permissions as an array.");
+                    LambdaPermission singletonPermission = this.mapper
+                        .readValue(mappedPermissionString, LambdaPermission.class);
                     return Collections.singletonList(singletonPermission);
-                }
-                catch (Exception ex) {
+                } catch (Exception ex) {
                     buildLogger.addErrorLogEntry("Error parsing permissions", ex);
                     throw new AwsExecException(ex);
                 }
             }
         } catch (IOException ex) {
             buildLogger.addErrorLogEntry("Error getting execution permissions", ex);
-            return null;
+            return Collections.emptyList();
         }
 
-        return null;
+        return Collections.emptyList();
     }
 
     private String brokerKms(List<Tag> tags) {

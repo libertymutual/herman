@@ -22,6 +22,10 @@ import java.util.Properties;
 
 public class ConfigurationUtil {
 
+    private ConfigurationUtil() {
+        throw new IllegalAccessError("Utility class");
+    }
+
     private static final String CONFIG_FILE = "properties.yml";
     private static final String ECR_POLICY_FILE = "ecr-policy.json";
     private static final String KMS_POLICY_FILE = "kms-policy.json";
@@ -33,7 +37,7 @@ public class ConfigurationUtil {
 
     public static String getHermanConfigurationAsString(AWSCredentials sessionCredentials, HermanLogger hermanLogger, String customConfigurationBucket, Regions region) {
         try {
-            String hermanConfigBucket = getConfigurationBucketName(sessionCredentials, customConfigurationBucket);
+            String hermanConfigBucket = getConfigurationBucketName(sessionCredentials, customConfigurationBucket, region);
             hermanLogger.addLogEntry(String.format("... Using task config from S3 bucket %s: %s", hermanConfigBucket, CONFIG_FILE));
 
             AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
@@ -49,7 +53,7 @@ public class ConfigurationUtil {
 
     public static String getECRPolicyAsString(AWSCredentials sessionCredentials, HermanLogger hermanLogger, String customConfigurationBucket, Regions region) {
         try {
-            String configBucket = getConfigurationBucketName(sessionCredentials, customConfigurationBucket);
+            String configBucket = getConfigurationBucketName(sessionCredentials, customConfigurationBucket, region);
             hermanLogger.addLogEntry(String.format("... Using ECR policy file from S3 bucket %s: %s", configBucket, ECR_POLICY_FILE));
 
             AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
@@ -65,7 +69,7 @@ public class ConfigurationUtil {
 
     public static String getKMSPolicyAsString(AWSCredentials sessionCredentials, HermanLogger hermanLogger, String customConfigurationBucket, Regions region) {
         try {
-            String configBucket = getConfigurationBucketName(sessionCredentials, customConfigurationBucket);
+            String configBucket = getConfigurationBucketName(sessionCredentials, customConfigurationBucket, region);
             hermanLogger.addLogEntry(String.format("... Using KMS policy file from S3 bucket %s: %s", configBucket, KMS_POLICY_FILE));
 
             AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
@@ -79,8 +83,7 @@ public class ConfigurationUtil {
         }
     }
 
-
-    private static String getConfigurationBucketName(AWSCredentials sessionCredentials, String customConfigurationBucket)
+    private static String getConfigurationBucketName(AWSCredentials sessionCredentials, String customConfigurationBucket, Regions region)
         throws IOException {
         AWSSecurityTokenService stsClient = AWSSecurityTokenServiceClientBuilder.standard()
             .withCredentials(new AWSStaticCredentialsProvider(sessionCredentials))
@@ -96,7 +99,10 @@ public class ConfigurationUtil {
         if (customConfigurationBucket != null) {
             hermanConfigBucket = customConfigurationBucket;
         } else {
-            hermanConfigBucket = String.format("herman-configuration-%s-%s", account, versionProperties.getProperty("version").toLowerCase());
+            hermanConfigBucket = String.format("herman-configuration-%s-%s-%s",
+                account,
+                region.getName(),
+                versionProperties.getProperty("version").toLowerCase());
         }
         return hermanConfigBucket;
     }

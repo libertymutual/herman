@@ -1,6 +1,10 @@
 package com.libertymutualgroup.herman.aws.ecs.loadbalancing;
 
-import com.amazonaws.services.cloudformation.AmazonCloudFormation;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.amazonaws.services.elasticloadbalancingv2.AmazonElasticLoadBalancing;
 import com.amazonaws.services.elasticloadbalancingv2.model.Action;
 import com.amazonaws.services.elasticloadbalancingv2.model.ActionTypeEnum;
@@ -28,7 +32,6 @@ import com.amazonaws.services.elasticloadbalancingv2.model.SetSecurityGroupsRequ
 import com.amazonaws.services.elasticloadbalancingv2.model.SetSubnetsRequest;
 import com.amazonaws.services.elasticloadbalancingv2.model.Tag;
 import com.amazonaws.services.elasticloadbalancingv2.model.TargetGroup;
-import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
 import com.libertymutualgroup.herman.aws.ecs.EcsDefinitionParser;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
@@ -36,23 +39,17 @@ import com.libertymutualgroup.herman.aws.ecs.TaskContextPropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.logging.SysoutLogger;
-import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
-import org.apache.commons.io.FileUtils;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-
+import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import org.apache.commons.io.FileUtils;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 public class EcsLoadBalancerV2HandlerTest {
 
@@ -60,10 +57,6 @@ public class EcsLoadBalancerV2HandlerTest {
 
     @Mock
     AmazonElasticLoadBalancing elbClient;
-    @Mock
-    AmazonIdentityManagement iamClient;
-    @Mock
-    AmazonCloudFormation cftClient;
     @Mock
     CertHandler certHandler;
     @Mock
@@ -75,7 +68,7 @@ public class EcsLoadBalancerV2HandlerTest {
     public void setup() {
         MockitoAnnotations.initMocks(this);
 
-        CommonTaskProperties taskProperties = new CommonTaskProperties()
+        ECSPushTaskProperties taskProperties = new ECSPushTaskProperties()
             .withCompany("lm")
             .withOrg("LMB")
             .withSbu("CI");
@@ -83,7 +76,7 @@ public class EcsLoadBalancerV2HandlerTest {
         handler = new EcsLoadBalancerV2Handler(elbClient, certHandler, dnsRegistrar, logger, taskProperties);
 
         when(certHandler.deriveCert("HTTPS", "np-lmb.lmig.com", "my-app-dev"))
-            .thenReturn(new DeriveCertResult().withCertArn("arn:somecert"));
+            .thenReturn(new SSLCertificate().withArn("arn:somecert"));
 
     }
 
@@ -94,7 +87,9 @@ public class EcsLoadBalancerV2HandlerTest {
         EcsPushDefinition pushDef = loadTemplate("template.yml");
 
         LoadBalancer balancer = new LoadBalancer().withDNSName("https://some.aws.url")
-            .withLoadBalancerArn("arn:balancer");
+            .withLoadBalancerArn("arn:balancer")
+            .withCanonicalHostedZoneId("123")
+            .withScheme("internal");
         DescribeLoadBalancersResult balancersResult = new DescribeLoadBalancersResult().withLoadBalancers(balancer);
         when(elbClient.describeLoadBalancers(any(DescribeLoadBalancersRequest.class))).thenReturn(balancersResult);
 
@@ -111,10 +106,11 @@ public class EcsLoadBalancerV2HandlerTest {
 
         //THEN
         // DNS Registered
-        verify(dnsRegistrar)
-            .registerDns(pushDef.getService().getUrlPrefixOverride() + "." + pushDef.getService().getUrlSuffix(),
-                "https://some.aws.url",
-                pushDef.getService().getUrlPrefixOverride(), meta.getClusterCftStackTags());
+        verify(dnsRegistrar).registerDns(
+            pushDef.getAppName(),
+            "application",
+            "HTTPS",
+            pushDef.getService().getUrlPrefixOverride() + "." + pushDef.getService().getUrlSuffix());
 
         // Update Target Group 
         ModifyTargetGroupRequest modifyTargetGroupRequest = new ModifyTargetGroupRequest()
@@ -167,7 +163,9 @@ public class EcsLoadBalancerV2HandlerTest {
         when(elbClient.createTargetGroup(any(CreateTargetGroupRequest.class))).thenReturn(createTargetGroupResult);
 
         LoadBalancer balancer = new LoadBalancer().withDNSName("https://some.aws.url")
-            .withLoadBalancerArn("arn:balancer");
+            .withLoadBalancerArn("arn:balancer")
+            .withCanonicalHostedZoneId("123")
+            .withScheme("internal");
         CreateLoadBalancerResult balancerResult = new CreateLoadBalancerResult().withLoadBalancers(balancer);
         when(elbClient.createLoadBalancer(any(CreateLoadBalancerRequest.class))).thenReturn(balancerResult);
 
@@ -182,10 +180,11 @@ public class EcsLoadBalancerV2HandlerTest {
 
         //THEN
         // DNS Registered
-        verify(dnsRegistrar)
-            .registerDns(pushDef.getService().getUrlPrefixOverride() + "." + pushDef.getService().getUrlSuffix(),
-                "https://some.aws.url",
-                pushDef.getService().getUrlPrefixOverride(), meta.getClusterCftStackTags());
+        verify(dnsRegistrar).registerDns(
+            pushDef.getAppName(),
+            "application",
+            "HTTPS",
+            pushDef.getService().getUrlPrefixOverride() + "." + pushDef.getService().getUrlSuffix());
 
         CreateTargetGroupRequest ctgr = new CreateTargetGroupRequest().withName(pushDef.getAppName())
             .withHealthCheckIntervalSeconds(pushDef.getService().getHealthCheck().getInterval())

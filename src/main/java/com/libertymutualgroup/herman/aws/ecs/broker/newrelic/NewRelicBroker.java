@@ -77,8 +77,7 @@ public class NewRelicBroker {
         InvokeResult invokeResult = this.lambdaClient.invoke(dnsBrokerInvokeRequest);
 
 
-        if (isSuccessful(invokeResult.getStatusCode()) && StringUtils
-            .isEmpty(invokeResult.getFunctionError())) {
+        if (isSuccessful(invokeResult.getStatusCode()) && StringUtils.isEmpty(invokeResult.getFunctionError())) {
             String nrBrokerResponseJson = new String(invokeResult.getPayload().array(), Charset.forName("UTF-8"));
 
             NewRelicBrokerResponse response;
@@ -103,7 +102,8 @@ public class NewRelicBroker {
             addNewRelicLinkToLogs(response.getApplicationId());
         } else {
             buildLogger.addLogEntry("... Error thrown by the NR Broker given payload: " + payload);
-            throw new RuntimeException("Error invoking the New Relic Broker: " + invokeResult);
+            String nrBrokerResponseJson = new String(invokeResult.getPayload().array(), Charset.forName("UTF-8"));
+            throw new RuntimeException("Error invoking the New Relic Broker: " + nrBrokerResponseJson);
         }
     }
 

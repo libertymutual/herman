@@ -15,15 +15,13 @@
  */
 package com.libertymutualgroup.herman.aws.ecs.loadbalancing;
 
-import com.amazonaws.services.cloudformation.model.Tag;
 import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.model.InvocationType;
 import com.amazonaws.services.lambda.model.InvokeRequest;
 import com.amazonaws.services.lambda.model.InvokeResult;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.libertymutualgroup.herman.aws.ecs.broker.domain.HermanBrokerStatus;
-import com.libertymutualgroup.herman.aws.ecs.broker.domain.HermanBrokerUpdate;
+import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import org.apache.commons.lang3.StringUtils;
 
@@ -44,51 +42,47 @@ public class DnsRegistrar {
         this.dnsLambda = dnsLambda;
     }
 
-    public void registerDns(String vanityUrl, String awsUrl, String appName, List<Tag> tags) {
-        String payload = getPayload(vanityUrl, awsUrl, appName, tags);
-        InvokeRequest dnsBrokerInvokeRequest = new InvokeRequest()
-            .withFunctionName(dnsLambda)
-            .withInvocationType(InvocationType.RequestResponse)
-            .withPayload(payload);
+    public void registerDns(String elbName, String elbType, String protocol, String registeredUrl) {
+        DnsBrokerRequest dnsBrokerRequest = new DnsBrokerRequest()
+            .withElbName(elbName)
+            .withElbType(elbType)
+            .withProtocol(protocol)
+            .withVanityUrl(registeredUrl);
         buildLogger.addLogEntry("... Invoke request sent to the DNS Broker");
+        InvokeResult invokeResult = this.lambdaClient.invoke(getInvokeRequest(dnsBrokerRequest));
 
-        InvokeResult invokeResult = this.lambdaClient.invoke(dnsBrokerInvokeRequest);
-        if (isSuccessful(invokeResult.getStatusCode()) && StringUtils
-            .isEmpty(invokeResult.getFunctionError())) {
+        if (isSuccessful(invokeResult.getStatusCode()) && StringUtils.isEmpty(invokeResult.getFunctionError())) {
             String dnsBrokerUpdatesJson = new String(invokeResult.getPayload().array(), Charset.forName("UTF-8"));
-            List<HermanBrokerUpdate> updates;
+            List<String> updates;
             try {
                 updates = new ObjectMapper()
-                    .readValue(dnsBrokerUpdatesJson, new TypeReference<List<HermanBrokerUpdate>>() {});
+                    .readValue(dnsBrokerUpdatesJson, new TypeReference<List<String>>() {});
             } catch (Exception e) {
                 throw new RuntimeException("Unable to parse broker updates from: " + dnsBrokerUpdatesJson, e);
             }
 
-            updates.stream().forEach(update -> {
+            updates.stream().forEach(update ->
                 buildLogger
                     .addLogEntry(
-                        String.format("... DNS Broker: [%s] %s", update.getStatus(), update.getMessage()));
-
-                if (HermanBrokerStatus.ERROR.equals(update.getStatus())) {
-                    throw new RuntimeException("DNS registration error");
-                }
-            });
+                        String.format("... DNS Broker: %s", update))
+            );
         } else {
-            buildLogger.addLogEntry("... Error thrown by the DNS Broker given payload: " + payload);
-            throw new RuntimeException("Error invoking DNS Broker: " + invokeResult);
+            buildLogger.addLogEntry("... Error thrown by the DNS Broker given payload: " + dnsBrokerRequest);
+            String brokerResponseJson = new String(invokeResult.getPayload().array(), Charset.forName("UTF-8"));
+            throw new RuntimeException("Error invoking DNS Broker: " + brokerResponseJson);
         }
     }
 
-    private String getPayload(String vanityUrl, String awsUrl, String appName, List<Tag> tags) {
+    private InvokeRequest getInvokeRequest(DnsBrokerRequest dnsBrokerRequest) {
+        InvokeRequest dnsBrokerInvokeRequest;
         try {
-            DnsBrokerRequest dnsBrokerRequest = new DnsBrokerRequest()
-                .withAppName(appName)
-                .withAwsUrl(awsUrl)
-                .withVanityUrl(vanityUrl)
-                .withTags(tags);
-            return new ObjectMapper().writeValueAsString(dnsBrokerRequest);
+            dnsBrokerInvokeRequest = new InvokeRequest()
+                .withFunctionName(dnsLambda)
+                .withInvocationType(InvocationType.RequestResponse)
+                .withPayload(new ObjectMapper().writeValueAsString(dnsBrokerRequest));
         } catch (Exception ex) {
-            throw new RuntimeException("Error getting DNS broker payload", ex);
+            throw new AwsExecException("Error building invoke request", ex);
         }
+        return dnsBrokerInvokeRequest;
     }
 }

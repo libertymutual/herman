@@ -15,8 +15,10 @@
  */
 package com.libertymutualgroup.herman.task.cft;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CFTPushTaskProperties extends CommonTaskProperties {
 
     private String cftPushVariableBrokerLambda;

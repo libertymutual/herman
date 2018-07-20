@@ -1,5 +1,8 @@
 package com.libertymutualgroup.herman.aws.ecs;
 
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.when;
+
 import com.amazonaws.services.cloudformation.AmazonCloudFormation;
 import com.amazonaws.services.cloudformation.model.DescribeStackResourcesRequest;
 import com.amazonaws.services.cloudformation.model.DescribeStackResourcesResult;
@@ -10,27 +13,19 @@ import com.amazonaws.services.cloudformation.model.Stack;
 import com.amazonaws.services.cloudformation.model.StackResource;
 import com.amazonaws.services.cloudformation.model.Tag;
 import com.amazonaws.services.ec2.AmazonEC2;
-import com.amazonaws.services.ec2.model.DescribeSecurityGroupsRequest;
-import com.amazonaws.services.ec2.model.DescribeSecurityGroupsResult;
 import com.amazonaws.services.ec2.model.DescribeSubnetsResult;
 import com.amazonaws.services.ec2.model.DescribeVpcsResult;
-import com.amazonaws.services.ec2.model.Filter;
-import com.amazonaws.services.ec2.model.SecurityGroup;
 import com.amazonaws.services.ec2.model.Subnet;
 import com.amazonaws.services.ec2.model.Vpc;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterIntrospector;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.logging.SysoutLogger;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.when;
 
 public class EcsClusterIntrospectorTest {
 
@@ -90,14 +85,6 @@ public class EcsClusterIntrospectorTest {
         Subnet subnet = new Subnet().withTags(subnetTag).withVpcId("vpc12345");
         when(ec2Client.describeSubnets()).thenReturn(new DescribeSubnetsResult().withSubnets(subnet));
 
-        Filter filter1 = new Filter().withName("tag:Name").withValues("aws-shared-external-elb-nonprod-1");
-        when(ec2Client.describeSecurityGroups(new DescribeSecurityGroupsRequest().withFilters(filter1))).thenReturn(
-            new DescribeSecurityGroupsResult().withSecurityGroups(new SecurityGroup().withGroupId("sg99998")));
-
-        Filter filter2 = new Filter().withName("tag:Name").withValues("aws-shared-external-elb-nonprod-2");
-        when(ec2Client.describeSecurityGroups(new DescribeSecurityGroupsRequest().withFilters(filter2))).thenReturn(
-            new DescribeSecurityGroupsResult().withSecurityGroups(new SecurityGroup().withGroupId("sg99999")));
-
         //WHEN
         EcsClusterMetadata meta = introspector.introspect(stackName);
 
@@ -112,7 +99,6 @@ public class EcsClusterIntrospectorTest {
         assertEquals("LMB", meta.getNewrelicSbuTag());
         assertEquals("sg34567", meta.getRdsSecurityGroup());
         assertEquals("vpc12345", meta.getVpcId());
-        assertEquals(2, meta.getAkamaiSecurityGroup().size());
         assertEquals(1, meta.getElbSecurityGroups().size());
         assertEquals(1, meta.getElbSubnets().size());
     }

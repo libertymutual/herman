@@ -74,9 +74,11 @@ public class S3Broker {
             .withClientConfiguration(BambooCredentialsHandler.getConfiguration()).withRegion(context.getRegion()).build();
 
         TagSet tags = new TagSet();
-        tags.setTag(taskProperties.getSbuTagKey(), configuration.getSbu());
-        tags.setTag(taskProperties.getOrgTagKey(), configuration.getOrg());
-        tags.setTag(taskProperties.getAppTagKey(), configuration.getAppName());
+        if (taskProperties != null) {
+            tags.setTag(taskProperties.getSbuTagKey(), configuration.getSbu());
+            tags.setTag(taskProperties.getOrgTagKey(), configuration.getOrg());
+            tags.setTag(taskProperties.getAppTagKey(), configuration.getAppName());
+        }
         String policy = null;
 
         if (configuration.getPolicyName() != null) {
@@ -96,10 +98,12 @@ public class S3Broker {
     public void brokerBucketFromEcsPush(AmazonS3 client, S3Bucket bucket, String bucketPolicy,
         EcsClusterMetadata clusterMetadata, EcsPushDefinition definition) {
         TagSet tags = new TagSet();
-        tags.setTag(taskProperties.getSbuTagKey(), clusterMetadata.getNewrelicSbuTag());
-        tags.setTag(taskProperties.getOrgTagKey(), clusterMetadata.getNewrelicOrgTag());
-        tags.setTag(taskProperties.getAppTagKey(), definition.getAppName());
-        tags.setTag(taskProperties.getClusterTagKey(), clusterMetadata.getClusterId());
+        if (taskProperties != null) {
+            tags.setTag(taskProperties.getSbuTagKey(), clusterMetadata.getNewrelicSbuTag());
+            tags.setTag(taskProperties.getOrgTagKey(), clusterMetadata.getNewrelicOrgTag());
+            tags.setTag(taskProperties.getAppTagKey(), definition.getAppName());
+            tags.setTag(taskProperties.getClusterTagKey(), clusterMetadata.getClusterId());
+        }
         S3InjectConfiguration configuration = new S3InjectConfiguration();
         configuration.setAppName(bucket.getName());
         configuration.setSbu(clusterMetadata.getNewrelicSbuTag());

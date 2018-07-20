@@ -15,21 +15,24 @@
  */
 package com.libertymutualgroup.herman.task.ecs;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.libertymutualgroup.herman.aws.ecs.loadbalancing.SSLCertificate;
 import com.libertymutualgroup.herman.aws.ecs.logging.SplunkInstance;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
 import com.libertymutualgroup.herman.task.newrelic.NewRelicBrokerProperties;
-
+import java.util.ArrayList;
 import java.util.List;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ECSPushTaskProperties extends CommonTaskProperties {
 
     private NewRelicBrokerProperties newRelic;
-    private List<SSLCertificate> sslCertificates;
+    private List<SSLCertificate> sslCertificates = new ArrayList<>();
     private String ecsConsoleLinkPattern;
-    private List<SplunkInstance> splunkInstances;
+    private List<SplunkInstance> splunkInstances = new ArrayList<>();
     private String rdsCredentialBrokerImage;
     private String dnsBrokerLambda;
+    private List<String> externalElbSecurityGroups = new ArrayList<>();
 
     public NewRelicBrokerProperties getNewRelic() {
         return newRelic;
@@ -80,6 +83,38 @@ public class ECSPushTaskProperties extends CommonTaskProperties {
         this.dnsBrokerLambda = dnsBrokerLambda;
     }
 
+    public List<String> getExternalElbSecurityGroups() {
+        return externalElbSecurityGroups;
+    }
+
+    public void setExternalElbSecurityGroups(List<String> externalElbSecurityGroups) {
+        this.externalElbSecurityGroups = externalElbSecurityGroups;
+    }
+
+    @Override
+    public ECSPushTaskProperties withCompany(final String company) {
+        setCompany(company);
+        return this;
+    }
+
+    @Override
+    public ECSPushTaskProperties withSbu(final String sbu) {
+        setSbu(sbu);
+        return this;
+    }
+
+    @Override
+    public ECSPushTaskProperties withOrg(final String org) {
+        setOrg(org);
+        return this;
+    }
+
+    @Override
+    public ECSPushTaskProperties withEngine(final String engine) {
+        setEngine(engine);
+        return this;
+    }
+
     public ECSPushTaskProperties withNewRelic(
         final NewRelicBrokerProperties newRelic) {
         this.newRelic = newRelic;
@@ -113,6 +148,12 @@ public class ECSPushTaskProperties extends CommonTaskProperties {
         return this;
     }
 
+    public ECSPushTaskProperties withExternalElbSecurityGroups(
+        final List<String> externalElbSecurityGroups) {
+        this.externalElbSecurityGroups = externalElbSecurityGroups;
+        return this;
+    }
+
     @Override
     public String toString() {
         return "ECSPushTaskProperties{" +
@@ -122,30 +163,7 @@ public class ECSPushTaskProperties extends CommonTaskProperties {
             ", splunkInstances=" + splunkInstances +
             ", rdsCredentialBrokerImage='" + rdsCredentialBrokerImage + '\'' +
             ", dnsBrokerLambda='" + dnsBrokerLambda + '\'' +
+            ", externalElbSecurityGroups=" + externalElbSecurityGroups +
             "} " + super.toString();
-    }
-
-    @Override
-    public ECSPushTaskProperties withCompany(final String company) {
-        setCompany(company);
-        return this;
-    }
-
-    @Override
-    public ECSPushTaskProperties withSbu(final String sbu) {
-        setSbu(sbu);
-        return this;
-    }
-
-    @Override
-    public ECSPushTaskProperties withOrg(final String org) {
-        setOrg(org);
-        return this;
-    }
-
-    @Override
-    public ECSPushTaskProperties withEngine(final String engine) {
-        setEngine(engine);
-        return this;
     }
 }

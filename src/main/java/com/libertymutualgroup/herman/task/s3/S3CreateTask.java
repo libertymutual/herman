@@ -77,7 +77,8 @@ public class S3CreateTask extends AbstractDeploymentTask {
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
             return objectMapper.readValue(s3CreateTaskPropertiesYml, CommonTaskProperties.class);
         } catch (Exception ex) {
-            throw new RuntimeException("Error getting S3 Create Task Task Properties", ex);
+            hermanLogger.addErrorLogEntry("Error getting S3 Create Task Task Properties. Continuing...", ex);
+            return null;
         }
     }
 }

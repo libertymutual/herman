@@ -40,13 +40,13 @@ public class CliPropertyHandler implements PropertyHandler {
 
     private Set<String> propertyKeysUsed = new HashSet<>();
 
-    private HermanLogger logger;
+    private HermanLogger hermanLogger;
     private String environmentName;
     private String rootDirectory;
     private Map<String, String> customVariables;
 
-    public CliPropertyHandler(HermanLogger logger, String environmentName, String rootDirectory, Map<String, String> customVariables) {
-        this.logger = logger;
+    public CliPropertyHandler(HermanLogger hermanLogger, String environmentName, String rootDirectory, Map<String, String> customVariables) {
+        this.hermanLogger = hermanLogger;
         this.environmentName = environmentName;
         this.rootDirectory = rootDirectory;
         this.customVariables = customVariables;
@@ -132,7 +132,7 @@ public class CliPropertyHandler implements PropertyHandler {
     }
 
     private void importPropFiles() {
-        FileUtil util = new FileUtil(this.rootDirectory, this.logger);
+        FileUtil util = new FileUtil(this.rootDirectory, this.hermanLogger);
         String envProps = util.findFile(this.environmentName + ".properties", true);
 
         if (props != null && envProps != null) {
@@ -141,7 +141,7 @@ public class CliPropertyHandler implements PropertyHandler {
                 props.load(propStream);
             } catch (IOException e) {
                 LOGGER.debug("Error loading properties file: " + this.environmentName, e);
-                this.logger.addLogEntry("Error loading " + this.environmentName + ".properties: " + e.getMessage());
+                this.hermanLogger.addLogEntry("Error loading " + this.environmentName + ".properties: " + e.getMessage());
             }
         }
     }

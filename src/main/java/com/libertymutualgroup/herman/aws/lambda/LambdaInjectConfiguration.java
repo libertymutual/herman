@@ -15,6 +15,7 @@
  */
 package com.libertymutualgroup.herman.aws.lambda;
 
+import com.amazonaws.services.ec2.model.SecurityGroup;
 import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.libertymutualgroup.herman.aws.ecs.broker.iam.IamAppDefinition;
 import com.libertymutualgroup.herman.aws.ecs.broker.kms.KmsAppDefinition;
@@ -29,12 +30,21 @@ public class LambdaInjectConfiguration implements IamAppDefinition, KmsAppDefini
     private Integer memorySize = 128;
     private String runtime;
     private Integer timeout = 5;
-    private List<String> subnetIds;
-    private List<String> securityGroupIds;
     private String iamPolicy;
     private String assumeRolePolicy;
     private String useKms = "false";
     private String kmsKeyName;
+    private SecurityGroup customSecurityGroup;
+    private List<String> subnetIds;
+    private List<String> securityGroupIds;
+
+    public SecurityGroup getCustomSecurityGroup() {
+        return customSecurityGroup;
+    }
+
+    public void setCustomSecurityGroup(SecurityGroup customSecurityGroup) {
+        this.customSecurityGroup = customSecurityGroup;
+    }
 
     public String getFunctionName() {
         return functionName;
@@ -133,6 +143,14 @@ public class LambdaInjectConfiguration implements IamAppDefinition, KmsAppDefini
         this.kmsKeyName = kmsKeyName;
     }
 
+    public String getAssumeRolePolicy() {
+        return assumeRolePolicy;
+    }
+
+    public void setAssumeRolePolicy(String assumeRolePolicy) {
+        this.assumeRolePolicy = assumeRolePolicy;
+    }
+
     public LambdaInjectConfiguration withFunctionName(final String functionName) {
         this.functionName = functionName;
         return this;
@@ -194,35 +212,33 @@ public class LambdaInjectConfiguration implements IamAppDefinition, KmsAppDefini
         return this;
     }
 
-    public String getAssumeRolePolicy() {
-        return assumeRolePolicy;
-    }
-
-    public void setAssumeRolePolicy(String assumeRolePolicy) {
-        this.assumeRolePolicy = assumeRolePolicy;
-    }
-
-    @Override
-    public String toString() {
-        return "LambdaInjectConfiguration{" +
-                "functionName='" + functionName + '\'' +
-                ", zipFileName='" + zipFileName + '\'' +
-                ", environment=" + environment +
-                ", handler='" + handler + '\'' +
-                ", memorySize=" + memorySize +
-                ", runtime='" + runtime + '\'' +
-                ", timeout=" + timeout +
-                ", subnetIds=" + subnetIds +
-                ", securityGroupIds=" + securityGroupIds +
-                ", iamPolicy='" + iamPolicy + '\'' +
-                ", assumeRolePolicy='" + assumeRolePolicy + '\'' +
-                ", useKms='" + useKms + '\'' +
-                ", kmsKeyName='" + kmsKeyName + '\'' +
-                '}';
+    public LambdaInjectConfiguration withCustomSecurityGroup(final SecurityGroup customSecurityGroup) {
+        this.customSecurityGroup = customSecurityGroup;
+        return this;
     }
 
     @Override
     public String getAppName() {
         return functionName;
+    }
+
+    @Override
+    public String toString() {
+        return "LambdaInjectConfiguration{" +
+            "functionName='" + functionName + '\'' +
+            ", zipFileName='" + zipFileName + '\'' +
+            ", environment=" + environment +
+            ", handler='" + handler + '\'' +
+            ", memorySize=" + memorySize +
+            ", runtime='" + runtime + '\'' +
+            ", timeout=" + timeout +
+            ", subnetIds=" + subnetIds +
+            ", securityGroupIds=" + securityGroupIds +
+            ", iamPolicy='" + iamPolicy + '\'' +
+            ", assumeRolePolicy='" + assumeRolePolicy + '\'' +
+            ", useKms='" + useKms + '\'' +
+            ", kmsKeyName='" + kmsKeyName + '\'' +
+            ", customSecurityGroup=" + customSecurityGroup +
+            '}';
     }
 }
