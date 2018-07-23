@@ -252,7 +252,8 @@ public class RdsBroker {
 
         Set<String> encryptablePasswordNames = new HashSet<>(Arrays.asList("spring.datasource.password",
             "spring_datasource_password", "spring.datasource.tomcat.password",
-            "spring_datasource_tomcat_password", "liquibase.password", "liquibase_password", "flyway.password",
+            "spring_datasource_tomcat_password", "spring.liquibase.password", "spring_liquibase_password",
+            "liquibase.password", "liquibase_password", "flyway.password",
             "flyway_password"));
 
         if (instance.getCredPrefix() != null) {
