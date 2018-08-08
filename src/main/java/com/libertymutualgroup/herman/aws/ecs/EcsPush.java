@@ -70,6 +70,9 @@ import com.amazonaws.services.rds.AmazonRDS;
 import com.amazonaws.services.rds.AmazonRDSClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
+import com.amazonaws.services.securitytoken.model.GetCallerIdentityRequest;
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQS;
@@ -145,6 +148,7 @@ public class EcsPush {
     private AmazonSNS snsClient;
     private AmazonDynamoDB dynamoDbClient;
     private AWSLambda lambdaClient;
+    private AWSSecurityTokenService stsClient;
     private AmazonCloudWatch cloudWatchClient;
     private FileUtil fileUtil;
 
@@ -215,6 +219,12 @@ public class EcsPush {
             .withRegion(context.getRegion())
             .build();
 
+        this.stsClient = AWSSecurityTokenServiceClientBuilder.standard()
+            .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
+            .withClientConfiguration(context.getAwsClientConfig())
+            .withRegion(context.getRegion())
+            .build();
+
         this.cloudWatchClient = AmazonCloudWatchClientBuilder.standard()
             .withCredentials(new AWSStaticCredentialsProvider(pushContext.getSessionCredentials()))
             .withClientConfiguration(pushContext.getAwsClientConfig()).withRegion(pushContext.getRegion()).build();
@@ -224,6 +234,11 @@ public class EcsPush {
 
     public void push() {
         EcsPushDefinition definition = getEcsPushDefinition();
+
+        String accountId = this.stsClient.getCallerIdentity(new GetCallerIdentityRequest()).getAccount();
+        logger.addLogEntry("Injecting account.id = " + accountId);
+        bambooPropertyHandler.addProperty("account.id", accountId);
+
         logger.addLogEntry(definition.toString());
         logInvocationInCloudWatch(definition);
 
@@ -250,7 +265,6 @@ public class EcsPush {
             definition.setTaskRoleArn(appRole.getArn());
         }
         bambooPropertyHandler.addProperty("app.iam", appRole.getArn());
-        bambooPropertyHandler.addProperty("account.id", ArnUtil.getAccountFromArn(appRole.getArn()));
 
         // Inject environment variables
         EcsDefaultEnvInjection injectMagic = new EcsDefaultEnvInjection();
