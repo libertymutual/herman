@@ -147,12 +147,19 @@ public class NewRelicBroker {
                     .mapInProperties(fileUtil.findFile(newRelicConfigurationDefinition.getNrqlConditions(), false));
             }
 
+            String infrastructureConditions = null;
+            if (StringUtils.isNotBlank(newRelicConfigurationDefinition.getInfrastructureConditions())) {
+                infrastructureConditions = propertyHandler
+                    .mapInProperties(fileUtil.findFile(newRelicConfigurationDefinition.getInfrastructureConditions(), false));
+            }
+
             newRelicConfiguration = new NewRelicConfiguration()
                 .withDbName(dbName)
                 .withChannels(channels)
                 .withConditions(conditions)
                 .withRdsPluginsConditions(rdsPluginsConditions)
                 .withNrqlConditions(nrqlConditions)
+                .withInfrastructureConditions(infrastructureConditions)
                 .withApdex(newRelicConfigurationDefinition.getApdex());
         } else {
             newRelicConfiguration = null;

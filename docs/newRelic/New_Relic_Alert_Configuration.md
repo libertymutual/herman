@@ -186,6 +186,39 @@ For example:
 ]
 ```
 
+### Infrastructure Conditions
+
+Infrasturcture Conditions should be a JSON Array. Each object in the array should match
+the payload required by the [New Relic Infrastructure API](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/infrastructure-alert-conditions/rest-api-calls-new-relic-infrastructure-alerts). 
+For Example:
+
+``` js
+[
+  {
+    "type": "infra_metric",
+    "name": "efs-alert",
+    "enabled": true,
+    "filter": {
+      "and": [
+        {
+          "is": {
+            "displayName": "fs-123456"
+          }
+        }
+      ]
+    },
+    "select_value": "provider.lastKnownSizeInBytes",
+    "comparison": "above",
+    "critical_threshold": {
+      "value": 20,
+      "duration_minutes": 5,
+      "time_function": "all"
+    },
+    "integration_provider": "EfsFileSystem"
+  }
+]
+```
+
 ### Channels
 
 Channels should be a JSON array. Each object in the array should match
