@@ -19,6 +19,7 @@ import com.amazonaws.regions.Regions;
 import com.libertymutualgroup.herman.cli.command.ECRLoginCommand;
 import com.libertymutualgroup.herman.cli.command.ECRRepoCreateCommand;
 import com.libertymutualgroup.herman.cli.command.ECRRepoTrimCommand;
+import com.libertymutualgroup.herman.cli.command.ECSClusterPushCommand;
 import com.libertymutualgroup.herman.cli.command.ECSPushCommand;
 import com.libertymutualgroup.herman.logging.SysoutLogger;
 import picocli.CommandLine;
@@ -34,6 +35,7 @@ import static picocli.CommandLine.RunAll;
 @Command(description = "Runs Herman the AWS Task Helper", name = "herman", mixinStandardHelpOptions = true, versionProvider = Cli.ManifestVersionProvider.class,
     subcommands = {
         ECSPushCommand.class,
+        ECSClusterPushCommand.class,
         ECRRepoCreateCommand.class,
         ECRLoginCommand.class,
         ECRRepoTrimCommand.class

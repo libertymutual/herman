@@ -22,6 +22,14 @@
     <context>aws-ecs-tasks</context>
   </web-resource>
 
+  <taskType class="com.libertymutualgroup.herman.task.bamboo.ecs.cluster.ECSClusterPushTask" key="ecsClusterPushTask"
+            name="Herman (LTS) - ECS Cluster Push">
+    <description>Create or Update an ECS Cluster</description>
+    <resource location="images/whale2.png" name="icon" type="download"/>
+    <configuration class="com.libertymutualgroup.herman.task.bamboo.ecs.cluster.ECSClusterPushTaskConfigurator"/>
+    <resource location="editEcsClusterPushTask.ftl" name="edit" type="freemarker"/>
+  </taskType>
+
   <taskType class="com.libertymutualgroup.herman.task.bamboo.ecr.ECRRepoCreateTask" key="ecsRepoCreateTask"
             name="Herman (LTS) - Repo Create, Docker Login">
     <description>Create an ECS repository with proper permissions and login</description>
@@ -31,7 +39,7 @@
   </taskType>
 
   <taskType class="com.libertymutualgroup.herman.task.bamboo.ecs.ECSPushTask" key="ecsPushTask"
-            name="Herman (LTS) - ECS Push">
+    name="Herman (LTS) - ECS Push">
     <description>Push an app to ECS based on your template</description>
     <resource location="images/whale2.png" name="icon" type="download"/>
     <configuration class="com.libertymutualgroup.herman.task.bamboo.ecs.ECSPushTaskConfigurator"/>
@@ -40,7 +48,7 @@
 
   <taskType class="com.libertymutualgroup.herman.task.cft.CftPushTask" key="cftPushTask"
     name="Herman (LTS) - CFT Push">
-    <description>Push an app to ECS based on your template</description>
+    <description>Push a Cloudformation Template to AWS</description>
     <resource location="images/whale2.png" name="icon" type="download"/>
     <configuration class="com.libertymutualgroup.herman.task.cft.CftPushTaskConfigurator"/>
     <resource location="editCftPushTask.ftl" name="edit" type="freemarker"/>
@@ -64,11 +72,10 @@
 
   <taskType class="com.libertymutualgroup.herman.task.newrelic.NewRelicBrokerTask" key="newRelicConfigPushTask"
     name="Herman (LTS) - New Relic Configuration Push">
-    <description>Create an AWS Lambda Function</description>
+    <description>Push New Relic Configuration</description>
     <resource location="images/whale2.png" name="icon" type="download"/>
     <configuration class="com.libertymutualgroup.herman.task.newrelic.NewRelicBrokerTaskConfigurator"/>
     <resource location="editNewRelicBrokerTask.ftl" name="edit" type="freemarker"/>
   </taskType>
-
 
 </atlassian-plugin>

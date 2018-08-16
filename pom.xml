@@ -22,7 +22,7 @@
     <amps.version>6.2.11</amps.version>
     <plugin.testrunner.version>1.2.3</plugin.testrunner.version>
     <atlassian.spring.scanner.version>1.2.13</atlassian.spring.scanner.version>
-    <aws-sdk.version>1.11.335</aws-sdk.version>
+    <aws-sdk.version>1.11.386</aws-sdk.version>
     <spring.framework.version>5.0.7.RELEASE</spring.framework.version>
     <!-- This key is used to keep the consistency between the key in atlassian-plugin.xml
       and the key to generate bundle. -->
@@ -211,6 +211,10 @@
     </dependency>
     <dependency>
       <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-autoscaling</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
       <artifactId>aws-java-sdk-dynamodb</artifactId>
     </dependency>
     <dependency>
@@ -243,6 +247,11 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
       <version>${spring.framework.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.collections</groupId>
+      <artifactId>google-collections</artifactId>
+      <version>1.0</version>
     </dependency>
 
 
