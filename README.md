@@ -59,6 +59,10 @@ ECS supports three basic styles of container workloads:
 
 [See: Task Definition Conventions](docs/Task_Definition_Conventions.md)
 
+## Cluster Deployment
+
+Herman supports deploying and managing ECS clusters. [See: Cluster Deployment](docs/Cluster_Deployment.md)
+
 ## Application Identity (AWS "IAM")
 
 As part of deployment, your application will get provisioned an identity

@@ -15,7 +15,9 @@
  */
 package com.libertymutualgroup.herman.aws.ecs.cluster;
 
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.cloudformation.AmazonCloudFormation;
+import com.amazonaws.services.cloudformation.model.AmazonCloudFormationException;
 import com.amazonaws.services.cloudformation.model.DescribeStackResourcesRequest;
 import com.amazonaws.services.cloudformation.model.DescribeStackResourcesResult;
 import com.amazonaws.services.cloudformation.model.DescribeStacksRequest;
@@ -30,6 +32,7 @@ import com.amazonaws.services.ec2.model.Subnet;
 import com.amazonaws.services.ec2.model.Vpc;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.logging.HermanLogger;
+
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -46,19 +49,32 @@ public class EcsClusterIntrospector {
         this.logger = logger;
     }
 
-    public EcsClusterMetadata introspect(String name) {
+    public EcsClusterMetadata introspect(String name, Regions region) {
         EcsClusterMetadata ecsClusterMetadata = new EcsClusterMetadata();
 
-        DescribeStackResourcesRequest req = new DescribeStackResourcesRequest();
-        req.setStackName(name);
+        String stackName = name;
 
-        DescribeStackResourcesResult clusterStackResult = cftClient.describeStackResources(req);
+        DescribeStackResourcesRequest req = new DescribeStackResourcesRequest()
+            .withStackName(stackName);
+        DescribeStackResourcesResult clusterStackResult;
+        try {
+            clusterStackResult = cftClient.describeStackResources(req);
+        }
+        catch (AmazonCloudFormationException ex) {
+            stackName += "-shared";
+            req.setStackName(stackName);
+            clusterStackResult = cftClient.describeStackResources(req);
+        }
+
+        if (clusterStackResult == null) {
+            throw new AwsExecException("Unable to find cluster to introspect from stack: " + name);
+        }
 
         for (StackResource r: clusterStackResult.getStackResources()) {
             updateClusterMetadataWithStackResourceValue(ecsClusterMetadata, r);
         }
 
-        DescribeStacksResult stackResult = cftClient.describeStacks(new DescribeStacksRequest().withStackName(name));
+        DescribeStacksResult stackResult = cftClient.describeStacks(new DescribeStacksRequest().withStackName(stackName));
         List<Tag> clusterCftStackTags = stackResult.getStacks().get(0).getTags();
         ecsClusterMetadata.setClusterCftStackTags(clusterCftStackTags);
 
@@ -120,6 +136,8 @@ public class EcsClusterIntrospector {
             ecsClusterMetadata.setAppSecurityGroup(p.getParameterValue());
         } else if ("SplunkUrl".equals(p.getParameterKey())) {
             ecsClusterMetadata.setSplunkUrl(p.getParameterValue());
+        } else if ("ClusterName".equals(p.getParameterKey())) {
+            ecsClusterMetadata.setClusterId(p.getParameterValue());
         }
     }
 

@@ -55,6 +55,8 @@ import com.amazonaws.services.ecs.model.ServiceEvent;
 import com.amazonaws.services.ecs.model.StopTaskRequest;
 import com.amazonaws.services.ecs.model.Task;
 import com.amazonaws.services.ecs.model.TaskDefinition;
+import com.amazonaws.services.ecs.model.TaskDefinitionPlacementConstraint;
+import com.amazonaws.services.ecs.model.TaskDefinitionPlacementConstraintType;
 import com.amazonaws.services.ecs.model.UpdateServiceRequest;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientBuilder;
@@ -78,6 +80,7 @@ import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.amazonaws.util.IOUtils;
+import com.google.common.collect.ImmutableList;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.broker.autoscaling.AutoscalingBroker;
 import com.libertymutualgroup.herman.aws.ecs.broker.dynamodb.DynamoDBBroker;
@@ -236,14 +239,19 @@ public class EcsPush {
         EcsPushDefinition definition = getEcsPushDefinition();
 
         String accountId = this.stsClient.getCallerIdentity(new GetCallerIdentityRequest()).getAccount();
-        logger.addLogEntry("Injecting account.id = " + accountId);
         bambooPropertyHandler.addProperty("account.id", accountId);
+
+
+        List<TaskDefinitionPlacementConstraint> placementConstraints = ImmutableList.of(new TaskDefinitionPlacementConstraint()
+            .withExpression("attribute:state !exists or attribute:state != pre-drain")
+            .withType(TaskDefinitionPlacementConstraintType.MemberOf));
+        definition.setPlacementConstraints(placementConstraints);
 
         logger.addLogEntry(definition.toString());
         logInvocationInCloudWatch(definition);
 
         EcsClusterIntrospector clusterIntrospector = new EcsClusterIntrospector(cftClient, ec2Client, logger);
-        EcsClusterMetadata clusterMetadata = clusterIntrospector.introspect(definition.getCluster());
+        EcsClusterMetadata clusterMetadata = clusterIntrospector.introspect(definition.getCluster(), pushContext.getRegion());
 
         LoggingService loggingService = new LoggingService(logger)
             .withSplunkInstanceValues(clusterMetadata.getSplunkUrl(), taskProperties);
