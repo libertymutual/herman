@@ -18,6 +18,7 @@ import com.amazonaws.services.ec2.model.DescribeSubnetsResult;
 import com.amazonaws.services.ec2.model.DescribeVpcsResult;
 import com.amazonaws.services.ec2.model.Subnet;
 import com.amazonaws.services.ec2.model.Vpc;
+import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterIntrospector;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
 import com.libertymutualgroup.herman.logging.HermanLogger;
@@ -180,6 +181,11 @@ public class EcsClusterIntrospectorTest {
         assertEquals("vpc12345", meta.getVpcId());
         assertEquals(1, meta.getElbSecurityGroups().size());
         assertEquals(1, meta.getElbSubnets().size());
+    }
+
+    @Test(expected = AwsExecException.class)
+    public void testIntrospectAwsExceptionOnNonExistentStack() {
+        introspector.introspect("not-a-real-stack", Regions.US_EAST_1);
     }
 
 }

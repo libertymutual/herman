@@ -66,6 +66,10 @@ public class EcsClusterIntrospector {
             clusterStackResult = cftClient.describeStackResources(req);
         }
 
+        if (clusterStackResult == null) {
+            throw new AwsExecException("Unable to find cluster to introspect from stack: " + name);
+        }
+
         for (StackResource r: clusterStackResult.getStackResources()) {
             updateClusterMetadataWithStackResourceValue(ecsClusterMetadata, r);
         }
