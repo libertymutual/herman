@@ -5,7 +5,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.libertymutualgroup.herman</groupId>
-  <artifactId>herman-bamboo-plugin</artifactId>
+  <artifactId>herman</artifactId>
   <version>1.0.0-SNAPSHOT</version>
 
   <organization>
