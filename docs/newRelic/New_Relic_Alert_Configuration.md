@@ -219,6 +219,27 @@ For Example:
 ]
 ```
 
+### Synthetics Monitors and Alerts
+Synthetics should be a JSON Array. Each object in the array should match
+the payload required by the [New Relic Synthetics API](https://docs.newrelic.com/docs/apis/synthetics-rest-api/monitor-examples/manage-synthetics-monitors-rest-api#create-monitor). 
+For Example:
+
+```js
+[
+  {
+    "type": "BROWSER",
+    "frequency": 10,
+    "uri": "https://google.com",
+    "locations": ["AWS_US_EAST_1", "AWS_US_WEST_2"],
+    "status": "ENABLED",
+    "slaThreshold": 1.0,
+    "options": {
+      "verifySSL": true
+    }
+  }
+]
+```
+
 ### Channels
 
 Channels should be a JSON array. Each object in the array should match

@@ -153,6 +153,12 @@ public class NewRelicBroker {
                     .mapInProperties(fileUtil.findFile(newRelicConfigurationDefinition.getInfrastructureConditions(), false));
             }
 
+            String synthetics = null;
+            if (StringUtils.isNotBlank(newRelicConfigurationDefinition.getSynthetics())) {
+                synthetics = propertyHandler
+                    .mapInProperties(fileUtil.findFile(newRelicConfigurationDefinition.getSynthetics(), false));
+            }
+
             newRelicConfiguration = new NewRelicConfiguration()
                 .withDbName(dbName)
                 .withChannels(channels)
@@ -160,6 +166,7 @@ public class NewRelicBroker {
                 .withRdsPluginsConditions(rdsPluginsConditions)
                 .withNrqlConditions(nrqlConditions)
                 .withInfrastructureConditions(infrastructureConditions)
+                .withSynthetics(synthetics)
                 .withApdex(newRelicConfigurationDefinition.getApdex());
         } else {
             newRelicConfiguration = null;
