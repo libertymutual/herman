@@ -16,8 +16,6 @@
 package com.libertymutualgroup.herman.aws.cft;
 
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.cloudformation.AmazonCloudFormation;
@@ -27,9 +25,7 @@ import com.amazonaws.services.cloudformation.model.AmazonCloudFormationException
 import com.amazonaws.services.cloudformation.model.CreateStackRequest;
 import com.amazonaws.services.cloudformation.model.DescribeStackResourcesRequest;
 import com.amazonaws.services.cloudformation.model.DescribeStackResourcesResult;
-import com.amazonaws.services.cloudformation.model.DescribeStacksRequest;
 import com.amazonaws.services.cloudformation.model.Parameter;
-import com.amazonaws.services.cloudformation.model.Stack;
 import com.amazonaws.services.cloudformation.model.StackResource;
 import com.amazonaws.services.cloudformation.model.Tag;
 import com.amazonaws.services.cloudformation.model.UpdateStackRequest;
@@ -37,17 +33,18 @@ import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
 import com.amazonaws.services.lambda.model.InvocationType;
 import com.amazonaws.services.lambda.model.InvokeRequest;
-import com.atlassian.bamboo.deployments.execution.DeploymentTaskContext;
 import com.atlassian.bamboo.task.TaskException;
-import com.atlassian.bamboo.variable.CustomVariableContext;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
-import com.libertymutualgroup.herman.aws.ecs.TaskContextPropertyHandler;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.cft.CFTPushTaskProperties;
-import com.libertymutualgroup.herman.util.FileUtil;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
@@ -55,61 +52,51 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class CftPush {
-
-    public static final String INTERRUPTED_WHILE_POLLING = "Interrupted while polling";
+public class CftPush { ;
     private static final Logger LOGGER = LoggerFactory.getLogger(CftPush.class);
     private static final String BUILD_NUMBER = "buildNumber";
     private static final String MAVEN_GROUP = "maven.groupId";
     private static final String MAVEN_ART = "maven.artifactId";
     private static final String MAVEN_VERS = "maven.version";
     private static final int RANDOM_PASSWORD_LENGTH = 20;
-    private static final int POLLING_INTERVAL_MS = 10000;
-    private static final List<String> CFT_FILE_NAMES = Arrays.asList("cft.template", "cft.yml", "cft.json");
     private Properties props = new Properties();
     private Properties output = new Properties();
     private HermanLogger buildLogger;
-    private DeploymentTaskContext taskContext;
+    private CftPushContext taskContext;
     private AmazonCloudFormation cftClient;
     private AWSLambda lambdaClient;
+    private StackUtils stackUtils;
     private Regions region;
-    private CustomVariableContext customVariableContext;
+    private PropertyHandler propertyHandler;
     private CFTPushTaskProperties taskProperties;
 
-    public CftPush(HermanLogger buildLogger, DeploymentTaskContext taskContext, AWSCredentials sessionCredentials,
-        ClientConfiguration config, Regions region, CustomVariableContext customVariableContext,
-        CFTPushTaskProperties taskProperties) {
-
-        this.buildLogger = buildLogger;
+    public CftPush(CftPushContext taskContext) {
         this.taskContext = taskContext;
-        this.customVariableContext = customVariableContext;
-        this.region = region;
+        this.buildLogger = taskContext.getLogger();
+        this.propertyHandler = taskContext.getPropertyHandler();
+        this.region = taskContext.getRegion();
 
         cftClient = AmazonCloudFormationClientBuilder.standard()
-            .withCredentials(new AWSStaticCredentialsProvider(sessionCredentials)).withClientConfiguration(config)
+            .withCredentials(new AWSStaticCredentialsProvider(taskContext.getSessionCredentials())).withClientConfiguration(taskContext.getAwsClientConfig())
             .withRegion(region).build();
 
         lambdaClient = AWSLambdaClientBuilder.standard()
-            .withCredentials(new AWSStaticCredentialsProvider(sessionCredentials)).withClientConfiguration(config)
+            .withCredentials(new AWSStaticCredentialsProvider(taskContext.getSessionCredentials())).withClientConfiguration(taskContext.getAwsClientConfig())
             .withRegion(region).build();
 
-        this.taskProperties = taskProperties;
+        this.stackUtils = new StackUtils(this.cftClient, this.buildLogger);
+
+        this.taskProperties = taskContext.getTaskProperties();
     }
 
-    public void push() throws TaskException {
+    public void push(String stackName, String template) throws TaskException {
 
         // Input data outside of CFT
-        String env = taskContext.getDeploymentContext().getEnvironmentName();
-        String projecName = taskContext.getDeploymentContext().getDeploymentProjectName();
+        String env = taskContext.getEnvName();
 
         if (!this.taskProperties.getCftPushVariableBrokerLambda().isEmpty()) {
             buildLogger.addLogEntry(
@@ -119,16 +106,18 @@ public class CftPush {
         injectBambooContext();
         importPropFiles(env);
 
-        String stackName = deriveStackName(projecName, env);
+        if (this.taskContext.getTemplateParameters() != null) {
+            props.putAll(this.taskContext.getTemplateParameters());
+        }
 
         if (!stackName.contains(region.getName())) {
             stackName = stackName + "-" + region.getName();
         }
 
-        createStack(stackName);
+        createStack(stackName, template);
 
-        buildLogger.addLogEntry("Stack triggered...");
-        waitForCompletion(stackName);
+        buildLogger.addLogEntry("Stack triggered: " + stackName);
+        this.stackUtils.waitForCompletion(stackName);
         outputStack(stackName);
 
         try (OutputStream fileOut = new FileOutputStream("stackoutput.properties")) {
@@ -138,15 +127,10 @@ public class CftPush {
         }
     }
 
-    private String deriveStackName(String deployProject, String deployEnvironment) {
-        String concat = deployProject.replace(" ", "-") + "-" + deployEnvironment.replace(" ", "-");
-        return concat.toLowerCase();
-    }
-
     private void importPropFiles(String env) {
         File stackOut = new File("stackoutput.properties");
 
-        try (FileReader stackRead = new FileReader(stackOut);) {
+        try (FileReader stackRead = new FileReader(stackOut)) {
             if (stackOut.exists()) {
                 props.load(stackRead);
                 buildLogger.addLogEntry("Loaded stackoutput.properties");
@@ -156,7 +140,7 @@ public class CftPush {
             buildLogger.addLogEntry("No stackoutput.properties");
         }
 
-        String root = taskContext.getRootDirectory().getAbsolutePath();
+        String root = taskContext.getRootPath();
         File envProps = new File(root + File.separator + env + ".properties");
         try (FileReader envFile = new FileReader(envProps);) {
             // load second to allow env to override
@@ -172,8 +156,7 @@ public class CftPush {
     }
 
     private void injectBambooContext() {
-        PropertyHandler handler = new TaskContextPropertyHandler(taskContext, customVariableContext);
-        Properties bambooContext = handler.lookupProperties(BUILD_NUMBER, MAVEN_GROUP, MAVEN_ART,
+        Properties bambooContext = this.propertyHandler.lookupProperties(BUILD_NUMBER, MAVEN_GROUP, MAVEN_ART,
             MAVEN_VERS);
 
         String randomPass = RandomStringUtils.randomAlphanumeric(RANDOM_PASSWORD_LENGTH);
@@ -192,18 +175,17 @@ public class CftPush {
             props.put("Version", versionId);
         }
 
-        String deployEnvironment = taskContext.getDeploymentContext().getEnvironmentName();
+        String deployEnvironment = taskContext.getEnvName();
         if (deployEnvironment != null) {
             props.put("DeployEnvironment", deployEnvironment);
         }
 
     }
 
-    private void createStack(String name) {
-        String template = getTemplate();
+    private void createStack(String name, String template) {
         List<Parameter> parameters = convertPropsToCftParams(template);
 
-        String deployEnvironment = taskContext.getDeploymentContext().getEnvironmentName();
+        String deployEnvironment = taskContext.getEnvName();
 
         List<Tag> tags = new ArrayList<>();
         tags.add(new Tag().withKey("Name").withValue(name));
@@ -212,8 +194,7 @@ public class CftPush {
         tags.add(new Tag().withKey(this.taskProperties.getAppTagKey() + "_env").withValue(deployEnvironment));
         tags.add(new Tag().withKey(this.taskProperties.getSbuTagKey()).withValue(this.taskProperties.getSbu()));
 
-        PropertyHandler handler = new TaskContextPropertyHandler(taskContext, customVariableContext);
-        Properties bambooContext = handler.lookupProperties(BUILD_NUMBER, MAVEN_GROUP, MAVEN_ART,
+        Properties bambooContext = this.propertyHandler.lookupProperties(BUILD_NUMBER, MAVEN_GROUP, MAVEN_ART,
             MAVEN_VERS);
 
         String artifactId = bambooContext.getProperty(MAVEN_ART);
@@ -257,24 +238,6 @@ public class CftPush {
 
     }
 
-    private String getTemplate() {
-        String root = taskContext.getRootDirectory().getAbsolutePath();
-        FileUtil fileUtil = new FileUtil(root, buildLogger);
-
-        String template = null;
-        for (String fileName: CFT_FILE_NAMES) {
-            boolean fileExists = fileUtil.fileExists(fileName);
-            if (fileExists) {
-                template = fileUtil.findFile(fileName, false);
-                buildLogger.addLogEntry("Template used: " + fileName);
-            }
-        }
-        if (template == null) {
-            throw new AwsExecException("CloudFormation template not found. Valid file names: "
-                + String.join(", ", CFT_FILE_NAMES));
-        }
-        return template;
-    }
 
     private List<Parameter> convertPropsToCftParams(String template) {
         List<Parameter> parameters = new ArrayList<>();
@@ -299,8 +262,8 @@ public class CftPush {
         try {
             variables = new ObjectMapper().readValue(variableJson, new TypeReference<Map<String, String>>() {});
         } catch (IOException e) {
-            buildLogger.addLogEntry(e.getMessage());
-            buildLogger.addLogEntry("Unable to parse variables from " + variableJson);
+            this.buildLogger.addLogEntry(e.getMessage());
+            this.buildLogger.addLogEntry("Unable to parse variables from " + variableJson);
             throw new TaskException(e.getMessage(), e);
         }
 
@@ -339,61 +302,6 @@ public class CftPush {
 
     }
 
-    private void waitForCompletion(String stackName) {
-        DescribeStacksRequest wait = new DescribeStacksRequest();
-        wait.setStackName(stackName);
-        Boolean completed = false;
 
-        buildLogger.addLogEntry("Waiting...");
-
-        // Try waiting at the start to avoid a race before the stack starts updating
-        sleep();
-        while (!completed) {
-            List<Stack> stacks = cftClient.describeStacks(wait).getStacks();
-
-            completed = reportStatusAndCheckCompletionOf(stacks);
-
-            // Not done yet so sleep for 10 seconds.
-            if (!completed) {
-                sleep();
-            }
-        }
-
-        buildLogger.addLogEntry("done");
-    }
-
-    private void sleep() {
-        try {
-            Thread.sleep(POLLING_INTERVAL_MS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            buildLogger.addLogEntry(INTERRUPTED_WHILE_POLLING);
-            throw new AwsExecException(INTERRUPTED_WHILE_POLLING);
-        }
-    }
-
-    private Boolean reportStatusAndCheckCompletionOf(List<Stack> stacks) {
-        for (Stack stack: stacks) {
-            reportStatusOf(stack);
-            if (stack.getStackStatus().contains("IN_PROGRESS")) {
-                return false;
-            }
-
-            if (stack.getStackStatus().contains("FAILED") || stack.getStackStatus().contains("ROLLBACK")) {
-                throw new AwsExecException("CFT pushed failed - " + stack.getStackStatus());
-            }
-        }
-        return true;
-    }
-
-    private void reportStatusOf(Stack stack) {
-
-        String status = stack.getStackStatus();
-        String reason = stack.getStackStatusReason();
-        if (reason != null) {
-            status += " : " + reason;
-        }
-        buildLogger.addLogEntry(status);
-    }
 
 }
