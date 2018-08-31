@@ -62,7 +62,6 @@ public class ECSClusterPushTask extends AbstractDeploymentTask {
         ECSPushTaskProperties taskProperties = ECSPushPropertyFactory.getTaskProperties(sessionCredentials, buildLogger, awsRegion);
 
         PropertyHandler handler = new TaskContextPropertyHandler(taskContext, getCustomVariableContext());
-        handler.addProperty("herman.rdsCredentialBrokerImage", taskProperties.getRdsCredentialBrokerImage());
 
         EcsPushContext context = new EcsPushContext()
             .withLogger(buildLogger)

@@ -27,8 +27,12 @@ import com.amazonaws.services.cloudformation.model.DescribeStackResourcesRequest
 import com.amazonaws.services.cloudformation.model.DescribeStacksRequest;
 import com.amazonaws.services.cloudformation.model.DescribeStacksResult;
 import com.amazonaws.services.cloudformation.model.GetTemplateRequest;
+import com.amazonaws.services.cloudformation.model.Parameter;
 import com.amazonaws.services.cloudformation.model.Stack;
 import com.amazonaws.services.cloudformation.model.StackResource;
+import com.amazonaws.services.ec2.AmazonEC2;
+import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
+import com.amazonaws.services.ec2.model.TagDescription;
 import com.amazonaws.services.ecs.AmazonECS;
 import com.amazonaws.services.ecs.AmazonECSClientBuilder;
 import com.amazonaws.services.ecs.model.Cluster;
@@ -42,6 +46,7 @@ import com.amazonaws.services.ecs.model.DescribeContainerInstancesResult;
 import com.amazonaws.services.ecs.model.ListContainerInstancesRequest;
 import com.amazonaws.services.ecs.model.ListContainerInstancesResult;
 import com.amazonaws.services.ecs.model.UpdateContainerInstancesStateRequest;
+import com.amazonaws.util.StringUtils;
 import com.atlassian.bamboo.task.TaskException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -61,6 +66,8 @@ import com.libertymutualgroup.herman.util.TemplateFormat;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -74,6 +81,7 @@ public class EcsClusterPush {
     private EcsPushContext context;
     private AmazonCloudFormation cfnClient;
     private AmazonECS ecsClient;
+    private AmazonEC2 ec2Client;
     private PropertyHandler propertyHandler;
     private HermanLogger logger;
     private FileUtil fileUtil;
@@ -98,6 +106,10 @@ public class EcsClusterPush {
             .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
             .withClientConfiguration(context.getAwsClientConfig()).withRegion(context.getRegion()).build();
 
+        this.ec2Client = AmazonEC2ClientBuilder.standard()
+            .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
+            .withClientConfiguration(context.getAwsClientConfig()).withRegion(context.getRegion()).build();
+
         this.propertyHandler = context.getPropertyHandler();
 
         this.fileUtil = new FileUtil(context.getRootPath(), this.logger);
@@ -108,7 +120,7 @@ public class EcsClusterPush {
             .withClientConfiguration(context.getAwsClientConfig()).withRegion(context.getRegion()).build();
 
         this.asgHandler = new AutoscalingGroupHandler(asgClient, this.logger);
-        this.containerInstanceHandler = new ContainerInstanceHandler(this.ecsClient, this.logger);
+        this.containerInstanceHandler = new ContainerInstanceHandler(this.ecsClient, this.ec2Client, this.logger);
         this.stackUtils = new StackUtils(this.cfnClient, this.logger);
     }
 
@@ -165,11 +177,8 @@ public class EcsClusterPush {
                 .withStackName(existingStackState.getInstanceStack().getStackName());
             String existingInstanceTemplate = this.cfnClient.getTemplate(existingTemplateRequest).getTemplateBody();
 
-            if (!existingInstanceTemplate.equals(instanceStackTemplate)) {
-                String[] existingInstanceStackNameArray = existingStackState.getInstanceStack().getStackName().split("-");
-                int existingInstanceStackNumber = Integer.parseInt(existingInstanceStackNameArray[existingInstanceStackNameArray.length - 1]);
-                instanceStackNumber = existingInstanceStackNumber + 1;
-                String instanceStackName = this.definition.getClusterName() + "-instances-" + instanceStackNumber;
+            if (!existingInstanceTemplate.equals(instanceStackTemplate) || parametersUpdated(existingStackState.getInstanceStack().getParameters())) {
+                String instanceStackName = this.findNextStackName(this.definition.getClusterName());
 
                 // Find old container instances
                 List<String> oldContainerInstanceArns = null;
@@ -270,12 +279,21 @@ public class EcsClusterPush {
         Stack sharedStack = stacksResponse.get(0);
 
         logger.addLogEntry("... Found shared stack: " + sharedStack.getStackName());
-        logger.addLogEntry("... Searching for instance stack with name matching pattern: " + this.definition.getClusterName() + "-instances-#");
-        List<Stack> allAccountStacks = getAllStacks();
-        List<Stack> instanceFilteredStacks = allAccountStacks.stream()
-            .filter(stack -> stack.getStackName().contains(this.definition.getClusterName() + "-instances"))
-            .sorted(Comparator.comparing(Stack::getStackName).reversed())
-            .collect(Collectors.toList());
+        logger.addLogEntry("... Searching for instance stack");
+        List<ContainerInstance> existingContainerInstances = containerInstanceHandler.getContainerInstances(clusterName);
+        List<Stack> instanceFilteredStacks;
+        if (existingContainerInstances == null || existingContainerInstances.size() == 0) {
+            List<Stack> allAccountStacks = getAllStacks();
+            instanceFilteredStacks = allAccountStacks.stream()
+                .filter(stack -> stack.getStackName().contains(this.definition.getClusterName() + "-instances"))
+                .sorted(Comparator.comparing(Stack::getStackName).reversed())
+                .collect(Collectors.toList());
+        }
+        else {
+            List<TagDescription> existingContainerInstanceTags = containerInstanceHandler.getContainerInstanceTags(existingContainerInstances.get(0));
+            String existingStackName = existingContainerInstanceTags.stream().filter(tag -> "aws:cloudformation:stack-name".equals(tag.getKey())).collect(Collectors.toList()).get(0).getValue();
+            instanceFilteredStacks = Collections.singletonList(getStackWithName(existingStackName));
+        }
 
         if (instanceFilteredStacks.size() == 0) {
             logger.addLogEntry("... Unable to find instance stack");
@@ -384,6 +402,23 @@ public class EcsClusterPush {
         }
 
         return stacks;
+    }
+
+    private Stack getStackWithName(String stackName) {
+        DescribeStacksResult stacksResult = this.cfnClient.describeStacks(new DescribeStacksRequest().withStackName(stackName));
+        return stacksResult.getStacks().get(0);
+    }
+
+    private String findNextStackName(String clusterName) {
+        List<Stack> allAccountStacks = getAllStacks();
+        List<Stack> instanceFilteredStacks = allAccountStacks.stream()
+            .filter(stack -> stack.getStackName().contains(clusterName + "-instances"))
+            .sorted(Comparator.comparing(Stack::getStackName).reversed())
+            .collect(Collectors.toList());
+        Stack latestStack = instanceFilteredStacks.get(0);
+        String[] stackNameSplit = latestStack.getStackName().split("-");
+        int stackNumber = Integer.parseInt(stackNameSplit[stackNameSplit.length - 1]) + 1;
+        return clusterName + "-instances-" + stackNumber;
     }
 
     private long waitForInstanceStartup(String asgName, Optional<Long> timeout) {
@@ -520,6 +555,20 @@ public class EcsClusterPush {
 
     private String loadStackFile(String stackFileName) {
         return fileUtil.findFile(stackFileName, false);
+    }
+
+    private boolean parametersUpdated(List<Parameter> existingStackParameters) {
+        List<String> ignoreList = Arrays.asList("ClusterName", "ClusterArn");
+        this.logger.addLogEntry("Checking parameter updates...");
+        List<Parameter> filteredParameters = existingStackParameters.stream().filter(parameter -> !ignoreList.contains(parameter.getParameterKey())).collect(Collectors.toList());
+        for (Parameter existingStackParam : filteredParameters) {
+            String deployProperty = this.propertyHandler.lookupVariable(existingStackParam.getParameterKey());
+            this.logger.addLogEntry("... " + existingStackParam.getParameterKey() + " ---  Stack: " + existingStackParam.getParameterValue() + " Deploy: " + deployProperty);
+            if (!StringUtils.isNullOrEmpty(deployProperty) && !existingStackParam.getParameterValue().equals(deployProperty)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

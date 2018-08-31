@@ -183,6 +183,10 @@ public class RdsBroker {
     }
 
     private RdsInstance brokerCredentials(RdsInstance instance, String encryptedMasterPassword, AWSKMS awskmsClient) {
+        if (propertyHandler.lookupVariable("herman.rdsCredentialBrokerImage") == null) {
+            logger.addErrorLogEntry("Missing RDS Credential Broker Image, skipping...");
+            return instance;
+        }
 
         if (instance.getEngine().equalsIgnoreCase(POSTGRES_ENGINE)
             || instance.getEngine().equalsIgnoreCase(MYSQL_ENGINE)

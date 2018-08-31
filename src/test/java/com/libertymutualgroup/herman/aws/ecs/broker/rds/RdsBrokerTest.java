@@ -64,6 +64,7 @@ public class RdsBrokerTest {
 
         Mockito.when(pushContext.getTaskProperties()).thenReturn(taskProperties);
         Mockito.when(pushContext.getLogger()).thenReturn(logger);
+        Mockito.when(propertyHandler.lookupVariable("herman.rdsCredentialBrokerImage")).thenReturn("testCredentialBroker");
         Mockito.when(pushContext.getPropertyHandler()).thenReturn(propertyHandler);
         DescribeDBInstancesResult result = new DescribeDBInstancesResult();
         result.setDBInstances(Arrays.asList(initDbInstance()));

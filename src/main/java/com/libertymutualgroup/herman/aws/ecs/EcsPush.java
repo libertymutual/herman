@@ -337,8 +337,10 @@ public class EcsPush {
         String acct = ArnUtil.getAccountFromArn(task.getTaskDefinition().getTaskDefinitionArn());
         String region = pushContext.getRegion().getName();
 
-        String consoleLink = String.format(taskProperties.getEcsConsoleLinkPattern(), acct, region, cluster, family);
-        loggingService.logSection("ECS Console", consoleLink);
+        if (taskProperties.getEcsConsoleLinkPattern() != null) {
+            String consoleLink = String.format(taskProperties.getEcsConsoleLinkPattern(), acct, region, cluster, family);
+            loggingService.logSection("ECS Console", consoleLink);
+        }
 
     }
 

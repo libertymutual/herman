@@ -6,6 +6,11 @@
 package com.libertymutualgroup.herman.aws.ecs.cluster;
 
 import com.amazonaws.services.autoscaling.model.Instance;
+import com.amazonaws.services.ec2.AmazonEC2;
+import com.amazonaws.services.ec2.model.DescribeTagsRequest;
+import com.amazonaws.services.ec2.model.DescribeTagsResult;
+import com.amazonaws.services.ec2.model.Filter;
+import com.amazonaws.services.ec2.model.TagDescription;
 import com.amazonaws.services.ecs.AmazonECS;
 import com.amazonaws.services.ecs.model.Attribute;
 import com.amazonaws.services.ecs.model.ContainerInstance;
@@ -18,16 +23,19 @@ import com.amazonaws.services.ecs.model.TargetType;
 import com.libertymutualgroup.herman.aws.asg.AutoscalingGroupHandler;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ContainerInstanceHandler {
     private AmazonECS ecsClient;
+    private AmazonEC2 ec2Client;
     private HermanLogger logger;
 
-    public ContainerInstanceHandler(AmazonECS ecsClient, HermanLogger logger) {
+    public ContainerInstanceHandler(AmazonECS ecsClient, AmazonEC2 ec2Client, HermanLogger logger) {
         this.ecsClient = ecsClient;
+        this.ec2Client = ec2Client;
         this.logger = logger;
     }
 
@@ -72,6 +80,31 @@ public class ContainerInstanceHandler {
             .filter(newInstance -> !newContainerInstanceIds.contains(newInstance))
             .collect(Collectors.toSet());
     }
+
+    public List<TagDescription> getContainerInstanceTags(ContainerInstance containerInstance) {
+        DescribeTagsResult tagsResult = this.ec2Client.describeTags(new DescribeTagsRequest()
+            .withFilters(
+                new Filter("resource-type").withValues("instance"),
+                new Filter("resource-id").withValues(containerInstance.getEc2InstanceId())
+            )
+        );
+        String nextToken = tagsResult.getNextToken();
+        ArrayList<TagDescription> tags = new ArrayList<>(tagsResult.getTags());
+        while (nextToken != null) {
+            DescribeTagsResult pagedResult = this.ec2Client.describeTags(new DescribeTagsRequest()
+                .withFilters(
+                    new Filter("resource-type").withValues("instance"),
+                    new Filter("resource-id").withValues(containerInstance.getEc2InstanceId())
+                    )
+                .withNextToken(nextToken)
+            );
+            tags.addAll(pagedResult.getTags());
+            nextToken = pagedResult.getNextToken();
+        }
+
+        return tags;
+    }
+
 
     private String getInstanceAttributeValue(ContainerInstance instance, String key) {
         for (Attribute attribute : instance.getAttributes()) {

@@ -6,6 +6,7 @@
 package com.libertymutualgroup.herman.aws.asg;
 
 import com.amazonaws.services.autoscaling.AmazonAutoScaling;
+import com.amazonaws.services.autoscaling.model.AmazonAutoScalingException;
 import com.amazonaws.services.autoscaling.model.AutoScalingGroup;
 import com.amazonaws.services.autoscaling.model.DescribeAutoScalingGroupsRequest;
 import com.amazonaws.services.autoscaling.model.Instance;
@@ -35,7 +36,12 @@ public class AutoscalingGroupHandler {
         SuspendProcessesRequest suspendRequest = new SuspendProcessesRequest()
             .withAutoScalingGroupName(asgName)
             .withScalingProcesses(SUSPEND_SCALING_PROCESSES);
-        this.asgClient.suspendProcesses(suspendRequest);
+        try {
+            this.asgClient.suspendProcesses(suspendRequest);
+        }
+        catch (AmazonAutoScalingException ex) {
+            this.logger.addErrorLogEntry("Unable to suspend autoscaling operations, proceeding with update...");
+        }
     }
 
     public void resumeScalingOperations(String asgName) {
