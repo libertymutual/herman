@@ -11,7 +11,7 @@
   },
   "files":
   [
-    {"includePattern": "target/(herman-bamboo-plugin-<BUILD_VERSION>.jar)", "uploadPattern": "herman-bambo-plugin-<BUILD_VERSION>.jar"}
+    {"includePattern": "target/(herman-<BUILD_VERSION>.jar)", "uploadPattern": "herman-<BUILD_VERSION>.jar"}
   ],
   "publish": true
 }
