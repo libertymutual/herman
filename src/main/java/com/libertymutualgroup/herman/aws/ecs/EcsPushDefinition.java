@@ -19,6 +19,7 @@ import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.PlacementStrategy;
 import com.amazonaws.services.ecs.model.TaskDefinitionPlacementConstraint;
+import com.amazonaws.services.ecs.model.Ulimit;
 import com.amazonaws.services.ecs.model.Volume;
 import com.libertymutualgroup.herman.aws.ecs.broker.dynamodb.DynamoDBTable;
 import com.libertymutualgroup.herman.aws.ecs.broker.iam.IamAppDefinition;
@@ -62,6 +63,7 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition {
     private String kmsKeyName;
     private String iamRole;
     private String albTimeout;
+    private List<Ulimit> ulimits;
 
     public List<ContainerDefinition> getContainerDefinitions() {
         return containerDefinitions;
@@ -273,6 +275,14 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition {
         this.taskMemory = taskMemory;
     }
 
+    public List<Ulimit> getUlimits() {
+        return ulimits;
+    }
+
+    public void setUlimits(List<Ulimit> ulimits) {
+        this.ulimits = ulimits;
+    }
+
     @Override
     public String toString() {
         return "EcsPushDefinition{" +
@@ -300,6 +310,7 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition {
             ", kmsKeyName='" + kmsKeyName + '\'' +
             ", iamRole='" + iamRole + '\'' +
             ", albTimeout='" + albTimeout + '\'' +
+            ", ulimits='" + ulimits + '\'' +
             '}';
     }
 

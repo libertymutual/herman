@@ -16,6 +16,8 @@
 package com.libertymutualgroup.herman.task.ecs;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.libertymutualgroup.herman.aws.ecs.broker.ddoswaf.DdosWafBrokerProperties;
+import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3BrokerProperties;
 import com.libertymutualgroup.herman.aws.ecs.loadbalancing.SSLCertificate;
 import com.libertymutualgroup.herman.aws.ecs.logging.SplunkInstance;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
@@ -27,12 +29,39 @@ import java.util.List;
 public class ECSPushTaskProperties extends CommonTaskProperties {
 
     private NewRelicBrokerProperties newRelic;
+    private DdosWafBrokerProperties ddosWaf;
     private List<SSLCertificate> sslCertificates = new ArrayList<>();
     private String ecsConsoleLinkPattern;
     private List<SplunkInstance> splunkInstances = new ArrayList<>();
     private String rdsCredentialBrokerImage;
     private String dnsBrokerLambda;
     private List<String> externalElbSecurityGroups = new ArrayList<>();
+    private S3BrokerProperties s3;
+    private String logsBucket;
+
+    @Override
+    public ECSPushTaskProperties withCompany(final String company) {
+        setCompany(company);
+        return this;
+    }
+
+    @Override
+    public ECSPushTaskProperties withSbu(final String sbu) {
+        setSbu(sbu);
+        return this;
+    }
+
+    @Override
+    public ECSPushTaskProperties withOrg(final String org) {
+        setOrg(org);
+        return this;
+    }
+
+    @Override
+    public ECSPushTaskProperties withEngine(final String engine) {
+        setEngine(engine);
+        return this;
+    }
 
     public NewRelicBrokerProperties getNewRelic() {
         return newRelic;
@@ -40,6 +69,14 @@ public class ECSPushTaskProperties extends CommonTaskProperties {
 
     public void setNewRelic(NewRelicBrokerProperties newRelic) {
         this.newRelic = newRelic;
+    }
+
+    public DdosWafBrokerProperties getDdosWaf() {
+        return ddosWaf;
+    }
+
+    public void setDdosWaf(DdosWafBrokerProperties ddosWaf) {
+        this.ddosWaf = ddosWaf;
     }
 
     public List<SSLCertificate> getSslCertificates() {
@@ -91,33 +128,31 @@ public class ECSPushTaskProperties extends CommonTaskProperties {
         this.externalElbSecurityGroups = externalElbSecurityGroups;
     }
 
-    @Override
-    public ECSPushTaskProperties withCompany(final String company) {
-        setCompany(company);
-        return this;
+    public S3BrokerProperties getS3() {
+        return s3;
     }
 
-    @Override
-    public ECSPushTaskProperties withSbu(final String sbu) {
-        setSbu(sbu);
-        return this;
+    public void setS3(S3BrokerProperties s3) {
+        this.s3 = s3;
     }
 
-    @Override
-    public ECSPushTaskProperties withOrg(final String org) {
-        setOrg(org);
-        return this;
+    public String getLogsBucket() {
+        return logsBucket;
     }
 
-    @Override
-    public ECSPushTaskProperties withEngine(final String engine) {
-        setEngine(engine);
-        return this;
+    public void setLogsBucket(String logsBucket) {
+        this.logsBucket = logsBucket;
     }
 
     public ECSPushTaskProperties withNewRelic(
         final NewRelicBrokerProperties newRelic) {
         this.newRelic = newRelic;
+        return this;
+    }
+
+    public ECSPushTaskProperties withDdosWaf(
+        final DdosWafBrokerProperties ddosWaf) {
+        this.ddosWaf = ddosWaf;
         return this;
     }
 
@@ -154,16 +189,29 @@ public class ECSPushTaskProperties extends CommonTaskProperties {
         return this;
     }
 
+    public ECSPushTaskProperties withS3(final S3BrokerProperties s3) {
+        this.s3 = s3;
+        return this;
+    }
+
+    public ECSPushTaskProperties withLogsBucket(final String logsBucket) {
+        this.logsBucket = logsBucket;
+        return this;
+    }
+
     @Override
     public String toString() {
         return "ECSPushTaskProperties{" +
             "newRelic=" + newRelic +
+            ", ddosWaf=" + ddosWaf +
             ", sslCertificates=" + sslCertificates +
             ", ecsConsoleLinkPattern='" + ecsConsoleLinkPattern + '\'' +
             ", splunkInstances=" + splunkInstances +
             ", rdsCredentialBrokerImage='" + rdsCredentialBrokerImage + '\'' +
             ", dnsBrokerLambda='" + dnsBrokerLambda + '\'' +
             ", externalElbSecurityGroups=" + externalElbSecurityGroups +
+            ", s3=" + s3 +
+            ", logsBucket='" + logsBucket + '\'' +
             "} " + super.toString();
     }
 }

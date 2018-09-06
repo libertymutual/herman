@@ -286,15 +286,20 @@ public class AuroraClient implements RdsClient {
         createDbClusterRequest.withAvailabilityZones(rds.getAvailabilityZones())
             .withBackupRetentionPeriod(rds.getBackupRetentionPeriod())
             .withCharacterSetName(rds.getCharacterSetName())
-            .withDBClusterIdentifier(clusterId).withDatabaseName(rds.getDBName())
-            .withDBSubnetGroupName(clusterMetadata.getDbSubnetGroup()).withEngine(rds.getEngine())
-            .withEngineVersion(rds.getEngineVersion()).withKmsKeyId(rds.getKmsKeyId())
+            .withDBClusterIdentifier(clusterId)
+            .withDatabaseName(rds.getDBName())
+            .withDBSubnetGroupName(clusterMetadata.getDbSubnetGroup())
+            .withEngine(rds.getEngine())
+            .withEngineVersion(rds.getEngineVersion())
+            .withKmsKeyId(rds.getKmsKeyId())
             .withMasterUsername(rds.getMasterUsername())
             .withMasterUserPassword(masterUserPassword)
-            .withPort(rds.getDbInstancePort()).withPreferredBackupWindow(rds.getPreferredBackupWindow())
+            .withPort(rds.getDbInstancePort())
+            .withPreferredBackupWindow(rds.getPreferredBackupWindow())
             .withPreferredMaintenanceWindow(rds.getPreferredMaintenanceWindow())
             .withStorageEncrypted(true)
-            .withTags(tags).withEnableIAMDatabaseAuthentication(rds.getIAMDatabaseAuthenticationEnabled())
+            .withTags(tags)
+            .withEnableIAMDatabaseAuthentication(rds.getIAMDatabaseAuthenticationEnabled())
             .withVpcSecurityGroupIds(rds.getAdditionalSecGroups());
         return client.createDBCluster(createDbClusterRequest);
     }
@@ -327,15 +332,22 @@ public class AuroraClient implements RdsClient {
         CreateDBInstanceRequest createReplicaRequest = new CreateDBInstanceRequest();
         createReplicaRequest.withAvailabilityZone(availabilityZone)
             .withAutoMinorVersionUpgrade(rds.getAutoMinorVersionUpgrade())
-            .withCharacterSetName(rds.getCharacterSetName()).withCopyTagsToSnapshot(rds.getCopyTagsToSnapshot())
-            .withDBClusterIdentifier(cluster.getDBClusterIdentifier()).withDBInstanceClass(rds.getDBInstanceClass())
-            .withDBInstanceIdentifier(instanceIdentifier).withDBSubnetGroupName(clusterMetadata.getDbSubnetGroup())
-            .withEngine(rds.getEngine()).withEngineVersion(rds.getEngineVersion())
-            .withIops(rds.getIops()).withLicenseModel(rds.getLicenseModel())
+            .withCharacterSetName(rds.getCharacterSetName())
+            .withCopyTagsToSnapshot(rds.getCopyTagsToSnapshot())
+            .withDBClusterIdentifier(cluster.getDBClusterIdentifier())
+            .withDBInstanceClass(rds.getDBInstanceClass())
+            .withDBInstanceIdentifier(instanceIdentifier)
+            .withDBSubnetGroupName(clusterMetadata.getDbSubnetGroup())
+            .withEngine(rds.getEngine())
+            .withEngineVersion(rds.getEngineVersion())
+            .withIops(rds.getIops())
+            .withLicenseModel(rds.getLicenseModel())
             .withMonitoringInterval(rds.getMonitoringInterval())
             .withMonitoringRoleArn(rds.getMonitoringRoleArn())
-            .withPubliclyAccessible(rds.getPubliclyAccessible()).withStorageEncrypted(true)
-            .withTags(tags).withTimezone(rds.getTimezone());
+            .withPubliclyAccessible(rds.getPubliclyAccessible())
+            .withStorageEncrypted(true)
+            .withTags(tags)
+            .withTimezone(rds.getTimezone());
 
         return client.createDBInstance(createReplicaRequest);
     }

@@ -125,13 +125,13 @@ public class NewRelicConfiguration {
         return this;
     }
 
-    public NewRelicConfiguration withNrqlConditions(final String nrqlConditions) {
-        this.nrqlConditions = nrqlConditions;
+    public NewRelicConfiguration withInfrastructureConditions(final String infrastructureConditions) {
+        this.infrastructureConditions = infrastructureConditions;
         return this;
     }
 
-    public NewRelicConfiguration withInfrastructureConditions(final String infrastructureConditions) {
-        this.infrastructureConditions = infrastructureConditions;
+    public NewRelicConfiguration withNrqlConditions(final String nrqlConditions) {
+        this.nrqlConditions = nrqlConditions;
         return this;
     }
 

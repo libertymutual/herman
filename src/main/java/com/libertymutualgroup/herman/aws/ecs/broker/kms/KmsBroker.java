@@ -28,6 +28,9 @@ import com.amazonaws.services.kms.model.DeleteAliasRequest;
 import com.amazonaws.services.kms.model.DescribeKeyRequest;
 import com.amazonaws.services.kms.model.DescribeKeyResult;
 import com.amazonaws.services.kms.model.EnableKeyRequest;
+import com.amazonaws.services.kms.model.EnableKeyRotationRequest;
+import com.amazonaws.services.kms.model.GetKeyRotationStatusRequest;
+import com.amazonaws.services.kms.model.GetKeyRotationStatusResult;
 import com.amazonaws.services.kms.model.KeyListEntry;
 import com.amazonaws.services.kms.model.ListAliasesRequest;
 import com.amazonaws.services.kms.model.ListAliasesResult;
@@ -124,6 +127,14 @@ public class KmsBroker {
         } catch (Exception ex) {
             throw new RuntimeException(
                 String.format("Error updating key policy for key ID %s. Policy: %s", keyId, policy), ex);
+        }
+
+        GetKeyRotationStatusResult statusResult = client.getKeyRotationStatus(new GetKeyRotationStatusRequest().withKeyId(keyId));
+        if (!statusResult.isKeyRotationEnabled()) {
+            client.enableKeyRotation(new EnableKeyRotationRequest().withKeyId(keyId));
+            hermanLogger.addLogEntry("... KMS key rotation enabled");
+        } else {
+            hermanLogger.addLogEntry("... KMS key rotation already enabled");
         }
 
         return keyId;

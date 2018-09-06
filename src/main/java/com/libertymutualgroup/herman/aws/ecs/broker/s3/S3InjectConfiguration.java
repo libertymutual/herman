@@ -16,20 +16,28 @@
 package com.libertymutualgroup.herman.aws.ecs.broker.s3;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.libertymutualgroup.herman.aws.ecs.broker.kms.KmsAppDefinition;
+import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class S3InjectConfiguration {
+public class S3InjectConfiguration implements KmsAppDefinition {
 
     private String appName;
     private String sbu;
     private String org;
     private String policyName;
     private Boolean website = false;
+    private S3EncryptionOption encryptionOption;
+    private List<S3LambdaNotificationConfiguration> lambdaNotifications;
+    private Boolean createBucketKey;
+    private String kmsKeyArn;
+    private String kmsKeyName;
 
     // Index and Error files used for website buckets
     private String indexFile = "index.html";
     private String errorFile = "error.html";
 
+    @Override
     public String getAppName() {
         return appName;
     }
@@ -70,6 +78,48 @@ public class S3InjectConfiguration {
         this.website = website;
     }
 
+    public S3EncryptionOption getEncryptionOption() {
+        return encryptionOption;
+    }
+
+    public void setEncryptionOption(S3EncryptionOption encryptionOption) {
+        this.encryptionOption = encryptionOption;
+    }
+
+    public List<S3LambdaNotificationConfiguration> getLambdaNotifications() {
+        return lambdaNotifications;
+    }
+
+    public void setLambdaNotifications(
+        List<S3LambdaNotificationConfiguration> lambdaNotifications) {
+        this.lambdaNotifications = lambdaNotifications;
+    }
+
+    public Boolean getCreateBucketKey() {
+        return createBucketKey;
+    }
+
+    public void setCreateBucketKey(Boolean createBucketKey) {
+        this.createBucketKey = createBucketKey;
+    }
+
+    public String getKmsKeyArn() {
+        return kmsKeyArn;
+    }
+
+    public void setKmsKeyArn(String kmsKeyArn) {
+        this.kmsKeyArn = kmsKeyArn;
+    }
+
+    @Override
+    public String getKmsKeyName() {
+        return kmsKeyName;
+    }
+
+    public void setKmsKeyName(String kmsKeyName) {
+        this.kmsKeyName = kmsKeyName;
+    }
+
     public String getIndexFile() {
         return indexFile;
     }
@@ -84,5 +134,85 @@ public class S3InjectConfiguration {
 
     public void setErrorFile(String errorFile) {
         this.errorFile = errorFile;
+    }
+
+    public S3InjectConfiguration withAppName(final String appName) {
+        this.appName = appName;
+        return this;
+    }
+
+    public S3InjectConfiguration withSbu(final String sbu) {
+        this.sbu = sbu;
+        return this;
+    }
+
+    public S3InjectConfiguration withOrg(final String org) {
+        this.org = org;
+        return this;
+    }
+
+    public S3InjectConfiguration withPolicyName(final String policyName) {
+        this.policyName = policyName;
+        return this;
+    }
+
+    public S3InjectConfiguration withWebsite(final Boolean website) {
+        this.website = website;
+        return this;
+    }
+
+    public S3InjectConfiguration withEncryptionOption(
+        final S3EncryptionOption encryptionOption) {
+        this.encryptionOption = encryptionOption;
+        return this;
+    }
+
+    public S3InjectConfiguration withLambdaNotifications(
+        final List<S3LambdaNotificationConfiguration> lambdaNotifications) {
+        this.lambdaNotifications = lambdaNotifications;
+        return this;
+    }
+
+    public S3InjectConfiguration withCreateBucketKey(final Boolean createBucketKey) {
+        this.createBucketKey = createBucketKey;
+        return this;
+    }
+
+    public S3InjectConfiguration withKmsKeyArn(final String kmsKeyArn) {
+        this.kmsKeyArn = kmsKeyArn;
+        return this;
+    }
+
+    public S3InjectConfiguration withKmsKeyName(final String kmsKeyName) {
+        this.kmsKeyName = kmsKeyName;
+        return this;
+    }
+
+    public S3InjectConfiguration withIndexFile(final String indexFile) {
+        this.indexFile = indexFile;
+        return this;
+    }
+
+    public S3InjectConfiguration withErrorFile(final String errorFile) {
+        this.errorFile = errorFile;
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return "S3InjectConfiguration{" +
+            "appName='" + appName + '\'' +
+            ", sbu='" + sbu + '\'' +
+            ", org='" + org + '\'' +
+            ", policyName='" + policyName + '\'' +
+            ", website=" + website +
+            ", encryptionOption=" + encryptionOption +
+            ", lambdaNotifications=" + lambdaNotifications +
+            ", createBucketKey=" + createBucketKey +
+            ", kmsKeyArn='" + kmsKeyArn + '\'' +
+            ", kmsKeyName='" + kmsKeyName + '\'' +
+            ", indexFile='" + indexFile + '\'' +
+            ", errorFile='" + errorFile + '\'' +
+            '}';
     }
 }

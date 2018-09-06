@@ -15,6 +15,7 @@
  */
 package com.libertymutualgroup.herman.aws.ecs;
 
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.services.cloudformation.AmazonCloudFormation;
 import com.amazonaws.services.cloudformation.AmazonCloudFormationClientBuilder;
@@ -218,7 +219,7 @@ public class EcsPush {
 
         this.lambdaClient = AWSLambdaClientBuilder.standard()
             .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
-            .withClientConfiguration(context.getAwsClientConfig())
+            .withClientConfiguration(new ClientConfiguration().withClientExecutionTimeout(300000).withSocketTimeout(300000))
             .withRegion(context.getRegion())
             .build();
 
@@ -292,13 +293,12 @@ public class EcsPush {
             DnsRegistrar dnsRegistrar = new DnsRegistrar(lambdaClient, logger, taskProperties.getDnsBrokerLambda());
             CertHandler certHandler = new CertHandler(logger, taskProperties.getSslCertificates());
             if (useAlb) {
-                EcsLoadBalancerV2Handler loadBalancerV2Handler = new EcsLoadBalancerV2Handler(elbV2Client,
+                EcsLoadBalancerV2Handler loadBalancerV2Handler = new EcsLoadBalancerV2Handler(elbV2Client, lambdaClient,
                     certHandler, dnsRegistrar, logger, taskProperties);
                 bal = loadBalancerV2Handler.createLoadBalancer(clusterMetadata, definition);
             } else {
                 EcsLoadBalancerHandler loadBalancerHandler = new EcsLoadBalancerHandler(elbClient, certHandler,
-                    dnsRegistrar,
-                    logger, taskProperties);
+                    dnsRegistrar, logger, taskProperties);
                 bal = loadBalancerHandler.createLoadBalancer(clusterMetadata, definition);
             }
         }
@@ -697,7 +697,7 @@ public class EcsPush {
         EcsClusterMetadata clusterMetadata) {
 
         String applicationKeyId = brokerKms(definition, clusterMetadata);
-        brokerS3(definition, clusterMetadata);
+        brokerS3(definition, clusterMetadata, applicationKeyId);
         brokerKinesisStream(definition, clusterMetadata);
         brokerSqs(definition);
         brokerSns(definition);
@@ -774,15 +774,15 @@ public class EcsPush {
 
     }
 
-    private void brokerS3(EcsPushDefinition definition, EcsClusterMetadata clusterMetadata) {
+    private void brokerS3(EcsPushDefinition definition, EcsClusterMetadata clusterMetadata, String kmsKeyId) {
         S3Broker s3Broker = new S3Broker(new S3CreateContext().fromECSPushContext(pushContext));
         if (definition.getBuckets() != null) {
             for (S3Bucket bucket : definition.getBuckets()) {
                 if (bucket.getPolicyName() != null) {
                     String policy = fileUtil.findFile(bucket.getPolicyName(), false);
-                    s3Broker.brokerBucketFromEcsPush(s3Client, bucket, policy, clusterMetadata, definition);
+                    s3Broker.brokerBucketFromEcsPush(s3Client, kmsClient, bucket, policy, kmsKeyId, clusterMetadata, definition);
                 } else {
-                    s3Broker.brokerBucketFromEcsPush(s3Client, bucket, null, clusterMetadata, definition);
+                    s3Broker.brokerBucketFromEcsPush(s3Client, kmsClient, bucket, null, kmsKeyId, clusterMetadata, definition);
                 }
             }
         }
@@ -811,19 +811,21 @@ public class EcsPush {
     }
 
     private void brokerServicesPostPush(EcsPushDefinition definition, EcsClusterMetadata meta) {
-        NewRelicBrokerConfiguration newRelicBrokerConfiguration = new NewRelicBrokerConfiguration()
-            .withBrokerProperties(taskProperties.getNewRelic());
-        NewRelicBroker newRelicBroker = new NewRelicBroker(
-            bambooPropertyHandler,
-            logger,
-            fileUtil,
-            newRelicBrokerConfiguration,
-            lambdaClient);
-        newRelicBroker.brokerNewRelicApplicationDeployment(
-            definition.getNewRelic(),
-            definition.getAppName(),
-            definition.getNewRelicApplicationName(),
-            meta.getNewrelicLicenseKey());
+        if (taskProperties.getNewRelic() != null) {
+            NewRelicBrokerConfiguration newRelicBrokerConfiguration = new NewRelicBrokerConfiguration()
+                .withBrokerProperties(taskProperties.getNewRelic());
+            NewRelicBroker newRelicBroker = new NewRelicBroker(
+                bambooPropertyHandler,
+                logger,
+                fileUtil,
+                newRelicBrokerConfiguration,
+                lambdaClient);
+            newRelicBroker.brokerNewRelicApplicationDeployment(
+                definition.getNewRelic(),
+                definition.getAppName(),
+                definition.getNewRelicApplicationName(),
+                meta.getNewrelicLicenseKey());
+        }
 
         if (definition.getBetaAutoscale() != null) {
             AutoscalingBroker asb = new AutoscalingBroker(pushContext);
