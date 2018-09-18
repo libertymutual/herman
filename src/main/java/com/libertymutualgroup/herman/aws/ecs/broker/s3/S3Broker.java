@@ -16,15 +16,31 @@
 package com.libertymutualgroup.herman.aws.ecs.broker.s3;
 
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.services.kms.AWSKMS;
+import com.amazonaws.services.kms.AWSKMSClientBuilder;
+import com.amazonaws.services.kms.model.DescribeKeyRequest;
+import com.amazonaws.services.kms.model.Tag;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.amazonaws.services.s3.model.BucketLoggingConfiguration;
+import com.amazonaws.services.s3.model.BucketNotificationConfiguration;
 import com.amazonaws.services.s3.model.BucketPolicy;
 import com.amazonaws.services.s3.model.BucketTaggingConfiguration;
 import com.amazonaws.services.s3.model.BucketWebsiteConfiguration;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
+import com.amazonaws.services.s3.model.DeleteBucketEncryptionRequest;
 import com.amazonaws.services.s3.model.HeadBucketRequest;
+import com.amazonaws.services.s3.model.LambdaConfiguration;
+import com.amazonaws.services.s3.model.NotificationConfiguration;
+import com.amazonaws.services.s3.model.SSEAlgorithm;
+import com.amazonaws.services.s3.model.ServerSideEncryptionByDefault;
+import com.amazonaws.services.s3.model.ServerSideEncryptionConfiguration;
+import com.amazonaws.services.s3.model.ServerSideEncryptionRule;
+import com.amazonaws.services.s3.model.SetBucketEncryptionRequest;
+import com.amazonaws.services.s3.model.SetBucketLoggingConfigurationRequest;
+import com.amazonaws.services.s3.model.SetBucketNotificationConfigurationRequest;
 import com.amazonaws.services.s3.model.SetBucketPolicyRequest;
 import com.amazonaws.services.s3.model.TagSet;
 import com.amazonaws.util.IOUtils;
@@ -34,20 +50,25 @@ import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.credentials.BambooCredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
+import com.libertymutualgroup.herman.aws.ecs.broker.kms.KmsBroker;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
 import com.libertymutualgroup.herman.logging.HermanLogger;
-import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
+import com.libertymutualgroup.herman.task.s3.S3CreateTaskProperties;
 import com.libertymutualgroup.herman.util.FileUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class S3Broker {
 
@@ -57,7 +78,7 @@ public class S3Broker {
 
     private HermanLogger buildLogger;
     private PropertyHandler handler;
-    private CommonTaskProperties taskProperties;
+    private S3CreateTaskProperties taskProperties;
     private S3CreateContext context;
 
     public S3Broker(S3CreateContext context) {
@@ -69,24 +90,39 @@ public class S3Broker {
 
     public BucketMeta brokerFromConfigurationFile() {
         S3InjectConfiguration configuration = getS3Configuration();
-        AmazonS3 client = AmazonS3ClientBuilder.standard()
-            .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
-            .withClientConfiguration(BambooCredentialsHandler.getConfiguration()).withRegion(context.getRegion()).build();
+        configuration.setEncryptionOption(configuration.getEncryptionOption() == null ?
+            taskProperties.getS3().getDefaultEncryption() : configuration.getEncryptionOption());
 
-        TagSet tags = new TagSet();
+        Map<String, String> tagMap = new HashMap<>();
         if (taskProperties != null) {
-            tags.setTag(taskProperties.getSbuTagKey(), configuration.getSbu());
-            tags.setTag(taskProperties.getOrgTagKey(), configuration.getOrg());
-            tags.setTag(taskProperties.getAppTagKey(), configuration.getAppName());
+            tagMap.put(taskProperties.getSbuTagKey(), configuration.getSbu());
+            tagMap.put(taskProperties.getOrgTagKey(), configuration.getOrg());
+            tagMap.put(taskProperties.getAppTagKey(), configuration.getAppName());
         }
-        String policy = null;
 
+        // Broker KMS key if required
+        if (S3EncryptionOption.KMS.equals(configuration.getEncryptionOption())
+                && Boolean.TRUE.equals(configuration.getCreateBucketKey())) {
+            configuration.setKmsKeyArn(brokerKms(configuration, tagMap));
+        }
+
+        // Setup up policy and tags for the bucket
+        String policy = null;
         if (configuration.getPolicyName() != null) {
             FileUtil fileUtil = new FileUtil(context.getRootPath(), buildLogger);
             policy = fileUtil.findFile(configuration.getPolicyName(), false);
         }
+        TagSet tags = new TagSet();
+        tagMap.entrySet().stream().forEach(it ->
+            tags.setTag(it.getKey(), it.getValue())
+        );
 
+        AmazonS3 client = AmazonS3ClientBuilder.standard()
+            .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
+            .withClientConfiguration(BambooCredentialsHandler.getConfiguration()).withRegion(context.getRegion()).build();
         brokerBucket(client, configuration, tags, policy);
+        updateNotificationConfiguration(configuration, client);
+
         buildLogger.addLogEntry("Setting bamboo.s3.brokered.name = " + configuration.getAppName());
         buildLogger.addLogEntry("Setting bamboo.s3.brokered.region = " + client.getRegionName());
         BucketMeta result = new BucketMeta();
@@ -95,8 +131,29 @@ public class S3Broker {
         return result;
     }
 
-    public void brokerBucketFromEcsPush(AmazonS3 client, S3Bucket bucket, String bucketPolicy,
-        EcsClusterMetadata clusterMetadata, EcsPushDefinition definition) {
+    private String brokerKms(S3InjectConfiguration configuration, Map<String, String> tagMap) {
+        AWSKMS kmsClient = AWSKMSClientBuilder.standard()
+            .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
+            .withClientConfiguration(BambooCredentialsHandler.getConfiguration()).withRegion(context.getRegion()).build();
+
+        KmsBroker kmsBroker = new KmsBroker(this.buildLogger, this.handler, this.context.getFileUtil(), this.taskProperties,
+            this.context.getSessionCredentials(), null, this.context.getRegion());
+        String keyArn = "";
+        if (configuration.getCreateBucketKey()) {
+            List<Tag> tags = tagMap.entrySet().stream().map(it ->
+                    new Tag().withTagKey(it.getKey()).withTagValue(it.getValue()))
+                .collect(Collectors.toList());
+            String keyId = kmsBroker.brokerKey(kmsClient, configuration, tags);
+            keyArn = kmsBroker.getExistingKeyArnFromId(kmsClient, keyId);
+        } else {
+            kmsBroker.deleteKey(kmsClient, configuration);
+        }
+
+        return keyArn;
+    }
+
+    public void brokerBucketFromEcsPush(AmazonS3 s3Client, AWSKMS kmsClient, S3Bucket bucket, String bucketPolicy, String kmsKeyId,
+            EcsClusterMetadata clusterMetadata, EcsPushDefinition definition) {
         TagSet tags = new TagSet();
         if (taskProperties != null) {
             tags.setTag(taskProperties.getSbuTagKey(), clusterMetadata.getNewrelicSbuTag());
@@ -104,12 +161,37 @@ public class S3Broker {
             tags.setTag(taskProperties.getAppTagKey(), definition.getAppName());
             tags.setTag(taskProperties.getClusterTagKey(), clusterMetadata.getClusterId());
         }
+
         S3InjectConfiguration configuration = new S3InjectConfiguration();
         configuration.setAppName(bucket.getName());
         configuration.setSbu(clusterMetadata.getNewrelicSbuTag());
         configuration.setOrg(clusterMetadata.getNewrelicOrgTag());
+        configuration.setEncryptionOption(bucket.getEncryptionOption() == null ?
+            taskProperties.getS3().getDefaultEncryption() : bucket.getEncryptionOption());
 
-        brokerBucket(client, configuration, tags, bucketPolicy);
+        if (S3EncryptionOption.KMS.equals(configuration.getEncryptionOption()) && kmsKeyId != null) {
+            String kmsKeyArn = kmsClient.describeKey(new DescribeKeyRequest().withKeyId(kmsKeyId)).getKeyMetadata().getArn();
+            buildLogger.addLogEntry("KMS key arn retrieved: " + kmsKeyArn);
+            configuration.setKmsKeyArn(kmsKeyArn);
+        } else {
+            new AwsExecException("KMS is set as the encryption option. An app KMS key ID is required.");
+        }
+
+        brokerBucket(s3Client, configuration, tags, bucketPolicy);
+    }
+
+    private void updateNotificationConfiguration(S3InjectConfiguration configuration, AmazonS3 client) {
+        if (configuration.getLambdaNotifications() != null) {
+            buildLogger.addLogEntry("Setting Lambda notification configurations: " + configuration.getLambdaNotifications());
+            Map<String, NotificationConfiguration> lambdaConfigurationMap = new HashMap<>();
+            configuration.getLambdaNotifications().stream().forEach(it -> lambdaConfigurationMap.put(
+                it.getName(),
+                new LambdaConfiguration(it.getFunctionARN(), it.getEvents())));
+
+            client.setBucketNotificationConfiguration(new SetBucketNotificationConfigurationRequest(
+                configuration.getAppName(),
+                new BucketNotificationConfiguration().withNotificationConfiguration(lambdaConfigurationMap)));
+        }
     }
 
     private void brokerBucket(AmazonS3 client, S3InjectConfiguration configuration, TagSet tags, String bucketPolicy) {
@@ -151,18 +233,53 @@ public class S3Broker {
                 + " at URL: " + bucketWebsiteUrl;
 
             buildLogger.addLogEntry(websiteConfigurationString);
-        } else {
-            S3BucketEncryption bucketEncryption = new S3BucketEncryption(bucketName, exists, client, buildLogger);
-            try {
-                bucketEncryption.ensureEncryption();
-            } catch (Exception ex) {
-                buildLogger
-                    .addLogEntry(String.format("Error enabling bucket default encryption for %s", bucketName));
-                throw new AwsExecException("Error enabling bucket default encryption", ex);
+        }
+
+        if (S3EncryptionOption.NONE.equals(configuration.getEncryptionOption())) {
+            client.deleteBucketEncryption(new DeleteBucketEncryptionRequest().withBucketName(bucketName));
+            buildLogger.addLogEntry("Encryption is disabled for bucket " + bucketName);
+
+        } else if (S3EncryptionOption.KMS.equals(configuration.getEncryptionOption())) {
+            buildLogger.addLogEntry(String.format("Enabling %s encryption for the bucket", configuration.getEncryptionOption()));
+            if (configuration.getKmsKeyArn() == null) {
+                throw new AwsExecException("KMS key arn is required if encryption option is set to KMS. Other options are AES256 and NONE.");
             }
+
+            SetBucketEncryptionRequest request = new SetBucketEncryptionRequest()
+                .withBucketName(bucketName)
+                .withServerSideEncryptionConfiguration(new ServerSideEncryptionConfiguration()
+                    .withRules(new ServerSideEncryptionRule()
+                        .withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
+                            .withSSEAlgorithm(SSEAlgorithm.KMS)
+                            .withKMSMasterKeyID(configuration.getKmsKeyArn()))));
+            client.setBucketEncryption(request);
+            buildLogger.addLogEntry(String.format("... KMS key: %s", configuration.getKmsKeyArn()));
+
+
+        } else if (S3EncryptionOption.AES256.equals(configuration.getEncryptionOption())) {
+            buildLogger.addLogEntry(String.format("Enabling %s encryption for the bucket", configuration.getEncryptionOption()));
+            SetBucketEncryptionRequest request = new SetBucketEncryptionRequest()
+                .withBucketName(bucketName)
+                .withServerSideEncryptionConfiguration(new ServerSideEncryptionConfiguration()
+                    .withRules(new ServerSideEncryptionRule()
+                        .withApplyServerSideEncryptionByDefault(new ServerSideEncryptionByDefault()
+                            .withSSEAlgorithm(SSEAlgorithm.AES256))));
+            client.setBucketEncryption(request);
         }
 
         client.setBucketTaggingConfiguration(bucketName, new BucketTaggingConfiguration().withTagSets(tags));
+
+        if (StringUtils.isNotBlank(taskProperties.getLogsBucket())) {
+            buildLogger.addLogEntry(String.format("Enabling S3 access logging using logs bucket %s", taskProperties.getLogsBucket()));
+            client.setBucketLoggingConfiguration(new SetBucketLoggingConfigurationRequest(
+                configuration.getAppName(),
+                new BucketLoggingConfiguration(taskProperties.getLogsBucket(), null)));
+        } else {
+            buildLogger.addLogEntry("Disabling S3 access logging");
+            client.setBucketLoggingConfiguration(new SetBucketLoggingConfigurationRequest(
+                configuration.getAppName(),
+                new BucketLoggingConfiguration()));
+        }
     }
 
     private void setBucketPolicy(AmazonS3 client, String bucketPolicy, String bucketName) {

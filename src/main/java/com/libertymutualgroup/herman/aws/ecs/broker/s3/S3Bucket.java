@@ -19,14 +19,7 @@ public class S3Bucket {
 
     private String name;
     private String policyName;
-
-    public String getPolicyName() {
-        return policyName;
-    }
-
-    public void setPolicyName(String policyName) {
-        this.policyName = policyName;
-    }
+    private S3EncryptionOption encryptionOption;
 
     public String getName() {
         return name;
@@ -36,11 +29,44 @@ public class S3Bucket {
         this.name = name;
     }
 
+    public String getPolicyName() {
+        return policyName;
+    }
+
+    public void setPolicyName(String policyName) {
+        this.policyName = policyName;
+    }
+
+    public S3EncryptionOption getEncryptionOption() {
+        return encryptionOption;
+    }
+
+    public void setEncryptionOption(S3EncryptionOption encryptionOption) {
+        this.encryptionOption = encryptionOption;
+    }
+
+    public S3Bucket withName(final String name) {
+        this.name = name;
+        return this;
+    }
+
+    public S3Bucket withPolicyName(final String policyName) {
+        this.policyName = policyName;
+        return this;
+    }
+
+    public S3Bucket withEncryptionOption(
+        final S3EncryptionOption encryptionOption) {
+        this.encryptionOption = encryptionOption;
+        return this;
+    }
+
     @Override
     public String toString() {
         return "S3Bucket{" +
             "name='" + name + '\'' +
             ", policyName='" + policyName + '\'' +
+            ", encryptionOption=" + encryptionOption +
             '}';
     }
 }

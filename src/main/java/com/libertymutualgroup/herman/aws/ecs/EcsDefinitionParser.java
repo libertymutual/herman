@@ -37,6 +37,7 @@ import com.amazonaws.services.ecs.model.TransportProtocol;
 import com.amazonaws.services.ecs.model.Ulimit;
 import com.amazonaws.services.ecs.model.UlimitName;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -123,6 +124,9 @@ public class EcsDefinitionParser {
 
         @JsonIgnore
         void setName(UlimitName name);
+
+        @JsonProperty("name")
+        void setName(String name);
     }
 
     interface IgnorePlacementConstraint {

@@ -20,7 +20,8 @@ import com.amazonaws.regions.Regions;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushContext;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.logging.HermanLogger;
-import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
+import com.libertymutualgroup.herman.task.s3.S3CreateTaskProperties;
+import com.libertymutualgroup.herman.util.FileUtil;
 
 public class S3CreateContext {
 
@@ -29,7 +30,20 @@ public class S3CreateContext {
     private AWSCredentials sessionCredentials;
     private Regions region;
     private String rootPath;
-    private CommonTaskProperties taskProperties;
+    private S3CreateTaskProperties taskProperties;
+    private FileUtil fileUtil;
+
+    public S3CreateContext fromECSPushContext(EcsPushContext pushContext) {
+        this.logger = pushContext.getLogger();
+        this.bambooPropertyHandler = pushContext.getPropertyHandler();
+        this.sessionCredentials = pushContext.getSessionCredentials();
+        this.region = pushContext.getRegion();
+        this.rootPath = pushContext.getRootPath();
+        this.taskProperties = new S3CreateTaskProperties()
+            .fromECSPushTaskProperties(pushContext.getTaskProperties());
+        this.fileUtil = new FileUtil(pushContext.getRootPath(), pushContext.getLogger());
+        return this;
+    }
 
     public HermanLogger getLogger() {
         return logger;
@@ -71,12 +85,20 @@ public class S3CreateContext {
         this.rootPath = rootPath;
     }
 
-    public CommonTaskProperties getTaskProperties() {
+    public S3CreateTaskProperties getTaskProperties() {
         return taskProperties;
     }
 
-    public void setTaskProperties(CommonTaskProperties taskProperties) {
+    public void setTaskProperties(S3CreateTaskProperties taskProperties) {
         this.taskProperties = taskProperties;
+    }
+
+    public FileUtil getFileUtil() {
+        return fileUtil;
+    }
+
+    public void setFileUtil(FileUtil fileUtil) {
+        this.fileUtil = fileUtil;
     }
 
     public S3CreateContext withLogger(final HermanLogger logger) {
@@ -84,7 +106,8 @@ public class S3CreateContext {
         return this;
     }
 
-    public S3CreateContext withBambooPropertyHandler(final PropertyHandler bambooPropertyHandler) {
+    public S3CreateContext withBambooPropertyHandler(
+        final PropertyHandler bambooPropertyHandler) {
         this.bambooPropertyHandler = bambooPropertyHandler;
         return this;
     }
@@ -104,8 +127,14 @@ public class S3CreateContext {
         return this;
     }
 
-    public S3CreateContext withTaskProperties(final CommonTaskProperties taskProperties) {
+    public S3CreateContext withTaskProperties(
+        final S3CreateTaskProperties taskProperties) {
         this.taskProperties = taskProperties;
+        return this;
+    }
+
+    public S3CreateContext withFileUtil(final FileUtil fileUtil) {
+        this.fileUtil = fileUtil;
         return this;
     }
 
@@ -115,19 +144,10 @@ public class S3CreateContext {
             "logger=" + logger +
             ", bambooPropertyHandler=" + bambooPropertyHandler +
             ", sessionCredentials=" + sessionCredentials +
-            ", region='" + region + '\'' +
+            ", region=" + region +
             ", rootPath='" + rootPath + '\'' +
             ", taskProperties=" + taskProperties +
+            ", fileUtil=" + fileUtil +
             '}';
-    }
-
-    public S3CreateContext fromECSPushContext(EcsPushContext pushContext) {
-        this.logger = pushContext.getLogger();
-        this.bambooPropertyHandler = pushContext.getPropertyHandler();
-        this.sessionCredentials = pushContext.getSessionCredentials();
-        this.region = pushContext.getRegion();
-        this.rootPath = pushContext.getRootPath();
-        this.taskProperties = pushContext.getTaskProperties();
-        return this;
     }
 }

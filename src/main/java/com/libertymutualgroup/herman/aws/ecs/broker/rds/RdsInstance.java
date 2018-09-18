@@ -16,6 +16,8 @@
 package com.libertymutualgroup.herman.aws.ecs.broker.rds;
 
 import com.amazonaws.services.rds.model.DBInstance;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -35,8 +37,9 @@ public class RdsInstance extends DBInstance {
     private String parameterGroupFile;
     private List<String> additionalSecGroups;
     private Boolean preDeployBackup;
+    private List<String> extensions; // Postgres-specific (optional)
 
-    public void setDefaults() {
+    public void setDefaults(String kmsKeyId) {
         this.setInjectNames(getInjectNames() == null ? new RdsInjectConfiguration() : getInjectNames());
 
         injectNames.setDefaults();
@@ -57,6 +60,8 @@ public class RdsInstance extends DBInstance {
             getIAMDatabaseAuthenticationEnabled() == null ? false : getIAMDatabaseAuthenticationEnabled());
         this.setAvailabilityZones(getAvailabilityZones() == null ? new String[]{"us-east-1a"} : getAvailabilityZones());
         this.setPreDeployBackup(getPreDeployBackup() == null ? false : getPreDeployBackup());
+        this.setExtensions(getExtensions() == null ? new ArrayList<>() : getExtensions());
+        this.setKmsKeyId(getKmsKeyId() == null ? kmsKeyId : getKmsKeyId());
     }
 
     public String getConnectionString() {
@@ -161,14 +166,6 @@ public class RdsInstance extends DBInstance {
         this.parameterGroupFile = parameterGroupFile;
     }
 
-    @Override
-    public String toString() {
-        return "RdsInstance{" +
-            "injectNames=" + injectNames +
-            ", encryptedPass='" + encryptedPassword + '\'' +
-            "} " + super.toString();
-    }
-
     public List<String> getAdditionalSecGroups() {
         return additionalSecGroups;
     }
@@ -183,6 +180,102 @@ public class RdsInstance extends DBInstance {
 
     public void setPreDeployBackup(Boolean preDeployBackup) {
         this.preDeployBackup = preDeployBackup;
+    }
+
+    public List<String> getExtensions() {
+        return extensions;
+    }
+
+    public void setExtensions(List<String> extensions) {
+        this.extensions = extensions;
+    }
+
+    public RdsInstance withInjectNames(
+        final RdsInjectConfiguration injectNames) {
+        this.injectNames = injectNames;
+        return this;
+    }
+
+    public RdsInstance withEncryptedPassword(final String encryptedPassword) {
+        this.encryptedPassword = encryptedPassword;
+        return this;
+    }
+
+    public RdsInstance withAppUsername(final String appUsername) {
+        this.appUsername = appUsername;
+        return this;
+    }
+
+    public RdsInstance withAppEncryptedPassword(final String appEncryptedPassword) {
+        this.appEncryptedPassword = appEncryptedPassword;
+        return this;
+    }
+
+    public RdsInstance withAdminUsername(final String adminUsername) {
+        this.adminUsername = adminUsername;
+        return this;
+    }
+
+    public RdsInstance withAdminEncryptedPassword(final String adminEncryptedPassword) {
+        this.adminEncryptedPassword = adminEncryptedPassword;
+        return this;
+    }
+
+    public RdsInstance withCredPrefix(final String credPrefix) {
+        this.credPrefix = credPrefix;
+        return this;
+    }
+
+    public RdsInstance withFullUpdate(final Boolean fullUpdate) {
+        this.fullUpdate = fullUpdate;
+        return this;
+    }
+
+    public RdsInstance withAvailabilityZones(final String[] availabilityZones) {
+        this.availabilityZones = availabilityZones;
+        return this;
+    }
+
+    public RdsInstance withOptionGroupFile(final String optionGroupFile) {
+        this.optionGroupFile = optionGroupFile;
+        return this;
+    }
+
+    public RdsInstance withParameterGroupFile(final String parameterGroupFile) {
+        this.parameterGroupFile = parameterGroupFile;
+        return this;
+    }
+
+    public RdsInstance withAdditionalSecGroups(final List<String> additionalSecGroups) {
+        this.additionalSecGroups = additionalSecGroups;
+        return this;
+    }
+
+    public RdsInstance withPreDeployBackup(final Boolean preDeployBackup) {
+        this.preDeployBackup = preDeployBackup;
+        return this;
+    }
+
+    public RdsInstance withExtensions(final List<String> extensions) {
+        this.extensions = extensions;
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return "RdsInstance{" +
+            "injectNames=" + injectNames +
+            ", appUsername='" + appUsername + '\'' +
+            ", adminUsername='" + adminUsername + '\'' +
+            ", credPrefix='" + credPrefix + '\'' +
+            ", fullUpdate=" + fullUpdate +
+            ", availabilityZones=" + Arrays.toString(availabilityZones) +
+            ", optionGroupFile='" + optionGroupFile + '\'' +
+            ", parameterGroupFile='" + parameterGroupFile + '\'' +
+            ", additionalSecGroups=" + additionalSecGroups +
+            ", preDeployBackup=" + preDeployBackup +
+            ", extensions=" + extensions +
+            "} " + super.toString();
     }
 
     @Override
@@ -212,6 +305,7 @@ public class RdsInstance extends DBInstance {
             .append(parameterGroupFile, that.parameterGroupFile)
             .append(additionalSecGroups, that.additionalSecGroups)
             .append(preDeployBackup, that.preDeployBackup)
+            .append(extensions, that.extensions)
             .isEquals();
     }
 
@@ -232,6 +326,7 @@ public class RdsInstance extends DBInstance {
             .append(parameterGroupFile)
             .append(additionalSecGroups)
             .append(preDeployBackup)
+            .append(extensions)
             .toHashCode();
     }
 }

@@ -19,6 +19,7 @@ import com.amazonaws.services.cloudformation.model.Tag;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.LoadBalancer;
 import com.amazonaws.services.elasticloadbalancing.AmazonElasticLoadBalancing;
+import com.amazonaws.services.elasticloadbalancing.model.AccessLog;
 import com.amazonaws.services.elasticloadbalancing.model.AddTagsRequest;
 import com.amazonaws.services.elasticloadbalancing.model.ApplySecurityGroupsToLoadBalancerRequest;
 import com.amazonaws.services.elasticloadbalancing.model.AttachLoadBalancerToSubnetsRequest;
@@ -31,7 +32,9 @@ import com.amazonaws.services.elasticloadbalancing.model.DescribeLoadBalancersRe
 import com.amazonaws.services.elasticloadbalancing.model.DuplicateLoadBalancerNameException;
 import com.amazonaws.services.elasticloadbalancing.model.HealthCheck;
 import com.amazonaws.services.elasticloadbalancing.model.Listener;
+import com.amazonaws.services.elasticloadbalancing.model.LoadBalancerAttributes;
 import com.amazonaws.services.elasticloadbalancing.model.LoadBalancerDescription;
+import com.amazonaws.services.elasticloadbalancing.model.ModifyLoadBalancerAttributesRequest;
 import com.amazonaws.services.elasticloadbalancing.model.SetLoadBalancerPoliciesOfListenerRequest;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.EcsPortHandler;
@@ -51,6 +54,7 @@ public class EcsLoadBalancerHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(EcsLoadBalancerHandler.class);
 
     private static final String HTTPS = "HTTPS";
+    public static final String INTERNET_FACING = "internet-facing";
     private AmazonElasticLoadBalancing elbClient;
     private CertHandler certHandler;
     private HermanLogger buildLogger;
@@ -94,8 +98,8 @@ public class EcsLoadBalancerHandler {
             definition.getService().getUrlSchemeOverride());
         String elbScheme;
         List<String> elbSubnets;
-        if (isInternetFacingUrlScheme || "internet-facing".equals(definition.getService().getElbSchemeOverride())) {
-            elbScheme = "internet-facing";
+        if (isInternetFacingUrlScheme || INTERNET_FACING.equals(definition.getService().getElbSchemeOverride())) {
+            elbScheme = INTERNET_FACING;
             elbSubnets = clusterMetadata.getPublicSubnets();
         } else {
             elbScheme = "internal";
@@ -103,7 +107,7 @@ public class EcsLoadBalancerHandler {
         }
 
         List<String> elbSecurityGroups = new ArrayList<>();
-        if ("internet-facing".equals(elbScheme) && HTTPS.equals(protocol)) {
+        if (INTERNET_FACING.equals(elbScheme) && HTTPS.equals(protocol)) {
             elbSecurityGroups.addAll(taskProperties.getExternalElbSecurityGroups());
         } else {
             elbSecurityGroups.addAll(clusterMetadata.getElbSecurityGroups());
@@ -113,9 +117,12 @@ public class EcsLoadBalancerHandler {
             sslCertificate.getArn());
         List<com.amazonaws.services.elasticloadbalancing.model.Tag> tags = getElbTagList(
             clusterMetadata.getClusterCftStackTags(), appName);
-        CreateLoadBalancerRequest createLoadBalancerRequest = new CreateLoadBalancerRequest().withSubnets(elbSubnets)
-            .withListeners(listeners).withScheme(elbScheme).withSecurityGroups(elbSecurityGroups)
-            .withLoadBalancerName(appName).withTags(tags);
+        CreateLoadBalancerRequest createLoadBalancerRequest = new CreateLoadBalancerRequest()
+            .withSubnets(elbSubnets)
+            .withListeners(listeners).withScheme(elbScheme)
+            .withSecurityGroups(elbSecurityGroups)
+            .withLoadBalancerName(appName)
+            .withTags(tags);
         try {
             elbClient.createLoadBalancer(createLoadBalancerRequest);
         } catch (DuplicateLoadBalancerNameException e) {
@@ -153,13 +160,14 @@ public class EcsLoadBalancerHandler {
         }
 
         if (definition.getService().getAppStickinessCookie() != null) {
-
             elbClient.createAppCookieStickinessPolicy(new CreateAppCookieStickinessPolicyRequest()
                 .withLoadBalancerName(appName).withPolicyName("StickyElbPolicy")
                 .withCookieName(definition.getService().getAppStickinessCookie()));
             elbClient.setLoadBalancerPoliciesOfListener(new SetLoadBalancerPoliciesOfListenerRequest()
                 .withLoadBalancerName(appName).withLoadBalancerPort(443).withPolicyNames("StickyElbPolicy"));
         }
+
+        resetAccessLoggingConfig(appName);
 
         HealthCheck healthCheck = definition.getService().getHealthCheck();
         String healthCheckPath = healthCheck.getTarget();
@@ -189,9 +197,35 @@ public class EcsLoadBalancerHandler {
         String registeredUrl = urlPrefix + "." + definition.getService().getUrlSuffix();
         dnsRegistrar.registerDns(appName, "classic", protocol, registeredUrl);
 
+        brokerDDoSWAFConfiguration(appName, protocol, elbScheme);
+
         buildLogger.addLogEntry("... ELB updates complete");
         return new LoadBalancer().withContainerName(containerName).withContainerPort(containerPort)
             .withLoadBalancerName(appName);
+    }
+
+    private void resetAccessLoggingConfig(String appName) {
+        AccessLog accessLog;
+        if (taskProperties.getLogsBucket() != null) {
+            buildLogger.addLogEntry(String.format("... Enabling access logging using the %s bucket", taskProperties.getLogsBucket()));
+            accessLog = new AccessLog()
+                .withEnabled(true)
+                .withEmitInterval(60) // Default is 60
+                .withS3BucketName(taskProperties.getLogsBucket());
+        } else {
+            buildLogger.addLogEntry("... Disabling access logging");
+            accessLog = new AccessLog().withEnabled(false);
+        }
+        elbClient.modifyLoadBalancerAttributes(new ModifyLoadBalancerAttributesRequest()
+            .withLoadBalancerName(appName)
+            .withLoadBalancerAttributes(new LoadBalancerAttributes().withAccessLog(accessLog)));
+    }
+
+    private void brokerDDoSWAFConfiguration(String appName, String protocol, String elbScheme) {
+        if (INTERNET_FACING.equals(elbScheme)
+                && HTTPS.equals(protocol)) {
+            buildLogger.addLogEntry("Skipping DDoS / WAF configuration updates - not implemented for ELBs");
+        }
     }
 
     private List<Listener> generateListeners(List<Integer> elbSourcePorts, Integer randomPort, String protocol,

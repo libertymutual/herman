@@ -32,6 +32,7 @@ import com.amazonaws.services.elasticloadbalancingv2.model.SetSecurityGroupsRequ
 import com.amazonaws.services.elasticloadbalancingv2.model.SetSubnetsRequest;
 import com.amazonaws.services.elasticloadbalancingv2.model.Tag;
 import com.amazonaws.services.elasticloadbalancingv2.model.TargetGroup;
+import com.amazonaws.services.lambda.AWSLambda;
 import com.libertymutualgroup.herman.aws.ecs.EcsDefinitionParser;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
@@ -58,6 +59,8 @@ public class EcsLoadBalancerV2HandlerTest {
     @Mock
     AmazonElasticLoadBalancing elbClient;
     @Mock
+    AWSLambda awsLambda;
+    @Mock
     CertHandler certHandler;
     @Mock
     DnsRegistrar dnsRegistrar;
@@ -73,7 +76,7 @@ public class EcsLoadBalancerV2HandlerTest {
             .withOrg("LMB")
             .withSbu("CI");
 
-        handler = new EcsLoadBalancerV2Handler(elbClient, certHandler, dnsRegistrar, logger, taskProperties);
+        handler = new EcsLoadBalancerV2Handler(elbClient, awsLambda, certHandler, dnsRegistrar, logger, taskProperties);
 
         when(certHandler.deriveCert("HTTPS", "np-lmb.lmig.com", "my-app-dev"))
             .thenReturn(new SSLCertificate().withArn("arn:somecert"));

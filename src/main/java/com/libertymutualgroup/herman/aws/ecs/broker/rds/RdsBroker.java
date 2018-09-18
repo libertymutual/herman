@@ -81,7 +81,7 @@ public class RdsBroker {
 
     public RdsInstance brokerDb() {
         RdsInstance rds = definition.getDatabase();
-        rds.setDefaults();
+        rds.setDefaults(targetKeyId);
         String instanceId = rds.getDBInstanceIdentifier() != null ? rds.getDBInstanceIdentifier()
             : definition.getAppName();
         String masterUserPassword = this.generateRandomPassword();
@@ -189,10 +189,10 @@ public class RdsBroker {
         }
 
         if (instance.getEngine().equalsIgnoreCase(POSTGRES_ENGINE)
-            || instance.getEngine().equalsIgnoreCase(MYSQL_ENGINE)
-            || instance.getEngine().contains(AURORA_ENGINE)) {
-            logger.addLogEntry("Brokering credentials for " + instance.getEngine() + " instance "
-                + instance.getEndpoint().getAddress());
+                || instance.getEngine().equalsIgnoreCase(MYSQL_ENGINE)
+                || instance.getEngine().contains(AURORA_ENGINE)) {
+            logger.addLogEntry(String.format("Updating credentials for %s (%s) instance: %s",
+                instance.getEngine(), instance.getEngineVersion(), instance.getEndpoint().getAddress()));
 
             String appUsername = instance.getAppUsername() != null ? instance.getAppUsername()
                 : getUsername(instance, "app");
@@ -200,7 +200,6 @@ public class RdsBroker {
             String appPassword = instance.getAppEncryptedPassword() != null ? instance.getAppEncryptedPassword()
                 : this.encrypt(awskmsClient, targetKeyId, this.generateRandomPassword());
 
-            logger.addLogEntry("... DB instance type is " + instance.getEngine().toLowerCase());
             logger.addLogEntry("... app username: " + appUsername);
             logger.addLogEntry("... app encrypted password: " + appPassword);
             logger.addLogEntry("... app password encrypted using KMS key: " + targetKeyId);
@@ -227,6 +226,7 @@ public class RdsBroker {
             propertyHandler.addProperty("DB_APP_PASSWORD", appPassword);
             propertyHandler.addProperty("DB_ADMIN_USERNAME", adminUsername);
             propertyHandler.addProperty("DB_ADMIN_PASSWORD", adminPassword);
+            propertyHandler.addProperty("DB_EXTENSIONS", getExtensions(instance));
             propertyHandler.addProperty("classpathTemplate", "/brokerTemplates/rds/credential-broker.yml");
 
             instance.setAppUsername(appUsername);
@@ -243,6 +243,14 @@ public class RdsBroker {
         }
 
         return instance;
+    }
+
+    private String getExtensions(RdsInstance instance) {
+        if (instance.getExtensions().size() > 0) {
+            return String.join(",", instance.getExtensions());
+        } else {
+            return "none"; // TODO - refactor this once the Lambda broker is used
+        }
     }
 
     private RdsInstance injectCipherNotation(RdsInstance instance) {
@@ -319,10 +327,15 @@ public class RdsBroker {
     }
 
     private String getCredentialBrokerProfile(RdsInstance instance) {
+        if (instance.getEngine().equalsIgnoreCase(MYSQL_ENGINE)
+                && instance.getEngineVersion().contains("5.6")) {
+            return "mysql56";
+        }
+
         if ((instance.getEngine().equalsIgnoreCase(MYSQL_ENGINE)
-            || (instance.getEngine().equalsIgnoreCase(AURORA_ENGINE))
-            || ("aurora-mysql".equalsIgnoreCase(instance.getEngine())))
-            && instance.getIAMDatabaseAuthenticationEnabled()) {
+                || (instance.getEngine().equalsIgnoreCase(AURORA_ENGINE))
+                || ("aurora-mysql".equalsIgnoreCase(instance.getEngine())))
+                && instance.getIAMDatabaseAuthenticationEnabled()) {
             return "mysqliam";
         }
 
@@ -331,8 +344,8 @@ public class RdsBroker {
         }
 
         if ((instance.getEngine().equalsIgnoreCase(AURORA_ENGINE)
-            || "aurora-mysql".equalsIgnoreCase(instance.getEngine()))
-            && !instance.getIAMDatabaseAuthenticationEnabled()) {
+                || "aurora-mysql".equalsIgnoreCase(instance.getEngine()))
+                && !instance.getIAMDatabaseAuthenticationEnabled()) {
             return MYSQL_ENGINE; // mysql profile for aurora without IAM auth
         }
 

@@ -104,6 +104,7 @@ public class RdsBrokerTest {
     private RdsInstance initInstanceDefinition() {
         RdsInstance instance = new RdsInstance();
         instance.setEngine("mysql");
+        instance.setEngineVersion("5.6");
 
         return instance;
     }
