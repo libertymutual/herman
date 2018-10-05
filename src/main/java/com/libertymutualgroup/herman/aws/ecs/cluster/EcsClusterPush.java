@@ -47,7 +47,6 @@ import com.amazonaws.services.ecs.model.ListContainerInstancesRequest;
 import com.amazonaws.services.ecs.model.ListContainerInstancesResult;
 import com.amazonaws.services.ecs.model.UpdateContainerInstancesStateRequest;
 import com.amazonaws.util.StringUtils;
-import com.atlassian.bamboo.task.TaskException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.collect.Lists;
@@ -59,8 +58,8 @@ import com.libertymutualgroup.herman.aws.cft.StackUtils;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushContext;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.logging.HermanLogger;
-import com.libertymutualgroup.herman.task.cft.CFTPushTaskProperties;
-import com.libertymutualgroup.herman.task.cft.CftPushTask;
+import com.libertymutualgroup.herman.task.cft.CftPushPropertyFactory;
+import com.libertymutualgroup.herman.task.cft.CftPushTaskProperties;
 import com.libertymutualgroup.herman.util.FileUtil;
 import com.libertymutualgroup.herman.util.TemplateFormat;
 
@@ -326,7 +325,7 @@ public class EcsClusterPush {
     private Stack pushStack(String stackName, String stackTemplate) {
         this.logger.addLogEntry("Pushing stack: " + stackName + "...");
 
-        CFTPushTaskProperties cftPushTaskProperties = CftPushTask.getTaskProperties(context.getSessionCredentials(), this.logger, context.getRegion());
+        CftPushTaskProperties cftPushTaskProperties = CftPushPropertyFactory.getTaskProperties(context.getSessionCredentials(), this.logger, context.getRegion(), this.propertyHandler);
         CftPushContext cftPushContext = new CftPushContext()
             .withLogger(this.logger)
             .withEnvName(context.getEnvName())
@@ -339,12 +338,7 @@ public class EcsClusterPush {
             .withTaskProperties(cftPushTaskProperties);
         CftPush cftPush = new CftPush(cftPushContext);
 
-        try {
-            cftPush.push(stackName, stackTemplate);
-        }
-        catch (TaskException e) {
-            throw new AwsExecException(e);
-        }
+        cftPush.push(stackName, stackTemplate);
 
         return this.cfnClient.describeStacks(new DescribeStacksRequest().withStackName(stackName)).getStacks().get(0);
     }

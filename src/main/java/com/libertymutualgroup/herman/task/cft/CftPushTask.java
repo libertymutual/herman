@@ -18,23 +18,19 @@ package com.libertymutualgroup.herman.task.cft;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.regions.Regions;
 import com.atlassian.bamboo.deployments.execution.DeploymentTaskContext;
-import com.atlassian.bamboo.task.TaskException;
 import com.atlassian.bamboo.task.TaskResult;
 import com.atlassian.bamboo.task.TaskResultBuilder;
 import com.atlassian.bamboo.variable.CustomVariableContext;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.libertymutualgroup.herman.aws.AbstractDeploymentTask;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.cft.CftPush;
 import com.libertymutualgroup.herman.aws.cft.CftPushContext;
 import com.libertymutualgroup.herman.aws.credentials.BambooCredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
-import com.libertymutualgroup.herman.aws.ecs.TaskContextPropertyHandler;
 import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
 import com.libertymutualgroup.herman.logging.HermanLogger;
-import com.libertymutualgroup.herman.util.ConfigurationUtil;
 import com.libertymutualgroup.herman.util.FileUtil;
+import com.libertymutualgroup.herman.util.PropertyHandlerUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Arrays;
@@ -50,14 +46,12 @@ public class CftPushTask extends AbstractDeploymentTask {
     }
 
     @Override
-    public TaskResult doExecute(final DeploymentTaskContext taskContext) throws TaskException {
+    public TaskResult doExecute(final DeploymentTaskContext taskContext) {
         final AtlassianBuildLogger buildLogger = new AtlassianBuildLogger(taskContext.getBuildLogger());
         final AWSCredentials sessionCredentials = BambooCredentialsHandler.getCredentials(taskContext);
-
         final Regions awsRegion = Regions.fromName(taskContext.getConfigurationMap().get("awsRegion"));
-        PropertyHandler handler = new TaskContextPropertyHandler(taskContext, getCustomVariableContext());
-
-        CFTPushTaskProperties taskProperties = getTaskProperties(sessionCredentials, buildLogger, awsRegion);
+        final PropertyHandler handler = PropertyHandlerUtil.getTaskContextPropertyHandler(taskContext, sessionCredentials, getCustomVariableContext());
+        final CftPushTaskProperties taskProperties = CftPushPropertyFactory.getTaskProperties(sessionCredentials, buildLogger, awsRegion, handler);
 
         CftPushContext context = new CftPushContext()
             .withLogger(buildLogger)
@@ -75,16 +69,6 @@ public class CftPushTask extends AbstractDeploymentTask {
         push.push(name, template);
 
         return TaskResultBuilder.newBuilder(taskContext).success().build();
-    }
-
-    public static CFTPushTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger, Regions region) {
-        try {
-            String cftPushTaskPropertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, hermanLogger, region);
-            ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-            return objectMapper.readValue(cftPushTaskPropertiesYml, CFTPushTaskProperties.class);
-        } catch (Exception ex) {
-            throw new RuntimeException("Error getting Cft Push Task Properties", ex);
-        }
     }
 
     private String getTemplate(DeploymentTaskContext taskContext, HermanLogger buildLogger) {

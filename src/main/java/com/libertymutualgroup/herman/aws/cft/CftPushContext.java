@@ -10,7 +10,7 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.regions.Regions;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.logging.HermanLogger;
-import com.libertymutualgroup.herman.task.cft.CFTPushTaskProperties;
+import com.libertymutualgroup.herman.task.cft.CftPushTaskProperties;
 
 import java.util.Map;
 
@@ -23,7 +23,7 @@ public class CftPushContext {
     private ClientConfiguration awsClientConfig;
     private Regions region;
     private Map<String, String> templateParameters;
-    private CFTPushTaskProperties taskProperties;
+    private CftPushTaskProperties taskProperties;
 
     public HermanLogger getLogger() {
         return logger;
@@ -89,11 +89,11 @@ public class CftPushContext {
         this.templateParameters = templateParameters;
     }
 
-    public CFTPushTaskProperties getTaskProperties() {
+    public CftPushTaskProperties getTaskProperties() {
         return taskProperties;
     }
 
-    public void setTaskProperties(CFTPushTaskProperties taskProperties) {
+    public void setTaskProperties(CftPushTaskProperties taskProperties) {
         this.taskProperties = taskProperties;
     }
 
@@ -137,7 +137,7 @@ public class CftPushContext {
         return this;
     }
 
-    public CftPushContext withTaskProperties(final CFTPushTaskProperties taskProperties) {
+    public CftPushContext withTaskProperties(final CftPushTaskProperties taskProperties) {
         this.taskProperties = taskProperties;
         return this;
     }
