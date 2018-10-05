@@ -19,6 +19,7 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.regions.Regions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.util.ConfigurationUtil;
 
@@ -28,15 +29,17 @@ public class ECSPushPropertyFactory {
         throw new IllegalAccessError("Utility class");
     }
 
-    public static ECSPushTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger, Regions region) {
-        return getTaskProperties(sessionCredentials, hermanLogger, null, region);
+    public static ECSPushTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger, Regions region, PropertyHandler handler) {
+        return getTaskProperties(sessionCredentials, hermanLogger, null, region, handler);
     }
 
-    public static ECSPushTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger, String customConfigurationBucket, Regions region) {
+    public static ECSPushTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger, String customConfigurationBucket, Regions region, PropertyHandler handler) {
         try {
             String ecsPushTaskPropertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, hermanLogger, customConfigurationBucket, region);
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-            return objectMapper.readValue(ecsPushTaskPropertiesYml, ECSPushTaskProperties.class);
+            return objectMapper.readValue(
+                handler.mapInProperties(ecsPushTaskPropertiesYml),
+                ECSPushTaskProperties.class);
         } catch (Exception ex) {
             throw new RuntimeException("Error getting ECS Push Task Properties", ex);
         }

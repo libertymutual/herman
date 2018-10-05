@@ -789,8 +789,7 @@ public class EcsPush {
     }
 
     private void brokerKinesisStream(EcsPushDefinition definition, EcsClusterMetadata clusterMetadata) {
-        KinesisBroker kinesisBroker = new KinesisBroker(logger, kinesisClient, clusterMetadata,
-            definition, taskProperties);
+        KinesisBroker kinesisBroker = new KinesisBroker(logger, kinesisClient, definition, taskProperties);
 
         // delete any streams tied to this app that are no longer specified in the PushDefinition
         kinesisBroker.checkStreamsToBeDeleted();
@@ -803,7 +802,7 @@ public class EcsPush {
     }
 
     private void brokerDynamoDB(EcsPushDefinition definition) {
-        DynamoDBBroker dynamoDBBroker = new DynamoDBBroker(logger, iamClient, definition, taskProperties);
+        DynamoDBBroker dynamoDBBroker = new DynamoDBBroker(logger, definition);
 
         if (definition.getDynamoDBTables() != null) {
             dynamoDBBroker.createDynamoDBTables(dynamoDbClient);
