@@ -516,9 +516,7 @@ public class EcsPush {
             ecsClient.updateService(updateRequest);
         }
 
-        if (definition.getService().getInstanceCount() > 0) {
-            waitForRequestInitialization(appName, ecsClient, clusterMetadata);
-        }
+        waitForRequestInitialization(appName, ecsClient, clusterMetadata);      
         boolean deploySuccessful = waitForDeployment(appName, ecsClient, clusterMetadata);
 
         if (!deploySuccessful) {
