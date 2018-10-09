@@ -33,13 +33,12 @@ import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
 import com.amazonaws.services.lambda.model.InvocationType;
 import com.amazonaws.services.lambda.model.InvokeRequest;
-import com.atlassian.bamboo.task.TaskException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.logging.HermanLogger;
-import com.libertymutualgroup.herman.task.cft.CFTPushTaskProperties;
+import com.libertymutualgroup.herman.task.cft.CftPushTaskProperties;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -72,7 +71,7 @@ public class CftPush { ;
     private StackUtils stackUtils;
     private Regions region;
     private PropertyHandler propertyHandler;
-    private CFTPushTaskProperties taskProperties;
+    private CftPushTaskProperties taskProperties;
 
     public CftPush(CftPushContext taskContext) {
         this.taskContext = taskContext;
@@ -93,7 +92,7 @@ public class CftPush { ;
         this.taskProperties = taskContext.getTaskProperties();
     }
 
-    public void push(String stackName, String template) throws TaskException {
+    public void push(String stackName, String template) {
 
         // Input data outside of CFT
         String env = taskContext.getEnvName();
@@ -120,7 +119,7 @@ public class CftPush { ;
         this.stackUtils.waitForCompletion(stackName);
         outputStack(stackName);
 
-        try (OutputStream fileOut = new FileOutputStream("stackoutput.properties")) {
+        try (OutputStream fileOut = new FileOutputStream(taskContext.getRootPath() + File.separator + "stackoutput.properties")) {
             output.store(fileOut, null);
         } catch (IOException e) {
             throw new AwsExecException(e);
@@ -128,7 +127,7 @@ public class CftPush { ;
     }
 
     private void importPropFiles(String env) {
-        File stackOut = new File("stackoutput.properties");
+        File stackOut = new File(taskContext.getRootPath() + File.separator + "stackoutput.properties");
 
         try (FileReader stackRead = new FileReader(stackOut)) {
             if (stackOut.exists()) {
@@ -250,7 +249,7 @@ public class CftPush { ;
         return parameters;
     }
 
-    private void introspectEnvironment() throws TaskException {
+    private void introspectEnvironment() {
         InvokeRequest cftVariableBrokerReq = new InvokeRequest()
             .withFunctionName(this.taskProperties.getCftPushVariableBrokerLambda())
             .withInvocationType(InvocationType.RequestResponse)
@@ -264,7 +263,7 @@ public class CftPush { ;
         } catch (IOException e) {
             this.buildLogger.addLogEntry(e.getMessage());
             this.buildLogger.addLogEntry("Unable to parse variables from " + variableJson);
-            throw new TaskException(e.getMessage(), e);
+            throw new AwsExecException(e.getMessage(), e);
         }
 
         for (Map.Entry<String, String> entry: variables.entrySet()) {

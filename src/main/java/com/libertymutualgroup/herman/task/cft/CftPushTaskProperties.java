@@ -19,7 +19,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CFTPushTaskProperties extends CommonTaskProperties {
+public class CftPushTaskProperties extends CommonTaskProperties {
 
     private String cftPushVariableBrokerLambda;
 
@@ -32,14 +32,14 @@ public class CFTPushTaskProperties extends CommonTaskProperties {
     }
 
 
-    public CFTPushTaskProperties withCftPushVariableBrokerLambda(String cftPushVariableBrokerLambda) {
+    public CftPushTaskProperties withCftPushVariableBrokerLambda(String cftPushVariableBrokerLambda) {
         this.cftPushVariableBrokerLambda = cftPushVariableBrokerLambda;
         return this;
     }
 
     @Override
     public String toString() {
-        return "CFTPushTaskProperties{" +
+        return "CftPushTaskProperties{" +
             "cftPushVariableBrokerLambda=" + cftPushVariableBrokerLambda +
             "} " + super.toString();
     }

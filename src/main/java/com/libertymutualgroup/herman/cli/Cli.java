@@ -16,6 +16,7 @@
 package com.libertymutualgroup.herman.cli;
 
 import com.amazonaws.regions.Regions;
+import com.libertymutualgroup.herman.cli.command.CftPushCommand;
 import com.libertymutualgroup.herman.cli.command.ECRLoginCommand;
 import com.libertymutualgroup.herman.cli.command.ECRRepoCreateCommand;
 import com.libertymutualgroup.herman.cli.command.ECRRepoTrimCommand;
@@ -38,7 +39,8 @@ import static picocli.CommandLine.RunAll;
         ECSClusterPushCommand.class,
         ECRRepoCreateCommand.class,
         ECRLoginCommand.class,
-        ECRRepoTrimCommand.class
+        ECRRepoTrimCommand.class,
+        CftPushCommand.class
 })
 public class Cli implements Callable<Void> {
     private static final String CONFIG_BUCKET_TEMPLATE= "herman-configuration-<aws account #>-lts";
