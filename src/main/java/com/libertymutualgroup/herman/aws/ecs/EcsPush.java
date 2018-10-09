@@ -516,7 +516,7 @@ public class EcsPush {
             ecsClient.updateService(updateRequest);
         }
 
-        waitForRequestInitialization(appName, ecsClient, clusterMetadata);
+        waitForRequestInitialization(appName, ecsClient, clusterMetadata);      
         boolean deploySuccessful = waitForDeployment(appName, ecsClient, clusterMetadata);
 
         if (!deploySuccessful) {
@@ -607,7 +607,7 @@ public class EcsPush {
 
         while (timeoutCount > 0) {
             try {
-                Thread.sleep(10000);
+                Thread.sleep(POLLING_INTERVAL_MS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new AwsExecException(INTERRUPTED_WHILE_POLLING);
@@ -626,6 +626,7 @@ public class EcsPush {
                     }
                 }
             }
+            timeoutCount--;
         }
         setUnsuccessfulServiceToZero(appName, ecsClient, clusterMetadata);
         throw new AwsExecException("AWS never initiated the deployment");
