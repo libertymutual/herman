@@ -17,13 +17,13 @@ package com.libertymutualgroup.herman.task.cli.ecs;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.libertymutualgroup.herman.aws.credentials.CredentialsHandler;
-import com.libertymutualgroup.herman.aws.ecs.CliPropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.EcsPush;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushContext;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushPropertyFactory;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
+import com.libertymutualgroup.herman.util.PropertyHandlerUtil;
 
 public class ECSPushTask {
     private HermanLogger logger;
@@ -34,9 +34,13 @@ public class ECSPushTask {
 
     public void runTask(ECSPushTaskConfiguration configuration) {
         final AWSCredentials sessionCredentials = CredentialsHandler.getCredentials();
-        ECSPushTaskProperties taskProperties = ECSPushPropertyFactory.getTaskProperties(sessionCredentials, logger, configuration.getCustomConfigurationBucket(), configuration.getRegion());
-
-        PropertyHandler propertyHandler = new CliPropertyHandler(logger, configuration.getEnvironmentName(), configuration.getRootPath(), configuration.getCustomVariables());
+        final PropertyHandler propertyHandler = PropertyHandlerUtil.getCliPropertyHandler(
+            sessionCredentials,
+            logger,
+            configuration.getEnvironmentName(),
+            configuration.getRootPath(),
+            configuration.getCustomVariables());
+        final ECSPushTaskProperties taskProperties = ECSPushPropertyFactory.getTaskProperties(sessionCredentials, logger, configuration.getCustomConfigurationBucket(), configuration.getRegion(), propertyHandler);
         propertyHandler.addProperty("herman.rdsCredentialBrokerImage", taskProperties.getRdsCredentialBrokerImage());
 
         EcsPushContext context = new EcsPushContext()

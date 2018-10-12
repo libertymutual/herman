@@ -26,12 +26,12 @@ import com.libertymutualgroup.herman.aws.credentials.BambooCredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecs.EcsPush;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushContext;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
-import com.libertymutualgroup.herman.aws.ecs.TaskContextPropertyHandler;
 import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushPropertyFactory;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
 import com.libertymutualgroup.herman.util.FileUtil;
+import com.libertymutualgroup.herman.util.PropertyHandlerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,12 +56,12 @@ public class ECSPushTask extends AbstractDeploymentTask {
         final AtlassianBuildLogger buildLogger = new AtlassianBuildLogger(taskContext.getBuildLogger());
         final AWSCredentials sessionCredentials = BambooCredentialsHandler.getCredentials(taskContext);
         final Regions awsRegion = Regions.fromName(taskContext.getConfigurationMap().get("awsRegion"));
-        int timeout = Integer.parseInt(taskContext.getConfigurationMap().getOrDefault("timeout",
+        final int timeout = Integer.parseInt(taskContext.getConfigurationMap().getOrDefault("timeout",
             String.valueOf(ECSPushTaskConfigurator.DEFAULT_TIMEOUT)));
+        final PropertyHandler handler = PropertyHandlerUtil
+            .getTaskContextPropertyHandler(taskContext, sessionCredentials, getCustomVariableContext());
 
-        ECSPushTaskProperties taskProperties = ECSPushPropertyFactory.getTaskProperties(sessionCredentials, buildLogger, awsRegion);
-
-        PropertyHandler handler = new TaskContextPropertyHandler(taskContext, getCustomVariableContext());
+        final ECSPushTaskProperties taskProperties = ECSPushPropertyFactory.getTaskProperties(sessionCredentials, buildLogger, awsRegion, handler);
         if (taskProperties.getRdsCredentialBrokerImage() != null) {
             handler.addProperty("herman.rdsCredentialBrokerImage", taskProperties.getRdsCredentialBrokerImage());
         }

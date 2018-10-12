@@ -21,8 +21,10 @@ import com.amazonaws.services.ecs.model.PlacementStrategy;
 import com.amazonaws.services.ecs.model.TaskDefinitionPlacementConstraint;
 import com.amazonaws.services.ecs.model.Ulimit;
 import com.amazonaws.services.ecs.model.Volume;
+import com.libertymutualgroup.herman.aws.ecs.broker.dynamodb.DynamoAppDefinition;
 import com.libertymutualgroup.herman.aws.ecs.broker.dynamodb.DynamoDBTable;
 import com.libertymutualgroup.herman.aws.ecs.broker.iam.IamAppDefinition;
+import com.libertymutualgroup.herman.aws.ecs.broker.kinesis.KinesisAppDefinition;
 import com.libertymutualgroup.herman.aws.ecs.broker.kinesis.KinesisStream;
 import com.libertymutualgroup.herman.aws.ecs.broker.kms.KmsAppDefinition;
 import com.libertymutualgroup.herman.aws.ecs.broker.newrelic.NewRelicConfiguration;
@@ -31,9 +33,10 @@ import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3Bucket;
 import com.libertymutualgroup.herman.aws.ecs.broker.sns.SnsTopic;
 import com.libertymutualgroup.herman.aws.ecs.broker.sqs.SqsQueue;
 import com.libertymutualgroup.herman.aws.ecs.service.EcsService;
+
 import java.util.List;
 
-public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition {
+public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, DynamoAppDefinition, KinesisAppDefinition {
 
     private List<ContainerDefinition> containerDefinitions;
     private String cluster;

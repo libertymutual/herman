@@ -27,13 +27,13 @@ import com.libertymutualgroup.herman.aws.AbstractDeploymentTask;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.credentials.BambooCredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
-import com.libertymutualgroup.herman.aws.ecs.TaskContextPropertyHandler;
 import com.libertymutualgroup.herman.aws.lambda.LambdaBroker;
 import com.libertymutualgroup.herman.aws.lambda.LambdaPushContext;
 import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
 import com.libertymutualgroup.herman.util.ConfigurationUtil;
+import com.libertymutualgroup.herman.util.PropertyHandlerUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
@@ -48,17 +48,17 @@ public class LambdaCreateTask extends AbstractDeploymentTask {
     @Override
     public TaskResult doExecute(final DeploymentTaskContext taskContext) {
         final AtlassianBuildLogger buildLogger = new AtlassianBuildLogger(taskContext.getBuildLogger());
-        PropertyHandler handler = new TaskContextPropertyHandler(taskContext, getCustomVariableContext());
-
         final AWSCredentials sessionCredentials = BambooCredentialsHandler.getCredentials(taskContext);
         final Regions region = Regions.fromName(taskContext.getConfigurationMap().get("awsRegion"));
+        final PropertyHandler handler = PropertyHandlerUtil
+            .getTaskContextPropertyHandler(taskContext, sessionCredentials, getCustomVariableContext());
 
         LambdaPushContext context = new LambdaPushContext()
             .withSessionCredentials(sessionCredentials)
             .withRootPath(taskContext.getRootDirectory().getAbsolutePath())
             .withBambooPropertyHandler(handler)
             .withLogger(buildLogger)
-            .withTaskProperties(getTaskProperties(sessionCredentials, buildLogger, region));
+            .withTaskProperties(getTaskProperties(sessionCredentials, buildLogger, region, handler));
 
         LambdaBroker lambdaBroker = new LambdaBroker(context,
             buildLogger,
@@ -72,11 +72,11 @@ public class LambdaCreateTask extends AbstractDeploymentTask {
         return TaskResultBuilder.newBuilder(taskContext).success().build();
     }
 
-    CommonTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger, Regions region) {
+    CommonTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger, Regions region, PropertyHandler handler) {
         try {
             String lambdaCreateTaskPropertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, hermanLogger, region);
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-            return objectMapper.readValue(lambdaCreateTaskPropertiesYml, CommonTaskProperties.class);
+            return objectMapper.readValue(handler.mapInProperties(lambdaCreateTaskPropertiesYml), CommonTaskProperties.class);
         } catch (Exception ex) {
             throw new RuntimeException("Error getting Lambda Create Task Properties", ex);
         }

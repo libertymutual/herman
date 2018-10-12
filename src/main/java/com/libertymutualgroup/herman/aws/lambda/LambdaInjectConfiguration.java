@@ -17,11 +17,18 @@ package com.libertymutualgroup.herman.aws.lambda;
 
 import com.amazonaws.services.ec2.model.SecurityGroup;
 import com.amazonaws.services.ecs.model.KeyValuePair;
+import com.libertymutualgroup.herman.aws.ecs.broker.dynamodb.DynamoAppDefinition;
+import com.libertymutualgroup.herman.aws.ecs.broker.dynamodb.DynamoDBTable;
 import com.libertymutualgroup.herman.aws.ecs.broker.iam.IamAppDefinition;
+import com.libertymutualgroup.herman.aws.ecs.broker.kinesis.KinesisAppDefinition;
+import com.libertymutualgroup.herman.aws.ecs.broker.kinesis.KinesisStream;
 import com.libertymutualgroup.herman.aws.ecs.broker.kms.KmsAppDefinition;
+import com.libertymutualgroup.herman.aws.ecs.broker.sns.SnsTopic;
+import com.libertymutualgroup.herman.aws.ecs.broker.sqs.SqsQueue;
+
 import java.util.List;
 
-public class LambdaInjectConfiguration implements IamAppDefinition, KmsAppDefinition {
+public class LambdaInjectConfiguration implements IamAppDefinition, KmsAppDefinition, DynamoAppDefinition, KinesisAppDefinition {
 
     private String functionName;
     private String zipFileName;
@@ -37,6 +44,10 @@ public class LambdaInjectConfiguration implements IamAppDefinition, KmsAppDefini
     private SecurityGroup customSecurityGroup;
     private List<String> subnetIds;
     private List<String> securityGroupIds;
+    private List<KinesisStream> streams;
+    private List<SqsQueue> queues;
+    private List<SnsTopic> topics;
+    private List<DynamoDBTable> dynamoDBTables;
 
     public SecurityGroup getCustomSecurityGroup() {
         return customSecurityGroup;
@@ -151,6 +162,39 @@ public class LambdaInjectConfiguration implements IamAppDefinition, KmsAppDefini
         this.assumeRolePolicy = assumeRolePolicy;
     }
 
+    public List<KinesisStream> getStreams() {
+        return streams;
+    }
+
+    public void setStreams(List<KinesisStream> streams) {
+        this.streams = streams;
+    }
+
+    public List<SqsQueue> getQueues() {
+        return queues;
+    }
+
+    public void setQueues(List<SqsQueue> queues) {
+        this.queues = queues;
+    }
+
+    public List<SnsTopic> getTopics() {
+        return topics;
+    }
+
+    public void setTopics(List<SnsTopic> topics) {
+        this.topics = topics;
+    }
+
+    @Override
+    public List<DynamoDBTable> getDynamoDBTables() {
+        return dynamoDBTables;
+    }
+
+    public void setDynamoDBTables(List<DynamoDBTable> dynamoDBTables) {
+        this.dynamoDBTables = dynamoDBTables;
+    }
+
     public LambdaInjectConfiguration withFunctionName(final String functionName) {
         this.functionName = functionName;
         return this;
@@ -239,6 +283,10 @@ public class LambdaInjectConfiguration implements IamAppDefinition, KmsAppDefini
             ", useKms='" + useKms + '\'' +
             ", kmsKeyName='" + kmsKeyName + '\'' +
             ", customSecurityGroup=" + customSecurityGroup +
+            ", streams=" + streams +
+            ", queues=" + queues +
+            ", topics=" + topics +
+            ", dynamoDbTables=" + dynamoDBTables +
             '}';
     }
 }
