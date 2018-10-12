@@ -15,8 +15,6 @@
  */
 package com.libertymutualgroup.herman.aws.lambda;
 
-import static java.lang.Math.toIntExact;
-
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
@@ -88,9 +86,13 @@ import com.libertymutualgroup.herman.aws.ecs.broker.sns.SnsBroker;
 import com.libertymutualgroup.herman.aws.ecs.broker.sns.SnsTopic;
 import com.libertymutualgroup.herman.aws.ecs.broker.sqs.SqsBroker;
 import com.libertymutualgroup.herman.aws.ecs.broker.sqs.SqsQueue;
+import com.libertymutualgroup.herman.aws.tags.TagUtil;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
 import com.libertymutualgroup.herman.util.FileUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -105,8 +107,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static java.lang.Math.toIntExact;
 
 public class LambdaBroker {
 
@@ -201,8 +203,11 @@ public class LambdaBroker {
         tags.add(new Tag().withTagKey(this.taskProperties.getOrgTagKey()).withTagValue(this.taskProperties.getOrg()));
         tags.add(
             new Tag().withTagKey(this.taskProperties.getAppTagKey()).withTagValue(this.configuration.getAppName()));
-        Map<String, String> tagMap = tags.stream().collect(Collectors.toMap(Tag::getTagKey, Tag::getTagValue));
 
+        Map<String, String> tagMap = tags.stream().collect(Collectors.toMap(Tag::getTagKey, Tag::getTagValue));
+        if (this.configuration.getTags() != null) {
+            tagMap.putAll(TagUtil.hermanToMap(this.configuration.getTags()));
+        }
         // Create/Update custom security group if needed
         String customSecurityGroupId = getCustomSecurityGroupId(tagMap);
 
@@ -523,9 +528,9 @@ public class LambdaBroker {
             for (SqsQueue queue : definition.getQueues()) {
                 if (queue.getPolicyName() != null) {
                     String policy = fileUtil.findFile(queue.getPolicyName(), false);
-                    sqsBroker.brokerQueue(sqsClient, queue, policy);
+                    sqsBroker.brokerQueue(sqsClient, queue, policy, definition.getTags());
                 } else {
-                    sqsBroker.brokerQueue(sqsClient, queue, null);
+                    sqsBroker.brokerQueue(sqsClient, queue, null, definition.getTags());
                 }
             }
         }

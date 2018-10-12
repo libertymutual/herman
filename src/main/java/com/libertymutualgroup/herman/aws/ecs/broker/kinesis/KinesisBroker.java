@@ -31,6 +31,8 @@ import com.amazonaws.services.kinesis.model.ResourceNotFoundException;
 import com.amazonaws.services.kinesis.model.StartStreamEncryptionRequest;
 import com.amazonaws.services.kinesis.model.StreamDescription;
 import com.amazonaws.services.kinesis.model.Tag;
+import com.libertymutualgroup.herman.aws.tags.HermanTag;
+import com.libertymutualgroup.herman.aws.tags.TagUtil;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
 import org.slf4j.Logger;
@@ -85,15 +87,16 @@ public class KinesisBroker {
             // Stream is now created. Waiting for it to become active so we can add tags and encryption.
             try {
                 waitForStreamToBecomeAvailable(stream.getName());
+                ArrayList<HermanTag> tags = new ArrayList<>(definition.getTags());
+                tags.add(new HermanTag(this.taskProperties.getSbuTagKey(), this.taskProperties.getSbu()));
+                tags.add(new HermanTag(this.taskProperties.getOrgTagKey(), this.taskProperties.getOrg()));
+                tags.add(new HermanTag(this.taskProperties.getAppTagKey(), definition.getAppName()));
 
                 // Add tags to stream
-                AddTagsToStreamRequest addTagsToStreamRequest = new AddTagsToStreamRequest();
-                addTagsToStreamRequest.setStreamName(stream.getName());
-                addTagsToStreamRequest
-                    .addTagsEntry(this.taskProperties.getSbuTagKey(), this.taskProperties.getSbu());
-                addTagsToStreamRequest
-                    .addTagsEntry(this.taskProperties.getOrgTagKey(), this.taskProperties.getOrg());
-                addTagsToStreamRequest.addTagsEntry(this.taskProperties.getAppTagKey(), definition.getAppName());
+                AddTagsToStreamRequest addTagsToStreamRequest = new AddTagsToStreamRequest()
+                    .withStreamName(stream.getName())
+                    .withTags(TagUtil.hermanToMap(tags));
+
                 client.addTagsToStream(addTagsToStreamRequest);
 
                 // Add encryption to stream

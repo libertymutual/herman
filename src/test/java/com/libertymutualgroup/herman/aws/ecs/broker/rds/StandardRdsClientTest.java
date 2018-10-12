@@ -22,11 +22,12 @@ import com.amazonaws.services.rds.model.OptionGroupMembership;
 import com.amazonaws.services.rds.model.OptionGroupNotFoundException;
 import com.amazonaws.services.rds.model.Parameter;
 import com.amazonaws.services.rds.model.PendingModifiedValues;
-import com.amazonaws.services.rds.model.Tag;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
+import com.libertymutualgroup.herman.aws.tags.HermanTag;
+import com.libertymutualgroup.herman.aws.tags.TagUtil;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.util.FileUtil;
 import org.apache.commons.io.FileUtils;
@@ -66,7 +67,7 @@ public class StandardRdsClientTest {
         Mockito.when(client.describeDBInstances(Mockito.any())).thenReturn(result);
     }
 
-    private StandardRdsClient initClient(EcsPushDefinition definition, List<Tag> tags) {
+    private StandardRdsClient initClient(EcsPushDefinition definition, List<HermanTag> tags) {
         if (tags == null) {
             tags = new ArrayList<>();
         }
@@ -88,7 +89,7 @@ public class StandardRdsClientTest {
         rds.setDBInstanceIdentifier(dbId);
         EcsPushDefinition definition = RdsCommonTestObjects.ecsPushDefinition(rds);
 
-        List<Tag> tags = new ArrayList<>();
+        List<HermanTag> tags = new ArrayList<>();
         StandardRdsClient rdsClient = initClient(definition, tags);
 
         DBInstance rdsResult = new DBInstance();
@@ -143,7 +144,7 @@ public class StandardRdsClientTest {
         rds.setOptionGroupFile(optionGroupFile);
         rds.setDBInstanceIdentifier(dbId);
         EcsPushDefinition definition = RdsCommonTestObjects.ecsPushDefinition(rds);
-        List<Tag> tags = new ArrayList<>();
+        List<HermanTag> tags = new ArrayList<>();
 
         RdsClient rdsClient = initClient(definition, tags);
 
@@ -202,7 +203,7 @@ public class StandardRdsClientTest {
         rds.setDBInstanceIdentifier(dbId);
 
         EcsPushDefinition definition = RdsCommonTestObjects.ecsPushDefinition(rds);
-        List<Tag> tags = new ArrayList<>();
+        List<HermanTag> tags = new ArrayList<>();
 
         StandardRdsClient rdsClient = initClient(definition, tags);
 
@@ -255,7 +256,7 @@ public class StandardRdsClientTest {
         rds.setParameterGroupFile(paramGroupFile);
         rds.setDBInstanceIdentifier(dbId);
 
-        List<Tag> tags = Collections.EMPTY_LIST;
+        List<HermanTag> tags = Collections.EMPTY_LIST;
         ObjectMapper objectMapper = RdsCommonTestObjects.objectMapper();
 
         DBInstance rdsResult = new DBInstance();
@@ -303,7 +304,7 @@ public class StandardRdsClientTest {
             .withDBParameterGroupName(dbParameterGroupName)
             .withDescription(String.format("%s %s Parameter Group", rds.getDBInstanceIdentifier(),
                 dbEngineVersion.getDBParameterGroupFamily()))
-            .withTags(tags));
+            .withTags(TagUtil.hermanToRdsTags(tags)));
         Mockito.verify(client, times(1)).modifyDBInstance(any(ModifyDBInstanceRequest.class));
     }
 
@@ -319,7 +320,7 @@ public class StandardRdsClientTest {
         rds.setParameterGroupFile(paramGroupFile);
         rds.setDBInstanceIdentifier(dbId);
 
-        List<Tag> tags = Collections.EMPTY_LIST;
+        List<HermanTag> tags = Collections.EMPTY_LIST;
         DBInstance rdsResult = new DBInstance();
         rdsResult.setDBParameterGroups(Collections.EMPTY_LIST);
         rdsResult.setDBInstanceIdentifier(dbId);

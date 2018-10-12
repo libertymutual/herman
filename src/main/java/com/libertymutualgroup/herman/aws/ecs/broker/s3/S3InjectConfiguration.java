@@ -17,6 +17,8 @@ package com.libertymutualgroup.herman.aws.ecs.broker.s3;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.libertymutualgroup.herman.aws.ecs.broker.kms.KmsAppDefinition;
+import com.libertymutualgroup.herman.aws.tags.HermanTag;
+
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -32,6 +34,7 @@ public class S3InjectConfiguration implements KmsAppDefinition {
     private Boolean createBucketKey;
     private String kmsKeyArn;
     private String kmsKeyName;
+    private List<HermanTag> tags;
 
     // Index and Error files used for website buckets
     private String indexFile = "index.html";
@@ -134,6 +137,14 @@ public class S3InjectConfiguration implements KmsAppDefinition {
 
     public void setErrorFile(String errorFile) {
         this.errorFile = errorFile;
+    }
+
+    public List<HermanTag> getTags() {
+        return tags;
+    }
+
+    public void setTags(List<HermanTag> tags) {
+        this.tags = tags;
     }
 
     public S3InjectConfiguration withAppName(final String appName) {

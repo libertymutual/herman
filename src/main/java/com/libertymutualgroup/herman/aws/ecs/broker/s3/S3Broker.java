@@ -42,7 +42,6 @@ import com.amazonaws.services.s3.model.SetBucketEncryptionRequest;
 import com.amazonaws.services.s3.model.SetBucketLoggingConfigurationRequest;
 import com.amazonaws.services.s3.model.SetBucketNotificationConfigurationRequest;
 import com.amazonaws.services.s3.model.SetBucketPolicyRequest;
-import com.amazonaws.services.s3.model.TagSet;
 import com.amazonaws.util.IOUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -52,23 +51,27 @@ import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.broker.kms.KmsBroker;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
+import com.libertymutualgroup.herman.aws.tags.HermanTag;
+import com.libertymutualgroup.herman.aws.tags.TagUtil;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.s3.S3CreateTaskProperties;
 import com.libertymutualgroup.herman.util.FileUtil;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class S3Broker {
 
@@ -93,17 +96,17 @@ public class S3Broker {
         configuration.setEncryptionOption(configuration.getEncryptionOption() == null ?
             taskProperties.getS3().getDefaultEncryption() : configuration.getEncryptionOption());
 
-        Map<String, String> tagMap = new HashMap<>();
+        ArrayList<HermanTag> tags = new ArrayList<>();
         if (taskProperties != null) {
-            tagMap.put(taskProperties.getSbuTagKey(), configuration.getSbu());
-            tagMap.put(taskProperties.getOrgTagKey(), configuration.getOrg());
-            tagMap.put(taskProperties.getAppTagKey(), configuration.getAppName());
+            tags.add(new HermanTag(taskProperties.getSbuTagKey(), configuration.getSbu()));
+            tags.add(new HermanTag(taskProperties.getOrgTagKey(), configuration.getOrg()));
+            tags.add(new HermanTag(taskProperties.getAppTagKey(), configuration.getAppName()));
         }
 
         // Broker KMS key if required
         if (S3EncryptionOption.KMS.equals(configuration.getEncryptionOption())
                 && Boolean.TRUE.equals(configuration.getCreateBucketKey())) {
-            configuration.setKmsKeyArn(brokerKms(configuration, tagMap));
+            configuration.setKmsKeyArn(brokerKms(configuration, TagUtil.hermanToMap(tags)));
         }
 
         // Setup up policy and tags for the bucket
@@ -112,10 +115,6 @@ public class S3Broker {
             FileUtil fileUtil = new FileUtil(context.getRootPath(), buildLogger);
             policy = fileUtil.findFile(configuration.getPolicyName(), false);
         }
-        TagSet tags = new TagSet();
-        tagMap.entrySet().stream().forEach(it ->
-            tags.setTag(it.getKey(), it.getValue())
-        );
 
         AmazonS3 client = AmazonS3ClientBuilder.standard()
             .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
@@ -154,12 +153,15 @@ public class S3Broker {
 
     public void brokerBucketFromEcsPush(AmazonS3 s3Client, AWSKMS kmsClient, S3Bucket bucket, String bucketPolicy, String kmsKeyId,
             EcsClusterMetadata clusterMetadata, EcsPushDefinition definition) {
-        TagSet tags = new TagSet();
+        ArrayList<HermanTag> tags = new ArrayList<>();
         if (taskProperties != null) {
-            tags.setTag(taskProperties.getSbuTagKey(), clusterMetadata.getNewrelicSbuTag());
-            tags.setTag(taskProperties.getOrgTagKey(), clusterMetadata.getNewrelicOrgTag());
-            tags.setTag(taskProperties.getAppTagKey(), definition.getAppName());
-            tags.setTag(taskProperties.getClusterTagKey(), clusterMetadata.getClusterId());
+            tags.add(new HermanTag(taskProperties.getSbuTagKey(), clusterMetadata.getNewrelicSbuTag()));
+            tags.add(new HermanTag(taskProperties.getOrgTagKey(), clusterMetadata.getNewrelicOrgTag()));
+            tags.add(new HermanTag(taskProperties.getAppTagKey(), definition.getAppName()));
+            tags.add(new HermanTag(taskProperties.getClusterTagKey(), clusterMetadata.getClusterId()));
+        }
+        if (definition.getTags() != null) {
+            tags = new ArrayList<>(TagUtil.mergeTags(tags, definition.getTags()));
         }
 
         S3InjectConfiguration configuration = new S3InjectConfiguration();
@@ -194,7 +196,7 @@ public class S3Broker {
         }
     }
 
-    private void brokerBucket(AmazonS3 client, S3InjectConfiguration configuration, TagSet tags, String bucketPolicy) {
+    private void brokerBucket(AmazonS3 client, S3InjectConfiguration configuration, List<HermanTag> tags, String bucketPolicy) {
         String bucketName = configuration.getAppName();
         buildLogger.addLogEntry("Deploying S3 Bucket to " + client.getRegionName());
         buildLogger.addLogEntry("Checking for existing bucket: " + bucketName);
@@ -267,7 +269,9 @@ public class S3Broker {
             client.setBucketEncryption(request);
         }
 
-        client.setBucketTaggingConfiguration(bucketName, new BucketTaggingConfiguration().withTagSets(tags));
+        if (tags != null) {
+            client.setBucketTaggingConfiguration(bucketName, new BucketTaggingConfiguration().withTagSets(TagUtil.hermanToTagSet(tags)));
+        }
 
         if (StringUtils.isNotBlank(taskProperties.getLogsBucket())) {
             buildLogger.addLogEntry(String.format("Enabling S3 access logging using logs bucket %s", taskProperties.getLogsBucket()));

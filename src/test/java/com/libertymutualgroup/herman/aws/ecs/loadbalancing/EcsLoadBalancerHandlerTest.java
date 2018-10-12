@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.elasticloadbalancing.AmazonElasticLoadBalancing;
 import com.amazonaws.services.elasticloadbalancing.model.AddTagsRequest;
 import com.amazonaws.services.elasticloadbalancing.model.ApplySecurityGroupsToLoadBalancerRequest;
@@ -18,6 +19,7 @@ import com.amazonaws.services.elasticloadbalancing.model.DuplicateLoadBalancerNa
 import com.amazonaws.services.elasticloadbalancing.model.Listener;
 import com.amazonaws.services.elasticloadbalancing.model.LoadBalancerDescription;
 import com.amazonaws.services.elasticloadbalancing.model.Tag;
+import com.amazonaws.services.lambda.AWSLambda;
 import com.libertymutualgroup.herman.aws.ecs.EcsDefinitionParser;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
@@ -43,6 +45,7 @@ public class EcsLoadBalancerHandlerTest {
 
     @Mock
     AmazonElasticLoadBalancing elbClient;
+
     @Mock
     CertHandler certHandler;
     @Mock

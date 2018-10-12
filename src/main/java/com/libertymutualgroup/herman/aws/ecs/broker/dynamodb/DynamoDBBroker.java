@@ -26,10 +26,13 @@ import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndex;
 import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndexDescription;
 import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndexUpdate;
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
+import com.amazonaws.services.dynamodbv2.model.TagResourceRequest;
 import com.amazonaws.services.dynamodbv2.model.UpdateGlobalSecondaryIndexAction;
 import com.amazonaws.services.dynamodbv2.model.UpdateTableRequest;
 import com.amazonaws.services.dynamodbv2.model.UpdateTableResult;
 import com.libertymutualgroup.herman.aws.AwsExecException;
+import com.libertymutualgroup.herman.aws.tags.HermanTag;
+import com.libertymutualgroup.herman.aws.tags.TagUtil;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,6 +87,9 @@ public class DynamoDBBroker {
         } else {
             // If the table is new, create it
             createTable(client, table);
+        }
+        if (this.pushDefinition.getTags() != null) {
+            tagTable(client, table.getTableName(), this.pushDefinition.getTags());
         }
     }
 
@@ -160,11 +166,24 @@ public class DynamoDBBroker {
 
     }
 
+    private void tagTable(AmazonDynamoDB client, String tableName, List<HermanTag> tags) {
+        this.buildLogger.addLogEntry("...Setting tags on table " + tableName);
+        DescribeTableResult describeResult = client.describeTable(tableName);
+        TagResourceRequest tagRequest = new TagResourceRequest()
+            .withResourceArn(describeResult.getTable().getTableArn())
+            .withTags(TagUtil.hermanToDynamoTags(tags));
+        client.tagResource(tagRequest);
+    }
+
     /**
      * @return true = success / false = fail
      */
     private boolean checkAndUpdateStreamSpecification(AmazonDynamoDB client, DynamoDBTable table,
         DescribeTableResult describeTableResult) {
+
+        if (describeTableResult.getTable().getStreamSpecification() == null && table.getStreamSpecification() == null) {
+            return true;
+        }
 
         if (checkIfStreamIsDifferent(describeTableResult.getTable(), table)) {
             buildLogger.addLogEntry("Updating Stream Specification");
@@ -185,10 +204,15 @@ public class DynamoDBBroker {
     }
 
     private boolean checkIfStreamIsDifferent(TableDescription currentTable, DynamoDBTable updatedTable) {
+        if (updatedTable.getStreamSpecification().isStreamEnabled() == null && currentTable.getStreamSpecification().getStreamEnabled() == null) {
+            return false;
+        }
+
         // If stream was off and is now on
         if (checkIfStreamIsBeingEnabled(currentTable, updatedTable)) {
             return true;
         }
+
 
         // If stream was off and is still off
         if (!updatedTable.getStreamSpecification().isStreamEnabled() && currentTable.getStreamSpecification() == null) {

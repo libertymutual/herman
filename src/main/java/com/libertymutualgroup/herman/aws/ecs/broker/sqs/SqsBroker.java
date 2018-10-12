@@ -23,12 +23,15 @@ import com.amazonaws.services.sqs.model.QueueAttributeName;
 import com.amazonaws.services.sqs.model.QueueDoesNotExistException;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
+import com.libertymutualgroup.herman.aws.tags.HermanTag;
+import com.libertymutualgroup.herman.aws.tags.TagUtil;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -55,7 +58,7 @@ public class SqsBroker {
      * | ContentBasedDeduplication | KmsMasterKeyId |
      * KmsDataKeyReusePeriodSeconds
      */
-    public void brokerQueue(AmazonSQS client, SqsQueue queue, String queuePolicy) {
+    public void brokerQueue(AmazonSQS client, SqsQueue queue, String queuePolicy, List<HermanTag> tags) {
         buildLogger.addLogEntry("Starting SQS Broker with queue: " + queue.getName());
         Map<String, String> attributes = new HashMap<>();
         Map<String, String> dlqAttributes = new HashMap<>();
@@ -126,6 +129,9 @@ public class SqsBroker {
             LOGGER.debug("Error updating queue: " + queue.getName(), ex);
             createNewQueue(client, queue.getName(), attributes);
         }
+        if (tags != null) {
+            tagQueue(client, queue.getName(), tags);
+        }
     }
 
     private String getQueueArn(AmazonSQS client, String queueName){
@@ -164,5 +170,11 @@ public class SqsBroker {
                 String.format("Error updating attributes for queue %s: %s", queueName, attributes));
             throw sqaEx;
         }
+    }
+
+    private void tagQueue(AmazonSQS client, String queueName, List<HermanTag> tags) {
+        String queueUrl = client.getQueueUrl(queueName).getQueueUrl();
+        buildLogger.addLogEntry("...Adding tags to queue: " + queueName);
+        client.tagQueue(queueUrl, TagUtil.hermanToMap(tags));
     }
 }

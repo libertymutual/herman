@@ -6,12 +6,12 @@ import com.amazonaws.services.kms.model.EncryptResult;
 import com.amazonaws.services.rds.AmazonRDS;
 import com.amazonaws.services.rds.model.DBInstanceNotFoundException;
 import com.amazonaws.services.rds.model.DescribeDBInstancesResult;
-import com.amazonaws.services.rds.model.Tag;
 import com.libertymutualgroup.herman.aws.ecs.EcsPush;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushContext;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
+import com.libertymutualgroup.herman.aws.tags.HermanTag;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
 import com.libertymutualgroup.herman.util.FileUtil;
@@ -77,7 +77,7 @@ public class RdsBrokerTest {
         return new RdsBroker(pushContext, client, kmsClient, "123", definition, clusterMetadata, pushFactory, fileUtil);
     }
 
-    private RdsClient initClient(EcsPushDefinition definition, ArrayList<Tag> tags) {
+    private RdsClient initClient(EcsPushDefinition definition, ArrayList<HermanTag> tags) {
         RdsClient rdsClient;
         if (tags == null) {
             tags = new ArrayList<>();

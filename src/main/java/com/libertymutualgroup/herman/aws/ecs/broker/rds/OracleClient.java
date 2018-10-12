@@ -16,8 +16,8 @@
 package com.libertymutualgroup.herman.aws.ecs.broker.rds;
 
 import com.amazonaws.services.rds.AmazonRDS;
-import com.amazonaws.services.rds.model.Tag;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
+import com.libertymutualgroup.herman.aws.tags.HermanTag;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 
 import java.util.List;
@@ -26,7 +26,7 @@ public class OracleClient extends StandardRdsClient {
 
     private HermanLogger logger;
 
-    OracleClient(AmazonRDS client, RdsInstance rds, EcsClusterMetadata clusterMetadata, List<Tag> tags,
+    OracleClient(AmazonRDS client, RdsInstance rds, EcsClusterMetadata clusterMetadata, List<HermanTag> tags,
         HermanLogger logger) {
         super(client, rds, clusterMetadata, tags, logger);
         this.logger = logger;
