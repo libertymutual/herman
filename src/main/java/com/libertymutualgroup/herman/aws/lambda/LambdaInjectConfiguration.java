@@ -25,6 +25,7 @@ import com.libertymutualgroup.herman.aws.ecs.broker.kinesis.KinesisStream;
 import com.libertymutualgroup.herman.aws.ecs.broker.kms.KmsAppDefinition;
 import com.libertymutualgroup.herman.aws.ecs.broker.sns.SnsTopic;
 import com.libertymutualgroup.herman.aws.ecs.broker.sqs.SqsQueue;
+import com.libertymutualgroup.herman.aws.tags.HermanTag;
 
 import java.util.List;
 
@@ -48,6 +49,7 @@ public class LambdaInjectConfiguration implements IamAppDefinition, KmsAppDefini
     private List<SqsQueue> queues;
     private List<SnsTopic> topics;
     private List<DynamoDBTable> dynamoDBTables;
+    private List<HermanTag> tags;
 
     public SecurityGroup getCustomSecurityGroup() {
         return customSecurityGroup;
@@ -195,6 +197,14 @@ public class LambdaInjectConfiguration implements IamAppDefinition, KmsAppDefini
         this.dynamoDBTables = dynamoDBTables;
     }
 
+    @Override public List<HermanTag> getTags() {
+        return tags;
+    }
+
+    public void setTags(List<HermanTag> tags) {
+        this.tags = tags;
+    }
+
     public LambdaInjectConfiguration withFunctionName(final String functionName) {
         this.functionName = functionName;
         return this;
@@ -287,6 +297,7 @@ public class LambdaInjectConfiguration implements IamAppDefinition, KmsAppDefini
             ", queues=" + queues +
             ", topics=" + topics +
             ", dynamoDbTables=" + dynamoDBTables +
+            ", tags=" + tags +
             '}';
     }
 }

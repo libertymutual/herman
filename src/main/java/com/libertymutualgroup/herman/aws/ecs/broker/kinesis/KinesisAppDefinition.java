@@ -15,10 +15,13 @@
  */
 package com.libertymutualgroup.herman.aws.ecs.broker.kinesis;
 
+import com.libertymutualgroup.herman.aws.tags.HermanTag;
+
 import java.util.List;
 
 public interface KinesisAppDefinition {
 
     String getAppName();
     List<KinesisStream> getStreams();
+    List<HermanTag> getTags();
 }

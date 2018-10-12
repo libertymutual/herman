@@ -33,6 +33,7 @@ import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3Bucket;
 import com.libertymutualgroup.herman.aws.ecs.broker.sns.SnsTopic;
 import com.libertymutualgroup.herman.aws.ecs.broker.sqs.SqsQueue;
 import com.libertymutualgroup.herman.aws.ecs.service.EcsService;
+import com.libertymutualgroup.herman.aws.tags.HermanTag;
 
 import java.util.List;
 
@@ -57,6 +58,7 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, Dy
     private String taskRoleArn;
     private NewRelicConfiguration newRelic;
     private String notificationWebhook;
+    private List<HermanTag> tags;
     //oddball flags - deprecate elb/iam soon
     private String iamOptOut;
     private String useElb;
@@ -198,6 +200,14 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, Dy
         this.notificationWebhook = notificationWebhook;
     }
 
+    public List<HermanTag> getTags() {
+        return tags;
+    }
+
+    public void setTags(List<HermanTag> tags) {
+        this.tags = tags;
+    }
+
     public String getIamOptOut() {
         return iamOptOut;
     }
@@ -305,6 +315,7 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, Dy
             ", taskRoleArn='" + taskRoleArn + '\'' +
             ", newRelic=" + newRelic +
             ", notificationWebhook='" + notificationWebhook + '\'' +
+            ", tags='" + tags + '\'' +
             ", iamOptOut='" + iamOptOut + '\'' +
             ", useElb='" + useElb + '\'' +
             ", betaAutoscale='" + betaAutoscale + '\'' +

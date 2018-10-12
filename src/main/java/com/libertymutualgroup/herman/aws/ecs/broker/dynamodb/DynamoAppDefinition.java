@@ -15,10 +15,13 @@
  */
 package com.libertymutualgroup.herman.aws.ecs.broker.dynamodb;
 
+import com.libertymutualgroup.herman.aws.tags.HermanTag;
+
 import java.util.List;
 
 public interface DynamoAppDefinition {
 
     String getAppName();
     List<DynamoDBTable> getDynamoDBTables();
+    List<HermanTag> getTags();
 }

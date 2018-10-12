@@ -15,11 +15,12 @@ import com.amazonaws.services.rds.model.DescribeDBEngineVersionsResult;
 import com.amazonaws.services.rds.model.DescribeDBInstancesResult;
 import com.amazonaws.services.rds.model.ModifyDBClusterRequest;
 import com.amazonaws.services.rds.model.Parameter;
-import com.amazonaws.services.rds.model.Tag;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
+import com.libertymutualgroup.herman.aws.tags.HermanTag;
+import com.libertymutualgroup.herman.aws.tags.TagUtil;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.util.FileUtil;
 import org.apache.commons.io.FileUtils;
@@ -62,7 +63,7 @@ public class AuroraClientTest {
         Mockito.when(client.describeDBClusters(Mockito.any())).thenReturn(clusterResult);
     }
 
-    private AuroraClient initClient(EcsPushDefinition definition, List<Tag> tags) {
+    private AuroraClient initClient(EcsPushDefinition definition, List<HermanTag> tags) {
         if (tags == null) {
             tags = new ArrayList<>();
         }
@@ -80,7 +81,7 @@ public class AuroraClientTest {
         rds.setEngine(engine);
         EcsPushDefinition definition = RdsCommonTestObjects.ecsPushDefinition(rds);
 
-        List<Tag> tags = new ArrayList<>();
+        List<HermanTag> tags = new ArrayList<>();
         RdsClient rdsClient = initClient(definition, tags);
 
         rdsClient.setOptionGroup("test", null);
@@ -99,7 +100,7 @@ public class AuroraClientTest {
         rds.setDBInstanceIdentifier(dbId);
         rds.setDBClusterIdentifier(dbId);
 
-        List<Tag> tags = Collections.EMPTY_LIST;
+        List<HermanTag> tags = Collections.EMPTY_LIST;
         ObjectMapper objectMapper = RdsCommonTestObjects.objectMapper();
         DBCluster dbcResult = new DBCluster();
         dbcResult.setDBClusterParameterGroup(null);
@@ -149,7 +150,7 @@ public class AuroraClientTest {
                 .withDBParameterGroupFamily("aurora-mysql5-7").withDBClusterParameterGroupName(dbParameterGroupName)
                 .withDescription(String.format("%s %s Parameter Group", rds.getDBInstanceIdentifier(),
                     dbEngineVersion.getDBParameterGroupFamily()))
-                .withTags(tags));
+                .withTags(TagUtil.hermanToRdsTags(tags)));
         Mockito.verify(client, times(1)).modifyDBCluster(any(ModifyDBClusterRequest.class));
     }
 
@@ -166,7 +167,7 @@ public class AuroraClientTest {
         rds.setDBInstanceIdentifier(dbId);
         rds.setDBClusterIdentifier(dbId);
 
-        List<Tag> tags = Collections.EMPTY_LIST;
+        List<HermanTag> tags = Collections.EMPTY_LIST;
         DBCluster dbcResult = new DBCluster();
         dbcResult.setDBClusterParameterGroup(null);
         dbcResult.setDBClusterIdentifier(dbId);

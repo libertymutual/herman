@@ -20,7 +20,6 @@ import com.amazonaws.services.kms.model.EncryptRequest;
 import com.amazonaws.services.rds.AmazonRDS;
 import com.amazonaws.services.rds.model.OptionGroup;
 import com.amazonaws.services.rds.model.Parameter;
-import com.amazonaws.services.rds.model.Tag;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.libertymutualgroup.herman.aws.ecs.EcsPush;
@@ -28,6 +27,8 @@ import com.libertymutualgroup.herman.aws.ecs.EcsPushContext;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
+import com.libertymutualgroup.herman.aws.tags.HermanTag;
+import com.libertymutualgroup.herman.aws.tags.TagUtil;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.util.DateUtil;
 import com.libertymutualgroup.herman.util.FileUtil;
@@ -86,18 +87,21 @@ public class RdsBroker {
             : definition.getAppName();
         String masterUserPassword = this.generateRandomPassword();
         Boolean staticPassword = rds.getAppEncryptedPassword() != null || rds.getAdminEncryptedPassword() != null;
-        List<Tag> tags = new ArrayList<>();
-        tags.add(new Tag().withKey(this.pushContext.getTaskProperties().getSbuTagKey())
+        List<HermanTag> tags = new ArrayList<>();
+        tags.add(new HermanTag().withKey(this.pushContext.getTaskProperties().getSbuTagKey())
             .withValue(clusterMetadata.getNewrelicSbuTag()));
-        tags.add(new Tag().withKey(this.pushContext.getTaskProperties().getOrgTagKey())
+        tags.add(new HermanTag().withKey(this.pushContext.getTaskProperties().getOrgTagKey())
             .withValue(clusterMetadata.getNewrelicOrgTag()));
-        tags.add(
-            new Tag().withKey(this.pushContext.getTaskProperties().getAppTagKey()).withValue(definition.getAppName()));
-        tags.add(new Tag().withKey(this.pushContext.getTaskProperties().getClusterTagKey())
+        tags.add(new HermanTag().withKey(this.pushContext.getTaskProperties().getAppTagKey()).withValue(definition.getAppName()));
+        tags.add(new HermanTag().withKey(this.pushContext.getTaskProperties().getClusterTagKey())
             .withValue(clusterMetadata.getClusterId()));
         if (definition.getNotificationWebhook() != null) {
-            tags.add(new Tag().withKey("NotificationWebhook").withValue(definition.getNotificationWebhook()));
+            tags.add(new HermanTag().withKey("NotificationWebhook").withValue(definition.getNotificationWebhook()));
         }
+        if (definition.getTags() != null) {
+            tags = TagUtil.mergeTags(tags, definition.getTags());
+        }
+
 
         String encryptedPassword;
         RdsClient rdsClient;
@@ -110,7 +114,7 @@ public class RdsBroker {
             rdsClient = new StandardRdsClient(client, rds, clusterMetadata, tags, logger);
         }
 
-        Boolean newDb = !rdsClient.dbExists(instanceId);
+        boolean newDb = !rdsClient.dbExists(instanceId);
 
         if (!newDb) {
             logger.addLogEntry("Finding existing RDS instance");
