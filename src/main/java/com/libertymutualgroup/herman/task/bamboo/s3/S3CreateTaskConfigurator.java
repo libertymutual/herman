@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.libertymutualgroup.herman.task.s3;
+package com.libertymutualgroup.herman.task.bamboo.s3;
 
 import static com.libertymutualgroup.herman.util.AwsRegionUtil.getRegionList;
 

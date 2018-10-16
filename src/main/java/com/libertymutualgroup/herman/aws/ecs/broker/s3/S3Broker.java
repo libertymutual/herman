@@ -83,7 +83,7 @@ public class S3Broker {
 
     public S3Broker(S3CreateContext context) {
         this.buildLogger = context.getLogger();
-        this.handler = context.getBambooPropertyHandler();
+        this.handler = context.getPropertyHandler();
         this.taskProperties = context.getTaskProperties();
         this.context = context;
     }
@@ -338,6 +338,11 @@ public class S3Broker {
         }
 
         return definition;
+    }
+
+    public static S3Broker createBroker(S3CreateContext context){
+        S3Broker broker = new S3Broker(context);
+        return broker;
     }
 
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.libertymutualgroup.herman.task.s3;
+package com.libertymutualgroup.herman.task.bamboo.s3;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
@@ -40,6 +40,8 @@ import com.libertymutualgroup.herman.util.ConfigurationUtil;
 import com.libertymutualgroup.herman.util.FileUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import static com.libertymutualgroup.herman.task.s3.S3CreatePropertyFactory.getTaskProperties;
+
 public class S3CreateTask extends AbstractDeploymentTask {
 
     @Autowired
@@ -63,7 +65,7 @@ public class S3CreateTask extends AbstractDeploymentTask {
         handler.addProperty("account.id", accountId);
 
         S3CreateContext s3CreateContext = new S3CreateContext()
-            .withBambooPropertyHandler(handler)
+            .withPropertyHandler(handler)
             .withLogger(buildLogger)
             .withRegion(awsRegion)
             .withRootPath(taskContext.getRootDirectory().getAbsolutePath())
@@ -82,14 +84,4 @@ public class S3CreateTask extends AbstractDeploymentTask {
         return TaskResultBuilder.newBuilder(taskContext).success().build();
     }
 
-    S3CreateTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger, Regions region) {
-        try {
-            String s3CreateTaskPropertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, hermanLogger, region);
-            ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-            return objectMapper.readValue(s3CreateTaskPropertiesYml, S3CreateTaskProperties.class);
-        } catch (Exception ex) {
-            hermanLogger.addErrorLogEntry("Error getting S3 Create Task Task Properties. Continuing...", ex);
-            return null;
-        }
-    }
 }
