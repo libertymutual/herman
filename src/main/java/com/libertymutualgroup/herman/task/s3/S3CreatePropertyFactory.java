@@ -37,7 +37,10 @@ public class S3CreatePropertyFactory {
         try {
             String s3CreateTaskPropertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, hermanLogger, region);
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-            return objectMapper.readValue(s3CreateTaskPropertiesYml, S3CreateTaskProperties.class);
+
+            hermanLogger.addLogEntry(String.format("Task properties: %s", s3CreateTaskPropertiesYml));
+            S3CreateTaskProperties props = objectMapper.readValue(s3CreateTaskPropertiesYml, S3CreateTaskProperties.class);
+            return props;
         } catch (Exception ex) {
             hermanLogger.addErrorLogEntry("Error getting S3 Create Task Task Properties. Continuing...", ex);
             return null;

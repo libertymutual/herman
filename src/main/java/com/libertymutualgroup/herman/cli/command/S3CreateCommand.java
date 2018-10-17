@@ -16,8 +16,6 @@
 package com.libertymutualgroup.herman.cli.command;
 
 import com.libertymutualgroup.herman.cli.Cli;
-import com.libertymutualgroup.herman.task.cli.ecs.ECSPushTask;
-import com.libertymutualgroup.herman.task.cli.ecs.ECSPushTaskConfiguration;
 import com.libertymutualgroup.herman.task.cli.s3.S3CreateTask;
 import com.libertymutualgroup.herman.task.cli.s3.S3CreateTaskConfiguration;
 
@@ -30,7 +28,7 @@ import static picocli.CommandLine.Help;
 import static picocli.CommandLine.Option;
 import static picocli.CommandLine.ParentCommand;
 
-@Command(name = "ecs-push", mixinStandardHelpOptions = true)
+@Command(name = "s3-create", mixinStandardHelpOptions = true)
 public class S3CreateCommand implements Runnable {
     @ParentCommand
     private Cli cli;
@@ -50,7 +48,7 @@ public class S3CreateCommand implements Runnable {
     @Override
     public void run() {
         String absPath = new File(this.rootPath).getAbsolutePath();
-        cli.getLogger().addLogEntry("Starting ECS Push...");
+        cli.getLogger().addLogEntry("Starting S3 Create...");
         S3CreateTaskConfiguration config = new S3CreateTaskConfiguration()
             .withRootPath(absPath)
             .withTimeout(timeout)

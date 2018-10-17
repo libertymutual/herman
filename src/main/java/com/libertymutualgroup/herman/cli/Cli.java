@@ -22,6 +22,7 @@ import com.libertymutualgroup.herman.cli.command.ECRRepoCreateCommand;
 import com.libertymutualgroup.herman.cli.command.ECRRepoTrimCommand;
 import com.libertymutualgroup.herman.cli.command.ECSClusterPushCommand;
 import com.libertymutualgroup.herman.cli.command.ECSPushCommand;
+import com.libertymutualgroup.herman.cli.command.S3CreateCommand;
 import com.libertymutualgroup.herman.logging.SysoutLogger;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -40,7 +41,8 @@ import static picocli.CommandLine.RunAll;
         ECRRepoCreateCommand.class,
         ECRLoginCommand.class,
         ECRRepoTrimCommand.class,
-        CftPushCommand.class
+        CftPushCommand.class,
+        S3CreateCommand.class
 })
 public class Cli implements Callable<Void> {
     private static final String CONFIG_BUCKET_TEMPLATE= "herman-configuration-<aws account #>-lts";
