@@ -336,13 +336,7 @@ public class S3Broker {
         } catch (IOException e1) {
             throw new AwsExecException(e1);
         }
-
         return definition;
-    }
-
-    public static S3Broker createBroker(S3CreateContext context){
-        S3Broker broker = new S3Broker(context);
-        return broker;
     }
 
 }
