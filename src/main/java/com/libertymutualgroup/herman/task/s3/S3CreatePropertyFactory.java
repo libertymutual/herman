@@ -29,18 +29,11 @@ public class S3CreatePropertyFactory {
         throw new IllegalAccessError("Utility class");
     }
 
-//    public static S3CreateTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger, Regions region) {
-//        return getTaskProperties(sessionCredentials, hermanLogger, null, region);
-//    }
-
     public static S3CreateTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger, Regions region) {
         try {
             String s3CreateTaskPropertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, hermanLogger, region);
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-
-            hermanLogger.addLogEntry(String.format("Task properties: %s", s3CreateTaskPropertiesYml));
-            S3CreateTaskProperties props = objectMapper.readValue(s3CreateTaskPropertiesYml, S3CreateTaskProperties.class);
-            return props;
+            return objectMapper.readValue(s3CreateTaskPropertiesYml, S3CreateTaskProperties.class);
         } catch (Exception ex) {
             hermanLogger.addErrorLogEntry("Error getting S3 Create Task Task Properties. Continuing...", ex);
             return null;
