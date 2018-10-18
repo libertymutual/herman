@@ -20,7 +20,6 @@ import com.amazonaws.regions.Regions;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushContext;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.logging.HermanLogger;
-import com.libertymutualgroup.herman.task.s3.S3CreateTaskProperties;
 import com.libertymutualgroup.herman.util.FileUtil;
 
 public class S3CreateContext {
@@ -30,7 +29,7 @@ public class S3CreateContext {
     private AWSCredentials sessionCredentials;
     private Regions region;
     private String rootPath;
-    private S3CreateTaskProperties taskProperties;
+    private S3CreateProperties taskProperties;
     private FileUtil fileUtil;
 
     public S3CreateContext fromECSPushContext(EcsPushContext pushContext) {
@@ -39,7 +38,7 @@ public class S3CreateContext {
         this.sessionCredentials = pushContext.getSessionCredentials();
         this.region = pushContext.getRegion();
         this.rootPath = pushContext.getRootPath();
-        this.taskProperties = new S3CreateTaskProperties()
+        this.taskProperties = new S3CreateProperties()
             .fromECSPushTaskProperties(pushContext.getTaskProperties());
         this.fileUtil = new FileUtil(pushContext.getRootPath(), pushContext.getLogger());
         return this;
@@ -85,11 +84,11 @@ public class S3CreateContext {
         this.rootPath = rootPath;
     }
 
-    public S3CreateTaskProperties getTaskProperties() {
+    public S3CreateProperties getTaskProperties() {
         return taskProperties;
     }
 
-    public void setTaskProperties(S3CreateTaskProperties taskProperties) {
+    public void setTaskProperties(S3CreateProperties taskProperties) {
         this.taskProperties = taskProperties;
     }
 
@@ -128,7 +127,7 @@ public class S3CreateContext {
     }
 
     public S3CreateContext withTaskProperties(
-        final S3CreateTaskProperties taskProperties) {
+        final S3CreateProperties taskProperties) {
         this.taskProperties = taskProperties;
         return this;
     }

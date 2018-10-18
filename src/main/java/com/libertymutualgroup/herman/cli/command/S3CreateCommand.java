@@ -15,9 +15,19 @@
  */
 package com.libertymutualgroup.herman.cli.command;
 
+import com.amazonaws.auth.AWSCredentials;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.libertymutualgroup.herman.aws.credentials.CredentialsHandler;
+import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
+import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3Broker;
+import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3CreateContext;
+import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3CreateProperties;
 import com.libertymutualgroup.herman.cli.Cli;
-import com.libertymutualgroup.herman.task.cli.s3.S3CreateTask;
 import com.libertymutualgroup.herman.task.cli.s3.S3CreateTaskConfiguration;
+import com.libertymutualgroup.herman.util.ConfigurationUtil;
+import com.libertymutualgroup.herman.util.FileUtil;
+import com.libertymutualgroup.herman.util.PropertyHandlerUtil;
 
 import java.io.File;
 import java.util.HashMap;
@@ -56,7 +66,36 @@ public class S3CreateCommand implements Runnable {
             .withRegion(cli.getRegion())
             .withCustomVariables(customVariables);
 
-        S3CreateTask s3Create = new S3CreateTask(cli.getLogger());
-        s3Create.runTask(config);
+
+        final AWSCredentials sessionCredentials = CredentialsHandler.getCredentials();
+
+        PropertyHandler propertyHandler = PropertyHandlerUtil.getCliPropertyHandler(sessionCredentials,cli.getLogger(),
+                config.getEnvironmentName(),
+                config.getRootPath(),
+                config.getCustomVariables());
+
+        String s3CreateTaskPropertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, cli.getLogger(), config.getRegion());
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+        S3CreateProperties properties = new S3CreateProperties();
+        try {
+            properties = objectMapper.readValue(s3CreateTaskPropertiesYml, S3CreateProperties.class);
+        } catch(Exception e){
+            cli.getLogger().addErrorLogEntry("Error getting S3 Create Task Properties from config bucket. Continuing...", e);
+        }
+
+        S3CreateContext s3CreateContext = new S3CreateContext()
+                .withPropertyHandler(propertyHandler)
+                .withLogger(cli.getLogger())
+                .withRegion(config.getRegion())
+                .withRootPath(config.getRootPath())
+                .withSessionCredentials(sessionCredentials)
+                .withTaskProperties(properties)
+                .withFileUtil(new FileUtil(config.getRootPath(), cli.getLogger()));
+
+        S3Broker s3Broker = new S3Broker(s3CreateContext);
+        s3Broker.brokerFromConfigurationFile();
+
+        cli.getLogger().addLogEntry("Done!");
     }
+
 }

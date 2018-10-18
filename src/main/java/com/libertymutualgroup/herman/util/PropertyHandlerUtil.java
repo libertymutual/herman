@@ -1,5 +1,6 @@
 package com.libertymutualgroup.herman.util;
 
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
@@ -12,6 +13,8 @@ import com.libertymutualgroup.herman.aws.ecs.CliPropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.TaskContextPropertyHandler;
 import com.libertymutualgroup.herman.logging.HermanLogger;
+
+import java.util.HashMap;
 import java.util.Map;
 
 public class PropertyHandlerUtil {
@@ -27,18 +30,22 @@ public class PropertyHandlerUtil {
         return handler;
     }
 
-    private static void addStandardProperties(AWSCredentials sessionCredentials, PropertyHandler handler) {
-        AWSSecurityTokenService stsClient = AWSSecurityTokenServiceClientBuilder.standard()
-            .withCredentials(new AWSStaticCredentialsProvider(sessionCredentials))
-            .withClientConfiguration(BambooCredentialsHandler.getConfiguration()).build();
-        String accountId = stsClient.getCallerIdentity(new GetCallerIdentityRequest()).getAccount();
-        handler.addProperty("account.id", accountId);
-    }
-
     public static PropertyHandler getCliPropertyHandler(AWSCredentials sessionCredentials, HermanLogger logger,
             String environmentName, String rootDirectory, Map<String, String> customVariables) {
         final PropertyHandler handler = new CliPropertyHandler(logger, environmentName, rootDirectory, customVariables);
         PropertyHandlerUtil.addStandardProperties(sessionCredentials, handler);
         return handler;
+    }
+
+    public static void addStandardProperties(AWSCredentials sessionCredentials, PropertyHandler propertyHandler){
+        String accountId = getAccountId(sessionCredentials);
+        propertyHandler.addProperty("account.id", accountId);
+    }
+
+    public static String getAccountId(AWSCredentials sessionCredentials){
+        AWSSecurityTokenService stsClient = AWSSecurityTokenServiceClientBuilder.standard()
+                .withCredentials(new AWSStaticCredentialsProvider(sessionCredentials))
+                .withClientConfiguration(new ClientConfiguration().withMaxErrorRetry(10)).build();
+        return stsClient.getCallerIdentity(new GetCallerIdentityRequest()).getAccount();
     }
 }

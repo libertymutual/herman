@@ -67,7 +67,7 @@ import com.libertymutualgroup.herman.aws.ecs.PushType;
 import com.libertymutualgroup.herman.aws.ecs.broker.iam.IAMBroker;
 import com.libertymutualgroup.herman.aws.ecs.broker.kms.KmsBroker;
 import com.libertymutualgroup.herman.logging.HermanLogger;
-import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
+import com.libertymutualgroup.herman.aws.CommonTaskProperties;
 import com.libertymutualgroup.herman.util.ArnUtil;
 import com.libertymutualgroup.herman.util.FileUtil;
 import org.slf4j.Logger;

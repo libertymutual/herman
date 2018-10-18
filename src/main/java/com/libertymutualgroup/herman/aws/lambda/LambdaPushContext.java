@@ -18,7 +18,7 @@ package com.libertymutualgroup.herman.aws.lambda;
 import com.amazonaws.auth.AWSCredentials;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.logging.HermanLogger;
-import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
+import com.libertymutualgroup.herman.aws.CommonTaskProperties;
 
 public class LambdaPushContext {
 

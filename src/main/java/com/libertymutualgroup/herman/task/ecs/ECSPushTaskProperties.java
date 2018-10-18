@@ -20,7 +20,7 @@ import com.libertymutualgroup.herman.aws.ecs.broker.ddoswaf.DdosWafBrokerPropert
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3BrokerProperties;
 import com.libertymutualgroup.herman.aws.ecs.loadbalancing.SSLCertificate;
 import com.libertymutualgroup.herman.aws.ecs.logging.SplunkInstance;
-import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
+import com.libertymutualgroup.herman.aws.CommonTaskProperties;
 import com.libertymutualgroup.herman.task.newrelic.NewRelicBrokerProperties;
 import java.util.ArrayList;
 import java.util.List;

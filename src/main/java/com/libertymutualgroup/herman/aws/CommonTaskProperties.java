@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.libertymutualgroup.herman.task.common;
+package com.libertymutualgroup.herman.aws;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 

@@ -34,7 +34,7 @@ import com.amazonaws.services.kinesis.model.Tag;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
 import com.libertymutualgroup.herman.logging.HermanLogger;
-import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
+import com.libertymutualgroup.herman.aws.CommonTaskProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
