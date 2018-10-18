@@ -16,7 +16,7 @@
 package com.libertymutualgroup.herman.aws.ecs.broker.s3;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.libertymutualgroup.herman.aws.CommonTaskProperties;
+import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)

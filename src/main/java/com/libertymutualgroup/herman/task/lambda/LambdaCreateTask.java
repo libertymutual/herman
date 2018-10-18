@@ -32,7 +32,7 @@ import com.libertymutualgroup.herman.aws.lambda.LambdaBroker;
 import com.libertymutualgroup.herman.aws.lambda.LambdaPushContext;
 import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
 import com.libertymutualgroup.herman.logging.HermanLogger;
-import com.libertymutualgroup.herman.aws.CommonTaskProperties;
+import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
 import com.libertymutualgroup.herman.util.ConfigurationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 
