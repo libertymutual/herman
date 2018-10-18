@@ -24,7 +24,6 @@ import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3Broker;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3CreateContext;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3CreateProperties;
 import com.libertymutualgroup.herman.cli.Cli;
-import com.libertymutualgroup.herman.task.cli.s3.S3CreateTaskConfiguration;
 import com.libertymutualgroup.herman.util.ConfigurationUtil;
 import com.libertymutualgroup.herman.util.FileUtil;
 import com.libertymutualgroup.herman.util.PropertyHandlerUtil;
@@ -49,9 +48,6 @@ public class S3CreateCommand implements Runnable {
     @Option(names = {"-e", "-env", "--environment"}, description = "Environment to deploy")
     private String environmentName;
 
-    @Option(names = {"-t", "--timeout"}, description = "Task timeout (in minutes)", showDefaultValue = Help.Visibility.ALWAYS)
-    private int timeout = 5;
-
     @Option(names = {"-v", "-vars", "--variables"}, description = "Custom build variables to be injected. <KEY>=<VALUE>")
     private Map<String, String> customVariables = new HashMap<>();
 
@@ -59,22 +55,15 @@ public class S3CreateCommand implements Runnable {
     public void run() {
         String absPath = new File(this.rootPath).getAbsolutePath();
         cli.getLogger().addLogEntry("Starting S3 Create...");
-        S3CreateTaskConfiguration config = new S3CreateTaskConfiguration()
-            .withRootPath(absPath)
-            .withTimeout(timeout)
-            .withEnvironmentName(environmentName)
-            .withRegion(cli.getRegion())
-            .withCustomVariables(customVariables);
-
 
         final AWSCredentials sessionCredentials = CredentialsHandler.getCredentials();
 
         PropertyHandler propertyHandler = PropertyHandlerUtil.getCliPropertyHandler(sessionCredentials,cli.getLogger(),
-                config.getEnvironmentName(),
-                config.getRootPath(),
-                config.getCustomVariables());
+                environmentName,
+                absPath,
+                customVariables);
 
-        String s3CreateTaskPropertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, cli.getLogger(), config.getRegion());
+        String s3CreateTaskPropertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, cli.getLogger(), cli.getRegion());
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
         S3CreateProperties properties = new S3CreateProperties();
         try {
@@ -86,11 +75,11 @@ public class S3CreateCommand implements Runnable {
         S3CreateContext s3CreateContext = new S3CreateContext()
                 .withPropertyHandler(propertyHandler)
                 .withLogger(cli.getLogger())
-                .withRegion(config.getRegion())
-                .withRootPath(config.getRootPath())
+                .withRegion(cli.getRegion())
+                .withRootPath(absPath)
                 .withSessionCredentials(sessionCredentials)
                 .withTaskProperties(properties)
-                .withFileUtil(new FileUtil(config.getRootPath(), cli.getLogger()));
+                .withFileUtil(new FileUtil(absPath, cli.getLogger()));
 
         S3Broker s3Broker = new S3Broker(s3CreateContext);
         s3Broker.brokerFromConfigurationFile();
