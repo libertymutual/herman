@@ -21,7 +21,7 @@ per environment.
 
 **s3\_template.json**
 
-``` js
+``` json
 {
     "functionName": "${function.name}",
     "zipFileName": "app.zip",
@@ -32,7 +32,13 @@ per environment.
     "handler": "src/main/app/app.handler",
     "memorySize": 256,
     "runtime": "nodejs6.10",
-    "timeout": "60"
+    "timeout": "60",
+    "tags": [
+        {
+            "key": "team",
+            "value": "herman-lambda-team"
+        }
+    ]
 }
 ```
 
@@ -49,6 +55,7 @@ per environment.
 | timeout      | No       | Time (in seconds) that the lambda will execute before timing out. (Default is 5s)                                                                                                                                |
 | vpcId      | No       | Not shown above\* - This will run the lambda within the context of the passed VPC ID.                                                           |
 | useKms       | No       | This will create a KMS key for the lambda to encrypt environment variables and other secrets                                                                                                                     |
+| tags       | No       | List of tags to be applied to lambda and provisioned resources                                                                                                                     |
 
 ## <span class="underline">Permissions and Policies</span>
 
