@@ -16,13 +16,17 @@
 package com.libertymutualgroup.herman.cli.command;
 
 import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.regions.Regions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.libertymutualgroup.herman.aws.credentials.CredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
+import com.libertymutualgroup.herman.aws.ecs.broker.s3.BucketMeta;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3Broker;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3CreateContext;
-import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3CreateProperties;
+import com.libertymutualgroup.herman.logging.HermanLogger;
+import com.libertymutualgroup.herman.task.bamboo.s3.S3CreateTask;
+import com.libertymutualgroup.herman.task.s3.S3CreateTaskProperties;
 import com.libertymutualgroup.herman.cli.Cli;
 import com.libertymutualgroup.herman.util.ConfigurationUtil;
 import com.libertymutualgroup.herman.util.FileUtil;
@@ -53,38 +57,54 @@ public class S3CreateCommand implements Runnable {
 
     @Override
     public void run() {
+        executeS3Task(
+                cli.getLogger(),
+                cli.getRegion(),
+                new CredentialsHandler(),
+                new PropertyHandlerUtil(),
+                new ConfigurationUtil());
+    }
+
+    public void executeS3Task(
+            HermanLogger logger,
+            Regions region,
+            CredentialsHandler credentialsHandler,
+            PropertyHandlerUtil propertyHandlerUtil,
+            ConfigurationUtil configurationUtil){
         String absPath = new File(this.rootPath).getAbsolutePath();
-        cli.getLogger().addLogEntry("Starting S3 Create...");
+        final AWSCredentials sessionCredentials = credentialsHandler.getAWSCredentials();
 
-        final AWSCredentials sessionCredentials = CredentialsHandler.getCredentials();
 
-        PropertyHandler propertyHandler = PropertyHandlerUtil.getCliPropertyHandler(sessionCredentials,cli.getLogger(),
+        PropertyHandler propertyHandler = propertyHandlerUtil.getCliPropertyHandler(
+                sessionCredentials,
+                logger,
                 environmentName,
                 absPath,
                 customVariables);
 
-        String s3CreateTaskPropertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, cli.getLogger(), cli.getRegion());
-        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-        S3CreateProperties properties = new S3CreateProperties();
-        try {
-            properties = objectMapper.readValue(s3CreateTaskPropertiesYml, S3CreateProperties.class);
-        } catch(Exception e){
-            cli.getLogger().addErrorLogEntry("Error getting S3 Create Task Properties from config bucket. Continuing...", e);
-        }
+        S3CreateTaskProperties properties = configurationUtil.getConfigProperties(
+                sessionCredentials, logger, region, S3CreateTaskProperties.class
+        );
 
         S3CreateContext s3CreateContext = new S3CreateContext()
                 .withPropertyHandler(propertyHandler)
-                .withLogger(cli.getLogger())
-                .withRegion(cli.getRegion())
+                .withLogger(logger)
+                .withRegion(region)
                 .withRootPath(absPath)
                 .withSessionCredentials(sessionCredentials)
                 .withTaskProperties(properties)
-                .withFileUtil(new FileUtil(absPath, cli.getLogger()));
+                .withFileUtil(new FileUtil(absPath, logger));
 
-        S3Broker s3Broker = new S3Broker(s3CreateContext);
-        s3Broker.brokerFromConfigurationFile();
+        S3Broker s3Broker = getBroker(s3CreateContext);
+        BucketMeta meta = s3Broker.brokerFromConfigurationFile();
 
-        cli.getLogger().addLogEntry("Done!");
+
+        logger.addLogEntry("S3 bucket name: " + meta.getName());
+        logger.addLogEntry("S3 bucket region: " + meta.getRegion());
+    }
+
+    public S3Broker getBroker(S3CreateContext context){
+        return new S3Broker(context);
     }
 
 }

@@ -19,10 +19,6 @@ import java.util.Map;
 
 public class PropertyHandlerUtil {
 
-    private PropertyHandlerUtil() {
-        throw new IllegalAccessError("Utility class");
-    }
-
     public static PropertyHandler getTaskContextPropertyHandler(DeploymentTaskContext taskContext,
         AWSCredentials sessionCredentials, CustomVariableContext customVariableContext) {
         final PropertyHandler handler = new TaskContextPropertyHandler(taskContext, customVariableContext);
@@ -30,7 +26,7 @@ public class PropertyHandlerUtil {
         return handler;
     }
 
-    public static PropertyHandler getCliPropertyHandler(AWSCredentials sessionCredentials, HermanLogger logger,
+    public PropertyHandler getCliPropertyHandler(AWSCredentials sessionCredentials, HermanLogger logger,
             String environmentName, String rootDirectory, Map<String, String> customVariables) {
         final PropertyHandler handler = new CliPropertyHandler(logger, environmentName, rootDirectory, customVariables);
         PropertyHandlerUtil.addStandardProperties(sessionCredentials, handler);

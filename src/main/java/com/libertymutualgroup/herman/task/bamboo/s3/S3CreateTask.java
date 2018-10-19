@@ -16,11 +16,7 @@
 package com.libertymutualgroup.herman.task.bamboo.s3;
 
 import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.regions.Regions;
-import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
-import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
-import com.amazonaws.services.securitytoken.model.GetCallerIdentityRequest;
 import com.atlassian.bamboo.deployments.execution.DeploymentTaskContext;
 import com.atlassian.bamboo.task.TaskResult;
 import com.atlassian.bamboo.task.TaskResultBuilder;
@@ -30,11 +26,10 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.libertymutualgroup.herman.aws.AbstractDeploymentTask;
 import com.libertymutualgroup.herman.aws.credentials.BambooCredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
-import com.libertymutualgroup.herman.aws.ecs.TaskContextPropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.BucketMeta;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3Broker;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3CreateContext;
-import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3CreateProperties;
+import com.libertymutualgroup.herman.task.s3.S3CreateTaskProperties;
 import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
 import com.libertymutualgroup.herman.util.ConfigurationUtil;
 import com.libertymutualgroup.herman.util.FileUtil;
@@ -58,14 +53,9 @@ public class S3CreateTask extends AbstractDeploymentTask {
 
         PropertyHandler handler = PropertyHandlerUtil.getTaskContextPropertyHandler(taskContext, sessionCredentials, getCustomVariableContext());
 
-        String s3CreateTaskPropertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, buildLogger, awsRegion);
-        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-        S3CreateProperties properties = new S3CreateProperties();
-        try {
-            properties = objectMapper.readValue(s3CreateTaskPropertiesYml, S3CreateProperties.class);
-        } catch(Exception e){
-            buildLogger.addErrorLogEntry("Error getting S3 Create Task Properties from config bucket. Continuing...", e);
-        }
+        S3CreateTaskProperties properties = new ConfigurationUtil().getConfigProperties(
+                sessionCredentials, buildLogger, awsRegion, S3CreateTaskProperties.class
+        );
 
         S3CreateContext s3CreateContext = new S3CreateContext()
             .withPropertyHandler(handler)

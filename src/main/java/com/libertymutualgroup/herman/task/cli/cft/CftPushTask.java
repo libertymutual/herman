@@ -25,8 +25,8 @@ public class CftPushTask {
     }
 
     public void runTask(CftPushTaskConfiguration configuration) {
-        final AWSCredentials sessionCredentials = CredentialsHandler.getCredentials();
-        final PropertyHandler propertyHandler = PropertyHandlerUtil.getCliPropertyHandler(
+        final AWSCredentials sessionCredentials = new CredentialsHandler().getCredentials();
+        final PropertyHandler propertyHandler = new PropertyHandlerUtil().getCliPropertyHandler(
             sessionCredentials,
             this.logger,
             configuration.getEnvironmentName(),

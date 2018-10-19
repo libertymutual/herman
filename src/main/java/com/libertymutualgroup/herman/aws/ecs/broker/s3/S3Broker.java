@@ -53,6 +53,7 @@ import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.broker.kms.KmsBroker;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
 import com.libertymutualgroup.herman.logging.HermanLogger;
+import com.libertymutualgroup.herman.task.s3.S3CreateTaskProperties;
 import com.libertymutualgroup.herman.util.FileUtil;
 import java.io.File;
 import java.io.FileInputStream;
@@ -77,7 +78,7 @@ public class S3Broker {
 
     private HermanLogger buildLogger;
     private PropertyHandler handler;
-    private S3CreateProperties taskProperties;
+    private S3CreateTaskProperties taskProperties;
     private S3CreateContext context;
 
     public S3Broker(S3CreateContext context) {

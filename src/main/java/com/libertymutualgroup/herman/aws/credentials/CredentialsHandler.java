@@ -21,10 +21,15 @@ import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 
 public class CredentialsHandler {
 
-    CredentialsHandler() {
-        throw new IllegalAccessError("Utility class");
+    public AWSCredentials getAWSCredentials() {
+        return new DefaultAWSCredentialsProviderChain().getCredentials();
     }
 
+    public ClientConfiguration getAWSConfiguration() {
+        return new ClientConfiguration().withMaxErrorRetry(10);
+    }
+
+    // Don't want to change every file in this PR, will refactor later
     public static AWSCredentials getCredentials() {
         return new DefaultAWSCredentialsProviderChain().getCredentials();
     }
