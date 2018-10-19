@@ -32,7 +32,13 @@ properties files per environment.
     "policyName": "s3_test_policy.json",
     "website": true,
     "indexFile": "index.html",
-    "errorFile": "error.html"
+    "errorFile": "error.html",
+    "tags": [
+        {
+            "key": "team",
+            "value": "herman-s3-team"
+        }
+    ]
 }
 ```
 
@@ -49,6 +55,7 @@ properties files per environment.
 | website    | No       | Will configure S3 bucket as a website, defaults to false                                                                                                               |
 | indexFile  | No       | Configure the index file if website hosting is enabled, defaults to index.html                                                                                         |
 | errorFile  | No       | Configure the error file if website hosting is enabled ([AWS Docs](http://docs.aws.amazon.com/AmazonS3/latest/dev/CustomErrorDocSupport.html)), defaults to error.html |
+| tags       | No       | List of tags to be applied to lambda and provisioned resources                                                                                                         |
 
   
 

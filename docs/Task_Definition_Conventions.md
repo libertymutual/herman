@@ -6,6 +6,13 @@
     -   The compute to provision to
 -   appName (required)  
     -   Used to name the various resources when created
+-   tags (optional)
+    -   Optional list of tags that will be applied to brokered services
+    ```yml
+    tags: 
+        - key: "team"
+          value: "herman-team"
+    ```
 
   
 
@@ -20,7 +27,7 @@ This block is optional - if left out, app will run in batch mode (start
     -   starting portion of your url, if a url is desired.  if not
         supplied, defaults to your appName
 -   urlSuffix (optional)
-    -   domain for your URL. (eg, np-lmb.lmig.com)
+    -   domain for your URL. (eg, my.url.com)
     -   Internal URLs can leverage existing SSL certs; external URLs
         will need extra handling
     -   If not supplied, app will not get a url/route (daemon/backround
@@ -48,7 +55,7 @@ The "service" block is defined with URL parameters, so the URL/Route is
 created, and the platform keeps the app running.   "urlPrefixOverride"
 is option - if not supplied, the url will be the appname.
 
-``` java
+``` yml
 cluster: ${ecs.cluster}
 appName: ${bamboo.maven.artifactId}-${bamboo.deploy.environment}
 service:
@@ -74,7 +81,7 @@ The "service" block is still defined, but there are no URL parameters,
 so the URL/Route doesn't get created, but the platform keeps the app
 running (1 in this case):
 
-``` java
+``` yml
 cluster: "${ecs.cluster}"
 appName: "${bamboo.maven.artifactId}-${bamboo.deploy.environment}"
 service:
@@ -94,7 +101,7 @@ containerDefinitions:
 The "service" block is not defined, so the container will run until
 completion and then terminate, returning it's success or error code.
 
-``` java
+``` yml
 cluster: "${ecs.cluster}"
 appName: "${bamboo.maven.artifactId}-${bamboo.deploy.environment}"
 containerDefinitions:
