@@ -31,8 +31,8 @@ import com.amazonaws.services.kinesis.model.ResourceNotFoundException;
 import com.amazonaws.services.kinesis.model.StartStreamEncryptionRequest;
 import com.amazonaws.services.kinesis.model.StreamDescription;
 import com.amazonaws.services.kinesis.model.Tag;
-import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
-import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
+import com.libertymutualgroup.herman.aws.tags.HermanTag;
+import com.libertymutualgroup.herman.aws.tags.TagUtil;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
 import org.slf4j.Logger;
@@ -48,15 +48,12 @@ public class KinesisBroker {
 
     private HermanLogger buildLogger;
     private AmazonKinesis client;
-    private EcsClusterMetadata clusterMetadata;
-    private EcsPushDefinition definition;
+    private KinesisAppDefinition definition;
     private CommonTaskProperties taskProperties;
 
-    public KinesisBroker(HermanLogger buildLogger, AmazonKinesis client, EcsClusterMetadata clusterMetadata,
-        EcsPushDefinition definition, CommonTaskProperties taskProperties) {
+    public KinesisBroker(HermanLogger buildLogger, AmazonKinesis client, KinesisAppDefinition definition, CommonTaskProperties taskProperties) {
         this.buildLogger = buildLogger;
         this.client = client;
-        this.clusterMetadata = clusterMetadata;
         this.definition = definition;
         this.taskProperties = taskProperties;
     }
@@ -90,17 +87,16 @@ public class KinesisBroker {
             // Stream is now created. Waiting for it to become active so we can add tags and encryption.
             try {
                 waitForStreamToBecomeAvailable(stream.getName());
+                ArrayList<HermanTag> tags = new ArrayList<>(definition.getTags());
+                tags.add(new HermanTag(this.taskProperties.getSbuTagKey(), this.taskProperties.getSbu()));
+                tags.add(new HermanTag(this.taskProperties.getOrgTagKey(), this.taskProperties.getOrg()));
+                tags.add(new HermanTag(this.taskProperties.getAppTagKey(), definition.getAppName()));
 
                 // Add tags to stream
-                AddTagsToStreamRequest addTagsToStreamRequest = new AddTagsToStreamRequest();
-                addTagsToStreamRequest.setStreamName(stream.getName());
-                addTagsToStreamRequest
-                    .addTagsEntry(this.taskProperties.getSbuTagKey(), clusterMetadata.getNewrelicSbuTag());
-                addTagsToStreamRequest
-                    .addTagsEntry(this.taskProperties.getOrgTagKey(), clusterMetadata.getNewrelicOrgTag());
-                addTagsToStreamRequest.addTagsEntry(this.taskProperties.getAppTagKey(), definition.getAppName());
-                addTagsToStreamRequest
-                    .addTagsEntry(this.taskProperties.getClusterTagKey(), clusterMetadata.getClusterId());
+                AddTagsToStreamRequest addTagsToStreamRequest = new AddTagsToStreamRequest()
+                    .withStreamName(stream.getName())
+                    .withTags(TagUtil.hermanToMap(tags));
+
                 client.addTagsToStream(addTagsToStreamRequest);
 
                 // Add encryption to stream

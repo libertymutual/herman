@@ -26,17 +26,14 @@ import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndex;
 import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndexDescription;
 import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndexUpdate;
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
+import com.amazonaws.services.dynamodbv2.model.TagResourceRequest;
 import com.amazonaws.services.dynamodbv2.model.UpdateGlobalSecondaryIndexAction;
 import com.amazonaws.services.dynamodbv2.model.UpdateTableRequest;
 import com.amazonaws.services.dynamodbv2.model.UpdateTableResult;
-import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
-import com.amazonaws.services.identitymanagement.model.AttachRolePolicyRequest;
-import com.amazonaws.services.identitymanagement.model.CreatePolicyRequest;
-import com.amazonaws.services.identitymanagement.model.CreatePolicyResult;
 import com.libertymutualgroup.herman.aws.AwsExecException;
-import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
+import com.libertymutualgroup.herman.aws.tags.HermanTag;
+import com.libertymutualgroup.herman.aws.tags.TagUtil;
 import com.libertymutualgroup.herman.logging.HermanLogger;
-import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,19 +46,14 @@ public class DynamoDBBroker {
     private static final String INTERRUPTED_WHILE_POLLING = "Interrupted while polling";
 
     private HermanLogger buildLogger;
-    private AmazonIdentityManagement iamClient;
-    private EcsPushDefinition pushDefinition;
-    private ECSPushTaskProperties taskProperties;
+    private DynamoAppDefinition pushDefinition;
 
     /**
      * Default constructor
      */
-    public DynamoDBBroker(HermanLogger buildLogger, AmazonIdentityManagement iamClient, EcsPushDefinition pushDefinition,
-        ECSPushTaskProperties taskProperties) {
+    public DynamoDBBroker(HermanLogger buildLogger, DynamoAppDefinition pushDefinition) {
         this.buildLogger = buildLogger;
-        this.iamClient = iamClient;
         this.pushDefinition = pushDefinition;
-        this.taskProperties = taskProperties;
     }
 
     /**
@@ -96,6 +88,9 @@ public class DynamoDBBroker {
             // If the table is new, create it
             createTable(client, table);
         }
+        if (this.pushDefinition.getTags() != null) {
+            tagTable(client, table.getTableName(), this.pushDefinition.getTags());
+        }
     }
 
     /**
@@ -129,43 +124,6 @@ public class DynamoDBBroker {
         if (!success) {
             buildLogger.addErrorLogEntry(
                 "Seems we failed to create the table " + table.getTableName() + " . Check AWS console");
-        }
-
-        // Set policy
-        String tableArn = tableResult.getTableDescription().getTableArn();
-
-        if (tableArn == null || tableArn.isEmpty()) {
-            buildLogger.addErrorLogEntry("Table arn created is missing, can't attach policy. ");
-        } else {
-
-            String policyDocument =
-                "{" +
-                    "  \"Version\": \"2012-10-17\"," +
-                    "  \"Statement\": [" +
-                    "    {" +
-                    "        \"Effect\": \"Allow\"," +
-                    "        \"Action\": [" +
-                    "            \"dynamodb:*\"" +
-                    "       ]," +
-                    "       \"Resource\": \"" + tableArn + "\"" +
-                    "    }" +
-                    "  ]" +
-                    "}";
-
-            buildLogger.addLogEntry("Creating DynamoDB Policy:\n" + policyDocument);
-
-            CreatePolicyRequest createPolicyRequest = new CreatePolicyRequest()
-                .withPolicyName(table.getTableName() + "Policy")
-                .withDescription("Auto created policy to support " + pushDefinition.getAppName())
-                .withPath(String.format("/%s/%s/", taskProperties.getOrg().toLowerCase(), pushDefinition.getAppName()))
-                .withPolicyDocument(policyDocument);
-
-            CreatePolicyResult iamPolicy = iamClient.createPolicy(createPolicyRequest);
-            AttachRolePolicyRequest rolePolicyRequest = new AttachRolePolicyRequest()
-                .withPolicyArn(iamPolicy.getPolicy().getArn())
-                .withRoleName(pushDefinition.getAppName()); // role name = app name by convention
-            iamClient.attachRolePolicy(rolePolicyRequest);
-
         }
     }
 
@@ -208,11 +166,24 @@ public class DynamoDBBroker {
 
     }
 
+    private void tagTable(AmazonDynamoDB client, String tableName, List<HermanTag> tags) {
+        this.buildLogger.addLogEntry("...Setting tags on table " + tableName);
+        DescribeTableResult describeResult = client.describeTable(tableName);
+        TagResourceRequest tagRequest = new TagResourceRequest()
+            .withResourceArn(describeResult.getTable().getTableArn())
+            .withTags(TagUtil.hermanToDynamoTags(tags));
+        client.tagResource(tagRequest);
+    }
+
     /**
      * @return true = success / false = fail
      */
     private boolean checkAndUpdateStreamSpecification(AmazonDynamoDB client, DynamoDBTable table,
         DescribeTableResult describeTableResult) {
+
+        if (describeTableResult.getTable().getStreamSpecification() == null && table.getStreamSpecification() == null) {
+            return true;
+        }
 
         if (checkIfStreamIsDifferent(describeTableResult.getTable(), table)) {
             buildLogger.addLogEntry("Updating Stream Specification");
@@ -229,14 +200,19 @@ public class DynamoDBBroker {
 
     private boolean checkIfStreamIsBeingEnabled(TableDescription currentTable, DynamoDBTable updatedTable) {
         return (currentTable.getStreamSpecification() == null && updatedTable.getStreamSpecification() != null
-            && updatedTable.getStreamSpecification().isStreamEnabled().booleanValue());
+            && updatedTable.getStreamSpecification().isStreamEnabled());
     }
 
     private boolean checkIfStreamIsDifferent(TableDescription currentTable, DynamoDBTable updatedTable) {
+        if (updatedTable.getStreamSpecification().isStreamEnabled() == null && currentTable.getStreamSpecification().getStreamEnabled() == null) {
+            return false;
+        }
+
         // If stream was off and is now on
         if (checkIfStreamIsBeingEnabled(currentTable, updatedTable)) {
             return true;
         }
+
 
         // If stream was off and is still off
         if (!updatedTable.getStreamSpecification().isStreamEnabled() && currentTable.getStreamSpecification() == null) {
@@ -255,10 +231,8 @@ public class DynamoDBBroker {
      */
     private boolean checkAndUpdateProvisionedThroughputs(AmazonDynamoDB client, DynamoDBTable table,
         DescribeTableResult describeTableResult) {
-        if (table.getProvisionedThroughput().getReadCapacityUnits() != describeTableResult.getTable()
-            .getProvisionedThroughput().getReadCapacityUnits() ||
-            table.getProvisionedThroughput().getWriteCapacityUnits() != describeTableResult.getTable()
-                .getProvisionedThroughput().getWriteCapacityUnits()) {
+        if (!table.getProvisionedThroughput().getReadCapacityUnits().equals(describeTableResult.getTable().getProvisionedThroughput().getReadCapacityUnits()) ||
+            !table.getProvisionedThroughput().getWriteCapacityUnits().equals(describeTableResult.getTable().getProvisionedThroughput().getWriteCapacityUnits())) {
             buildLogger.addLogEntry("Updating Provisioned Throughput");
             UpdateTableRequest updateTableRequest = new UpdateTableRequest();
             updateTableRequest.setTableName(table.getTableName());
@@ -409,7 +383,7 @@ public class DynamoDBBroker {
         }
 
         String tableStatus = client.describeTable(tableName).getTable().getTableStatus();
-        buildLogger.addLogEntry("Table status is " + tableStatus);
+        buildLogger.addLogEntry("Table status is " + tableStatus + "...");
         while (tableStatus.matches("CREATING|UPDATING")) {
 
             if (currentCount > maxCount) {
@@ -418,10 +392,9 @@ public class DynamoDBBroker {
             }
             currentCount++;
             try {
-                buildLogger.addLogEntry("Waiting...");
                 Thread.sleep(wait);
                 tableStatus = client.describeTable(tableName).getTable().getTableStatus();
-                buildLogger.addLogEntry("Status: " + tableStatus);
+                buildLogger.addLogEntry("... Status: " + tableStatus);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 buildLogger.addLogEntry(INTERRUPTED_WHILE_POLLING);

@@ -19,6 +19,12 @@ import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
+import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
+import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
+import com.amazonaws.services.dynamodbv2.model.Projection;
+import com.amazonaws.services.dynamodbv2.model.StreamSpecification;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
 import com.amazonaws.services.ec2.model.AmazonEC2Exception;
@@ -32,6 +38,8 @@ import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientBuilder;
 import com.amazonaws.services.identitymanagement.model.Role;
+import com.amazonaws.services.kinesis.AmazonKinesis;
+import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 import com.amazonaws.services.kms.AWSKMS;
 import com.amazonaws.services.kms.AWSKMSClientBuilder;
 import com.amazonaws.services.kms.model.Tag;
@@ -55,6 +63,10 @@ import com.amazonaws.services.lambda.model.UpdateFunctionCodeRequest;
 import com.amazonaws.services.lambda.model.UpdateFunctionConfigurationRequest;
 import com.amazonaws.services.lambda.model.UpdateFunctionConfigurationResult;
 import com.amazonaws.services.lambda.model.VpcConfig;
+import com.amazonaws.services.sns.AmazonSNS;
+import com.amazonaws.services.sns.AmazonSNSClientBuilder;
+import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.amazonaws.util.IOUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -64,11 +76,19 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.credentials.BambooCredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecs.PushType;
+import com.libertymutualgroup.herman.aws.ecs.broker.dynamodb.DynamoDBBroker;
+import com.libertymutualgroup.herman.aws.ecs.broker.dynamodb.DynamoDBMixIns;
 import com.libertymutualgroup.herman.aws.ecs.broker.iam.IAMBroker;
+import com.libertymutualgroup.herman.aws.ecs.broker.kinesis.KinesisBroker;
+import com.libertymutualgroup.herman.aws.ecs.broker.kinesis.KinesisStream;
 import com.libertymutualgroup.herman.aws.ecs.broker.kms.KmsBroker;
+import com.libertymutualgroup.herman.aws.ecs.broker.sns.SnsBroker;
+import com.libertymutualgroup.herman.aws.ecs.broker.sns.SnsTopic;
+import com.libertymutualgroup.herman.aws.ecs.broker.sqs.SqsBroker;
+import com.libertymutualgroup.herman.aws.ecs.broker.sqs.SqsQueue;
+import com.libertymutualgroup.herman.aws.tags.TagUtil;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
-import com.libertymutualgroup.herman.util.ArnUtil;
 import com.libertymutualgroup.herman.util.FileUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,6 +130,10 @@ public class LambdaBroker {
     private CommonTaskProperties taskProperties;
     private AWSCredentials credentials;
     private Regions region;
+    private AmazonKinesis kinesisClient;
+    private AmazonSQS sqsClient;
+    private AmazonSNS snsClient;
+    private AmazonDynamoDB dynamoDbClient;
 
     private ObjectMapper mapper = new ObjectMapper();
 
@@ -147,6 +171,30 @@ public class LambdaBroker {
             .withClientConfiguration(config)
             .withRegion(region)
             .build();
+
+        this.sqsClient = AmazonSQSClientBuilder.standard()
+            .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
+            .withClientConfiguration(config)
+            .withRegion(region)
+            .build();
+
+        this.snsClient = AmazonSNSClientBuilder.standard()
+            .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
+            .withClientConfiguration(config)
+            .withRegion(region)
+            .build();
+
+        this.dynamoDbClient = AmazonDynamoDBClientBuilder.standard()
+            .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
+            .withClientConfiguration(config)
+            .withRegion(region)
+            .build();
+
+        this.kinesisClient = AmazonKinesisClientBuilder.standard()
+            .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
+            .withClientConfiguration(config)
+            .withRegion(region)
+            .build();
     }
 
     public void brokerLambda() throws IOException {
@@ -155,8 +203,11 @@ public class LambdaBroker {
         tags.add(new Tag().withTagKey(this.taskProperties.getOrgTagKey()).withTagValue(this.taskProperties.getOrg()));
         tags.add(
             new Tag().withTagKey(this.taskProperties.getAppTagKey()).withTagValue(this.configuration.getAppName()));
-        Map<String, String> tagMap = tags.stream().collect(Collectors.toMap(Tag::getTagKey, Tag::getTagValue));
 
+        Map<String, String> tagMap = tags.stream().collect(Collectors.toMap(Tag::getTagKey, Tag::getTagValue));
+        if (this.configuration.getTags() != null) {
+            tagMap.putAll(TagUtil.hermanToMap(this.configuration.getTags()));
+        }
         // Create/Update custom security group if needed
         String customSecurityGroupId = getCustomSecurityGroupId(tagMap);
 
@@ -185,13 +236,9 @@ public class LambdaBroker {
         Role executionRole = iamBroker
             .brokerAppRole(this.iamClient, this.configuration, policy, this.context.getBambooPropertyHandler(),
                 PushType.LAMBDA);
-
         this.context.getBambooPropertyHandler().addProperty("app.iam", executionRole.getArn());
-        this.context.getBambooPropertyHandler()
-            .addProperty("account.id", ArnUtil.getAccountFromArn(executionRole.getArn()));
 
         FunctionCode functionCode;
-
         try {
             FileInputStream zipInputStream = fileUtil.findfileAsInputStream(this.configuration.getZipFileName());
             FileChannel zipInputChannel = zipInputStream.getChannel();
@@ -302,6 +349,11 @@ public class LambdaBroker {
             buildLogger.addLogEntry("Pushed lambda with kms key " + output.getConfiguration().getKMSKeyArn());
         }
         buildLogger.addLogEntry(output.getConfiguration().toString());
+
+        brokerSns(this.configuration);
+        brokerSqs(this.configuration);
+        brokerKinesisStream(this.configuration);
+        brokerDynamoDB(this.configuration);
     }
 
     private Environment getEnvironment() {
@@ -452,6 +504,10 @@ public class LambdaBroker {
             }
 
             ObjectMapper mapper = isJson ? new ObjectMapper() : new ObjectMapper(new YAMLFactory());
+            mapper.addMixIn(KeySchemaElement.class, DynamoDBMixIns.class);
+            mapper.addMixIn(StreamSpecification.class, DynamoDBMixIns.class);
+            mapper.addMixIn(AttributeDefinition.class, DynamoDBMixIns.class);
+            mapper.addMixIn(Projection.class, DynamoDBMixIns.class);
 
             definition = mapper.readValue(this.context.getBambooPropertyHandler().mapInProperties(template),
                 LambdaInjectConfiguration.class);
@@ -463,5 +519,58 @@ public class LambdaBroker {
         }
 
         return definition;
+    }
+
+    private void brokerSqs(LambdaInjectConfiguration definition) {
+        if (definition.getQueues() != null) {
+            SqsBroker sqsBroker = new SqsBroker(this.buildLogger, this.context.getBambooPropertyHandler());
+            this.buildLogger.addLogEntry("Brokering SQS queues...");
+            for (SqsQueue queue : definition.getQueues()) {
+                if (queue.getPolicyName() != null) {
+                    String policy = fileUtil.findFile(queue.getPolicyName(), false);
+                    sqsBroker.brokerQueue(sqsClient, queue, policy, definition.getTags());
+                } else {
+                    sqsBroker.brokerQueue(sqsClient, queue, null, definition.getTags());
+                }
+            }
+        }
+    }
+
+    private void brokerSns(LambdaInjectConfiguration definition) {
+        if (definition.getTopics() != null) {
+            SnsBroker snsBroker = new SnsBroker(this.buildLogger, this.context.getBambooPropertyHandler());
+            this.buildLogger.addLogEntry("Brokering SNS topics...");
+            for (SnsTopic topic : definition.getTopics()) {
+                if (topic.getPolicyName() != null) {
+                    String policy = fileUtil.findFile(topic.getPolicyName(), false);
+                    snsBroker.brokerTopic(snsClient, topic, policy);
+                } else {
+                    snsBroker.brokerTopic(snsClient, topic, null);
+                }
+            }
+        }
+
+    }
+
+    private void brokerKinesisStream(LambdaInjectConfiguration definition) {
+        KinesisBroker kinesisBroker = new KinesisBroker(this.buildLogger, kinesisClient, definition, taskProperties);
+
+        // delete any streams tied to this app that are no longer specified in the PushDefinition
+        kinesisBroker.checkStreamsToBeDeleted();
+
+        if (definition.getStreams() != null) {
+            this.buildLogger.addLogEntry("Brokering Kinesis streams...");
+            for (KinesisStream stream : definition.getStreams()) {
+                kinesisBroker.brokerStream(stream);
+            }
+        }
+    }
+
+    private void brokerDynamoDB(LambdaInjectConfiguration definition) {
+        if (definition.getDynamoDBTables() != null) {
+            DynamoDBBroker dynamoDBBroker = new DynamoDBBroker(this.buildLogger, definition);
+            this.buildLogger.addLogEntry("Brokering DynamoDB tables");
+            dynamoDBBroker.createDynamoDBTables(dynamoDbClient);
+        }
     }
 }

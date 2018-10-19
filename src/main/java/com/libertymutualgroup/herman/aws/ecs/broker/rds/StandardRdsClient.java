@@ -53,6 +53,8 @@ import com.amazonaws.services.rds.model.Tag;
 import com.amazonaws.services.rds.model.VpcSecurityGroupMembership;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
+import com.libertymutualgroup.herman.aws.tags.HermanTag;
+import com.libertymutualgroup.herman.aws.tags.TagUtil;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,10 +74,10 @@ public class StandardRdsClient implements RdsClient {
     private AmazonRDS client;
     private RdsInstance rds;
     private EcsClusterMetadata clusterMetadata;
-    private List<Tag> tags;
+    private List<HermanTag> tags;
     private HermanLogger buildLogger;
 
-    StandardRdsClient(AmazonRDS client, RdsInstance rds, EcsClusterMetadata clusterMetadata, List<Tag> tags,
+    StandardRdsClient(AmazonRDS client, RdsInstance rds, EcsClusterMetadata clusterMetadata, List<HermanTag> tags,
         HermanLogger buildLogger) {
         this.client = client;
         this.rds = rds;
@@ -127,7 +129,7 @@ public class StandardRdsClient implements RdsClient {
             .withPubliclyAccessible(rds.getPubliclyAccessible()).
             withStorageEncrypted(true)
             .withStorageType(rds.getStorageType())
-            .withTags(tags)
+            .withTags(TagUtil.hermanToRdsTags(tags))
             .withEnableIAMDatabaseAuthentication(rds.getIAMDatabaseAuthenticationEnabled())
             .withTimezone(rds.getTimezone()).
             withVpcSecurityGroupIds(clusterMetadata.getRdsSecurityGroup());
@@ -145,25 +147,32 @@ public class StandardRdsClient implements RdsClient {
 
     @Override
     public void runFullUpdate(String instanceId, String masterUserPassword) {
-        ModifyDBInstanceRequest request = new ModifyDBInstanceRequest().withAllocatedStorage(rds.getAllocatedStorage())
+        ModifyDBInstanceRequest request = new ModifyDBInstanceRequest()
+            .withAllocatedStorage(rds.getAllocatedStorage())
             .withAllowMajorVersionUpgrade(true)
             .withAutoMinorVersionUpgrade(rds.getAutoMinorVersionUpgrade())
             .withBackupRetentionPeriod(rds.getBackupRetentionPeriod())
             .withCopyTagsToSnapshot(rds.getCopyTagsToSnapshot())
-            .withDBInstanceClass(rds.getDBInstanceClass()).withDBInstanceIdentifier(instanceId)
-            .withEngineVersion(rds.getEngineVersion()).withIops(rds.getIops())
-            .withLicenseModel(rds.getLicenseModel()).withMasterUserPassword(masterUserPassword)
+            .withDBInstanceClass(rds.getDBInstanceClass())
+            .withDBInstanceIdentifier(instanceId)
+            .withEngineVersion(rds.getEngineVersion())
+            .withIops(rds.getIops())
+            .withLicenseModel(rds.getLicenseModel())
+            .withMasterUserPassword(masterUserPassword)
             .withMonitoringInterval(rds.getMonitoringInterval())
-            .withMonitoringRoleArn(rds.getMonitoringRoleArn()).withMultiAZ(rds.getMultiAZ())
+            .withMonitoringRoleArn(rds.getMonitoringRoleArn())
+            .withMultiAZ(rds.getMultiAZ())
             .withPreferredBackupWindow(rds.getPreferredBackupWindow())
             .withPreferredMaintenanceWindow(rds.getPreferredMaintenanceWindow())
-            .withPubliclyAccessible(rds.getPubliclyAccessible()).withStorageType(rds.getStorageType())
+            .withPubliclyAccessible(rds.getPubliclyAccessible())
+            .withStorageType(rds.getStorageType())
             .withEnableIAMDatabaseAuthentication(rds.getIAMDatabaseAuthenticationEnabled())
-            .withVpcSecurityGroupIds(clusterMetadata.getRdsSecurityGroup()).withApplyImmediately(true);
+            .withVpcSecurityGroupIds(clusterMetadata.getRdsSecurityGroup())
+            .withApplyImmediately(true);
         DBInstance instance = client.modifyDBInstance(request);
         buildLogger.addLogEntry("... DB update applied");
 
-        this.applyTags(instance.getDBInstanceArn(), tags);
+        this.applyTags(instance.getDBInstanceArn(), TagUtil.hermanToRdsTags(tags));
     }
 
     @Override
@@ -231,7 +240,7 @@ public class StandardRdsClient implements RdsClient {
                 .withDBParameterGroupName(dbParameterGroupName)
                 .withDescription(String.format("%s %s Parameter Group", rdsResult.getDBInstanceIdentifier(),
                     dbEngineVersion.getDBParameterGroupFamily()))
-                .withTags(tags));
+                .withTags(TagUtil.hermanToRdsTags(tags)));
 
             buildLogger.addLogEntry("... Updating parameters for DB parameter group " + dbParameterGroupName);
             client.modifyDBParameterGroup(new ModifyDBParameterGroupRequest()
@@ -242,11 +251,18 @@ public class StandardRdsClient implements RdsClient {
         boolean dbParameterGroupIsSet = rdsResult.getDBParameterGroups().stream()
             .anyMatch(aDBParameterGroup -> aDBParameterGroup.getDBParameterGroupName().equals(dbParameterGroupName));
         if (!dbParameterGroupIsSet) {
-            buildLogger.addLogEntry(
-                "... Modifying DB instance to use parameter group " + dbParameterGroup.getDBParameterGroupName());
-            client.modifyDBInstance(new ModifyDBInstanceRequest()
-                .withDBInstanceIdentifier(rdsResult.getDBInstanceIdentifier())
-                .withDBParameterGroupName(dbParameterGroup.getDBParameterGroupName()));
+            try {
+                buildLogger.addLogEntry(
+                    "... Modifying DB instance to use parameter group " + dbParameterGroup.getDBParameterGroupName());
+                client.modifyDBInstance(new ModifyDBInstanceRequest()
+                    .withDBInstanceIdentifier(rdsResult.getDBInstanceIdentifier())
+                    .withDBParameterGroupName(dbParameterGroup.getDBParameterGroupName()));
+
+                // Sleeping because the status doesn't immediately change
+                Thread.sleep(pollingIntervalMs);
+            } catch (Exception ex) {
+                throw new AwsExecException("Error setting param group " + dbParameterGroup.getDBParameterGroupName(), ex);
+            }
         }
 
         this.waitForAvailableStatus(instanceId);
@@ -307,7 +323,7 @@ public class StandardRdsClient implements RdsClient {
                             expectedOptionGroup.getMajorEngineVersion()))
                     .withEngineName(rdsResult.getEngine())
                     .withMajorEngineVersion(expectedOptionGroup.getMajorEngineVersion())
-                    .withTags(tags));
+                    .withTags(TagUtil.hermanToRdsTags(tags)));
 
                 buildLogger.addLogEntry("... Updating options for DB option group " + optionGroupName);
                 List<OptionConfiguration> optionConfigurations = expectedOptionGroup.getOptions().stream()

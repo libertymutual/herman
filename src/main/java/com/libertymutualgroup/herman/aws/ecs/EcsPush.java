@@ -66,7 +66,6 @@ import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 import com.amazonaws.services.kms.AWSKMS;
 import com.amazonaws.services.kms.AWSKMSClientBuilder;
-import com.amazonaws.services.kms.model.Tag;
 import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
 import com.amazonaws.services.rds.AmazonRDS;
@@ -81,7 +80,6 @@ import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.amazonaws.util.IOUtils;
-import com.google.common.collect.ImmutableList;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.broker.autoscaling.AutoscalingBroker;
 import com.libertymutualgroup.herman.aws.ecs.broker.dynamodb.DynamoDBBroker;
@@ -110,6 +108,8 @@ import com.libertymutualgroup.herman.aws.ecs.loadbalancing.EcsLoadBalancerV2Hand
 import com.libertymutualgroup.herman.aws.ecs.loadbalancing.ElbOrAlbDecider;
 import com.libertymutualgroup.herman.aws.ecs.loadbalancing.ServicePurger;
 import com.libertymutualgroup.herman.aws.ecs.logging.LoggingService;
+import com.libertymutualgroup.herman.aws.tags.HermanTag;
+import com.libertymutualgroup.herman.aws.tags.TagUtil;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
 import com.libertymutualgroup.herman.util.ArnUtil;
@@ -243,9 +243,17 @@ public class EcsPush {
         bambooPropertyHandler.addProperty("account.id", accountId);
 
 
-        List<TaskDefinitionPlacementConstraint> placementConstraints = ImmutableList.of(new TaskDefinitionPlacementConstraint()
+        ArrayList<TaskDefinitionPlacementConstraint> placementConstraints;
+        if (definition.getPlacementConstraints() == null) {
+            placementConstraints = new ArrayList<>();
+        }
+        else {
+            placementConstraints = new ArrayList<>(definition.getPlacementConstraints());
+        }
+        placementConstraints.add(new TaskDefinitionPlacementConstraint()
             .withExpression("attribute:state !exists or attribute:state != pre-drain")
             .withType(TaskDefinitionPlacementConstraintType.MemberOf));
+
         definition.setPlacementConstraints(placementConstraints);
 
         logger.addLogEntry(definition.toString());
@@ -341,7 +349,6 @@ public class EcsPush {
             String consoleLink = String.format(taskProperties.getEcsConsoleLinkPattern(), acct, region, cluster, family);
             loggingService.logSection("ECS Console", consoleLink);
         }
-
     }
 
     private EcsPushDefinition getEcsPushDefinition() {
@@ -516,7 +523,7 @@ public class EcsPush {
             ecsClient.updateService(updateRequest);
         }
 
-        waitForRequestInitialization(appName, ecsClient, clusterMetadata);      
+        waitForRequestInitialization(appName, ecsClient, clusterMetadata);
         boolean deploySuccessful = waitForDeployment(appName, ecsClient, clusterMetadata);
 
         if (!deploySuccessful) {
@@ -538,7 +545,6 @@ public class EcsPush {
                 }
 
                 ecsClient.updateService(updateRequest);
-
                 waitForRequestInitialization(appName, ecsClient, clusterMetadata);
                 boolean rollbackSuccessful = waitForDeployment(appName, ecsClient, clusterMetadata);
 
@@ -699,7 +705,7 @@ public class EcsPush {
 
         String applicationKeyId = brokerKms(definition, clusterMetadata);
         brokerS3(definition, clusterMetadata, applicationKeyId);
-        brokerKinesisStream(definition, clusterMetadata);
+        brokerKinesisStream(definition);
         brokerSqs(definition);
         brokerSns(definition);
         brokerRds(definition, injectMagic, clusterMetadata, applicationKeyId);
@@ -711,15 +717,16 @@ public class EcsPush {
         KmsBroker broker = new KmsBroker(logger, bambooPropertyHandler, fileUtil, taskProperties,
             this.pushContext.getSessionCredentials(), this.pushContext.getCustomConfigurationBucket(), this.pushContext.getRegion());
 
-        List<Tag> tags = new ArrayList<>();
-        tags.add(new Tag().withTagKey(taskProperties.getSbuTagKey()).withTagValue(clusterMetadata.getNewrelicSbuTag()));
-        tags.add(new Tag().withTagKey(taskProperties.getOrgTagKey()).withTagValue(clusterMetadata.getNewrelicOrgTag()));
-        tags.add(new Tag().withTagKey(taskProperties.getAppTagKey()).withTagValue(definition.getAppName()));
-        tags.add(new Tag().withTagKey(taskProperties.getClusterTagKey()).withTagValue(clusterMetadata.getClusterId()));
+        List<HermanTag> tags = new ArrayList<>();
+        tags.add(new HermanTag(taskProperties.getSbuTagKey(), clusterMetadata.getNewrelicSbuTag()));
+        tags.add(new HermanTag(taskProperties.getOrgTagKey(), clusterMetadata.getNewrelicOrgTag()));
+        tags.add(new HermanTag(taskProperties.getAppTagKey(), definition.getAppName()));
+        tags.add(new HermanTag(taskProperties.getClusterTagKey(), clusterMetadata.getClusterId()));
 
+        tags = TagUtil.mergeTags(tags, definition.getTags());
         String applicationKeyId = Strings.EMPTY;
         if (broker.isActive(definition)) {
-            applicationKeyId = broker.brokerKey(kmsClient, definition, tags);
+            applicationKeyId = broker.brokerKey(kmsClient, definition, TagUtil.hermanToKmsTags(tags));
         } else {
             broker.deleteKey(kmsClient, definition);
         }
@@ -752,9 +759,9 @@ public class EcsPush {
             for (SqsQueue queue : definition.getQueues()) {
                 if (queue.getPolicyName() != null) {
                     String policy = fileUtil.findFile(queue.getPolicyName(), false);
-                    sqsBroker.brokerQueue(sqsClient, queue, policy);
+                    sqsBroker.brokerQueue(sqsClient, queue, policy, definition.getTags());
                 } else {
-                    sqsBroker.brokerQueue(sqsClient, queue, null);
+                    sqsBroker.brokerQueue(sqsClient, queue, null, definition.getTags());
                 }
             }
         }
@@ -789,9 +796,8 @@ public class EcsPush {
         }
     }
 
-    private void brokerKinesisStream(EcsPushDefinition definition, EcsClusterMetadata clusterMetadata) {
-        KinesisBroker kinesisBroker = new KinesisBroker(logger, kinesisClient, clusterMetadata,
-            definition, taskProperties);
+    private void brokerKinesisStream(EcsPushDefinition definition) {
+        KinesisBroker kinesisBroker = new KinesisBroker(logger, kinesisClient, definition, taskProperties);
 
         // delete any streams tied to this app that are no longer specified in the PushDefinition
         kinesisBroker.checkStreamsToBeDeleted();
@@ -804,7 +810,7 @@ public class EcsPush {
     }
 
     private void brokerDynamoDB(EcsPushDefinition definition) {
-        DynamoDBBroker dynamoDBBroker = new DynamoDBBroker(logger, iamClient, definition, taskProperties);
+        DynamoDBBroker dynamoDBBroker = new DynamoDBBroker(logger, definition);
 
         if (definition.getDynamoDBTables() != null) {
             dynamoDBBroker.createDynamoDBTables(dynamoDbClient);

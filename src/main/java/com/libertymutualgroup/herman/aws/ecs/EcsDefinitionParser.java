@@ -17,12 +17,8 @@ package com.libertymutualgroup.herman.aws.ecs;
 
 import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
 import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
-import com.amazonaws.services.dynamodbv2.model.KeyType;
 import com.amazonaws.services.dynamodbv2.model.Projection;
-import com.amazonaws.services.dynamodbv2.model.ProjectionType;
-import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 import com.amazonaws.services.dynamodbv2.model.StreamSpecification;
-import com.amazonaws.services.dynamodbv2.model.StreamViewType;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.LogConfiguration;
 import com.amazonaws.services.ecs.model.LogDriver;
@@ -38,10 +34,10 @@ import com.amazonaws.services.ecs.model.Ulimit;
 import com.amazonaws.services.ecs.model.UlimitName;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.libertymutualgroup.herman.aws.AwsExecException;
+import com.libertymutualgroup.herman.aws.ecs.broker.dynamodb.DynamoDBMixIns;
 import java.util.List;
 
 public class EcsDefinitionParser {
@@ -67,10 +63,10 @@ public class EcsDefinitionParser {
         mapper.addMixIn(LogConfiguration.class, IgnoreLogConfigLogDriver.class);
         mapper.addMixIn(PlacementStrategy.class, IgnorePlaceStrategyType.class);
         mapper.addMixIn(TaskDefinitionPlacementConstraint.class, IgnoreTaskPlacementConstraint.class);
-        mapper.addMixIn(KeySchemaElement.class, IgnoreForDynamo.class);
-        mapper.addMixIn(StreamSpecification.class, IgnoreForDynamo.class);
-        mapper.addMixIn(AttributeDefinition.class, IgnoreForDynamo.class);
-        mapper.addMixIn(Projection.class, IgnoreForDynamo.class);
+        mapper.addMixIn(KeySchemaElement.class, DynamoDBMixIns.class);
+        mapper.addMixIn(StreamSpecification.class, DynamoDBMixIns.class);
+        mapper.addMixIn(AttributeDefinition.class, DynamoDBMixIns.class);
+        mapper.addMixIn(Projection.class, DynamoDBMixIns.class);
 
         EcsPushDefinition ecsPushDefinition;
         try {
@@ -97,21 +93,6 @@ public class EcsDefinitionParser {
                 }
             }
         }
-    }
-
-    interface IgnoreForDynamo {
-
-        @JsonSetter
-        void setKeyType(KeyType keyType);
-
-        @JsonSetter
-        void setStreamViewType(StreamViewType streamViewType);
-
-        @JsonSetter
-        void setAttributeType(ScalarAttributeType attributeType);
-
-        @JsonSetter
-        void setProjectionType(ProjectionType projectionType);
     }
 
     interface IgnoreTransportSetValueObjMixIn {
