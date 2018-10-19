@@ -2,10 +2,10 @@
 
 1. An S3 bucket needs to be created in each AWS account that is a target for Herman. 
 The standard name for this bucket is herman-configuration-<AWS account ID>-<version>. 
-Version is pulled from a property file [See: Version Properties File](src/main/resources/version.properties). 
+Version is pulled from a property file [See: Version Properties File](/src/main/resources/version.properties). 
     * NOTE: The configuration bucket name can be overridden for the CLI option using the `--config` option.
 2. Add a properties.yml file to the config bucket (see "Herman Configuration" section below).
-[See: Sample Properties File](src/main/resources/config/samples/properties.yml) for the structure of this file.
+[See: Sample Properties File](/src/main/resources/config/samples/properties.yml) for the structure of this file.
 3. Add a ecr-policy.json file to the config bucket. The contents of this file is an ECR IAM policy, 
 used as the default IAM policy used when creating ECR repositories.
 4. Add a kms-policy.json file to the config bucket. The contents of this file is a KMS IAM policy, 
