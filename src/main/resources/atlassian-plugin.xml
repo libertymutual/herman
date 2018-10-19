@@ -54,11 +54,11 @@
     <resource location="editCftPushTask.ftl" name="edit" type="freemarker"/>
   </taskType>
 
-  <taskType class="com.libertymutualgroup.herman.task.s3.S3CreateTask" key="s3CreateTask"
-    name="Herman (LTS) - S3 Bucket Create">
+  <taskType class="com.libertymutualgroup.herman.task.bamboo.s3.S3CreateTask" key="s3CreateTask"
+            name="Herman (LTS) - S3 Bucket Create">
     <description>Create an S3 Bucket</description>
     <resource location="images/whale2.png" name="icon" type="download"/>
-    <configuration class="com.libertymutualgroup.herman.task.s3.S3CreateTaskConfigurator"/>
+    <configuration class="com.libertymutualgroup.herman.task.bamboo.s3.S3CreateTaskConfigurator"/>
     <resource location="editS3CreateTask.ftl" name="edit" type="freemarker"/>
   </taskType>
 

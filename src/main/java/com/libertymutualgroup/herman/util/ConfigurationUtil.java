@@ -10,6 +10,8 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
 import com.amazonaws.services.securitytoken.model.GetCallerIdentityRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.libertymutualgroup.herman.aws.credentials.BambooCredentialsHandler;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import org.apache.commons.io.IOUtils;
@@ -21,10 +23,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 public class ConfigurationUtil {
-
-    private ConfigurationUtil() {
-        throw new IllegalAccessError("Utility class");
-    }
 
     private static final String CONFIG_FILE = "properties.yml";
     private static final String ECR_POLICY_FILE = "ecr-policy.json";
@@ -105,5 +103,16 @@ public class ConfigurationUtil {
                 versionProperties.getProperty("version").toLowerCase());
         }
         return hermanConfigBucket;
+    }
+
+    public <T> T getConfigProperties(AWSCredentials sessionCredentials, HermanLogger logger, Regions region, Class<T> propertiesClass){
+        String propertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, logger, region);
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+        try {
+            return objectMapper.readValue(propertiesYml, propertiesClass);
+        } catch(Exception e){
+            logger.addErrorLogEntry("Error getting properties from config bucket. Continuing...", e);
+        }
+        return null;
     }
 }

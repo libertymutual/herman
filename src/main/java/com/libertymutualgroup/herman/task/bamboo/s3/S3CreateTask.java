@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.libertymutualgroup.herman.task.s3;
+package com.libertymutualgroup.herman.task.bamboo.s3;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.regions.Regions;
@@ -29,12 +29,13 @@ import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.BucketMeta;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3Broker;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3CreateContext;
+import com.libertymutualgroup.herman.task.s3.S3CreateTaskProperties;
 import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
-import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.util.ConfigurationUtil;
 import com.libertymutualgroup.herman.util.FileUtil;
 import com.libertymutualgroup.herman.util.PropertyHandlerUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+
 
 public class S3CreateTask extends AbstractDeploymentTask {
 
@@ -49,16 +50,20 @@ public class S3CreateTask extends AbstractDeploymentTask {
         final AWSCredentials sessionCredentials = BambooCredentialsHandler.getCredentials(taskContext);
         final Regions awsRegion = Regions.fromName(taskContext.getConfigurationMap().getOrDefault("awsRegion",
             String.valueOf(S3CreateTaskConfigurator.DEFAULT_REGION)));
-        final PropertyHandler handler = PropertyHandlerUtil
-            .getTaskContextPropertyHandler(taskContext, sessionCredentials, getCustomVariableContext());
+
+        PropertyHandler handler = PropertyHandlerUtil.getTaskContextPropertyHandler(taskContext, sessionCredentials, getCustomVariableContext());
+
+        S3CreateTaskProperties properties = new ConfigurationUtil().getConfigProperties(
+                sessionCredentials, buildLogger, awsRegion, S3CreateTaskProperties.class
+        );
 
         S3CreateContext s3CreateContext = new S3CreateContext()
-            .withBambooPropertyHandler(handler)
+            .withPropertyHandler(handler)
             .withLogger(buildLogger)
             .withRegion(awsRegion)
             .withRootPath(taskContext.getRootDirectory().getAbsolutePath())
             .withSessionCredentials(sessionCredentials)
-            .withTaskProperties(getTaskProperties(sessionCredentials, buildLogger, awsRegion, handler))
+            .withTaskProperties(properties)
             .withFileUtil(new FileUtil(taskContext.getRootDirectory().getAbsolutePath(), buildLogger));
 
         S3Broker s3Broker = new S3Broker(s3CreateContext);
@@ -72,14 +77,4 @@ public class S3CreateTask extends AbstractDeploymentTask {
         return TaskResultBuilder.newBuilder(taskContext).success().build();
     }
 
-    S3CreateTaskProperties getTaskProperties(AWSCredentials sessionCredentials, HermanLogger hermanLogger, Regions region, PropertyHandler handler) {
-        try {
-            String s3CreateTaskPropertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, hermanLogger, region);
-            ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-            return objectMapper.readValue(handler.mapInProperties(s3CreateTaskPropertiesYml), S3CreateTaskProperties.class);
-        } catch (Exception ex) {
-            hermanLogger.addErrorLogEntry("Error getting S3 Create Task Task Properties. Continuing...", ex);
-            return null;
-        }
-    }
 }

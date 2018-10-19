@@ -86,7 +86,7 @@ public class S3Broker {
 
     public S3Broker(S3CreateContext context) {
         this.buildLogger = context.getLogger();
-        this.handler = context.getBambooPropertyHandler();
+        this.handler = context.getPropertyHandler();
         this.taskProperties = context.getTaskProperties();
         this.context = context;
     }
@@ -340,7 +340,6 @@ public class S3Broker {
         } catch (IOException e1) {
             throw new AwsExecException(e1);
         }
-
         return definition;
     }
 

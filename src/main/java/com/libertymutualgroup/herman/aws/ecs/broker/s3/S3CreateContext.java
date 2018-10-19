@@ -26,7 +26,7 @@ import com.libertymutualgroup.herman.util.FileUtil;
 public class S3CreateContext {
 
     private HermanLogger logger;
-    private PropertyHandler bambooPropertyHandler;
+    private PropertyHandler propertyHandler;
     private AWSCredentials sessionCredentials;
     private Regions region;
     private String rootPath;
@@ -35,7 +35,7 @@ public class S3CreateContext {
 
     public S3CreateContext fromECSPushContext(EcsPushContext pushContext) {
         this.logger = pushContext.getLogger();
-        this.bambooPropertyHandler = pushContext.getPropertyHandler();
+        this.propertyHandler = pushContext.getPropertyHandler();
         this.sessionCredentials = pushContext.getSessionCredentials();
         this.region = pushContext.getRegion();
         this.rootPath = pushContext.getRootPath();
@@ -53,12 +53,12 @@ public class S3CreateContext {
         this.logger = logger;
     }
 
-    public PropertyHandler getBambooPropertyHandler() {
-        return bambooPropertyHandler;
+    public PropertyHandler getPropertyHandler() {
+        return propertyHandler;
     }
 
-    public void setBambooPropertyHandler(PropertyHandler bambooPropertyHandler) {
-        this.bambooPropertyHandler = bambooPropertyHandler;
+    public void setPropertyHandler(PropertyHandler propertyHandler) {
+        this.propertyHandler = propertyHandler;
     }
 
     public AWSCredentials getSessionCredentials() {
@@ -106,9 +106,9 @@ public class S3CreateContext {
         return this;
     }
 
-    public S3CreateContext withBambooPropertyHandler(
-        final PropertyHandler bambooPropertyHandler) {
-        this.bambooPropertyHandler = bambooPropertyHandler;
+    public S3CreateContext withPropertyHandler(
+        final PropertyHandler propertyHandler) {
+        this.propertyHandler = propertyHandler;
         return this;
     }
 
@@ -142,7 +142,7 @@ public class S3CreateContext {
     public String toString() {
         return "S3CreateContext{" +
             "logger=" + logger +
-            ", bambooPropertyHandler=" + bambooPropertyHandler +
+            ", propertyHandler=" + propertyHandler +
             ", sessionCredentials=" + sessionCredentials +
             ", region=" + region +
             ", rootPath='" + rootPath + '\'' +
