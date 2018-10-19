@@ -23,7 +23,7 @@
     <plugin.testrunner.version>1.2.3</plugin.testrunner.version>
     <atlassian.spring.scanner.version>1.2.13</atlassian.spring.scanner.version>
     <aws-sdk.version>1.11.386</aws-sdk.version>
-    <spring.framework.version>5.0.7.RELEASE</spring.framework.version>
+    <spring.framework.version>5.1.1.RELEASE</spring.framework.version>
     <!-- This key is used to keep the consistency between the key in atlassian-plugin.xml
       and the key to generate bundle. -->
     <atlassian.plugin.key>${project.groupId}.${project.artifactId}</atlassian.plugin.key>
