@@ -33,12 +33,12 @@ public class PropertyHandlerUtil {
         return handler;
     }
 
-    public static void addStandardProperties(AWSCredentials sessionCredentials, PropertyHandler propertyHandler){
+    private static void addStandardProperties(AWSCredentials sessionCredentials, PropertyHandler propertyHandler){
         String accountId = getAccountId(sessionCredentials);
         propertyHandler.addProperty("account.id", accountId);
     }
 
-    public static String getAccountId(AWSCredentials sessionCredentials){
+    private static String getAccountId(AWSCredentials sessionCredentials){
         AWSSecurityTokenService stsClient = AWSSecurityTokenServiceClientBuilder.standard()
                 .withCredentials(new AWSStaticCredentialsProvider(sessionCredentials))
                 .withClientConfiguration(new ClientConfiguration().withMaxErrorRetry(10)).build();
