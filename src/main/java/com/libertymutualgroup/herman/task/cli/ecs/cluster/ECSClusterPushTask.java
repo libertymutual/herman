@@ -34,7 +34,7 @@ public class ECSClusterPushTask {
 
     public void runTask(ECSClusterPushTaskConfiguration configuration) {
         final AWSCredentials sessionCredentials = CredentialsHandler.getCredentials();
-        final PropertyHandler propertyHandler = PropertyHandlerUtil.getCliPropertyHandler(
+        final PropertyHandler propertyHandler = new PropertyHandlerUtil().getCliPropertyHandler(
             sessionCredentials,
             logger,
             configuration.getEnvironmentName(),
