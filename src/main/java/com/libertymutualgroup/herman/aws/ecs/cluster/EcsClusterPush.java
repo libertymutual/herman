@@ -131,6 +131,7 @@ public class EcsClusterPush {
 
         String sharedStackName = this.definition.getClusterName() + "-shared";
         int instanceStackNumber;
+        setCftParams();
 
         if (existingStackState == null) { // New Cluster
             this.logger.addLogEntry("Creating new cluster: " + this.definition.getClusterName());
@@ -255,6 +256,12 @@ public class EcsClusterPush {
                 this.logger.addLogEntry("... No instance updates to apply, skipping...");
             }
         }
+    }
+
+    private void setCftParams() {
+        this.definition.getCftParameters().forEach(param -> {
+            this.cftParams.put(param.getKey(), param.getValue());
+        });
     }
 
     private EcsClusterDeployState findExistingStack(String clusterName) {

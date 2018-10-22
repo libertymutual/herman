@@ -5,6 +5,9 @@
  */
 package com.libertymutualgroup.herman.aws.ecs.cluster;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class EcsClusterPushDefinition {
     private String clusterName;
     private String sharedCftName;
@@ -12,6 +15,7 @@ public class EcsClusterPushDefinition {
     private int instanceRegistrationTimeout = 3;
     private boolean drainingEnabled = true;
     private int maxConcurrentDraining = 3;
+    private List<CftParameter> cftParameters = new ArrayList<>();
 
     public String getClusterName() {
         return clusterName;
@@ -59,5 +63,13 @@ public class EcsClusterPushDefinition {
 
     public void setMaxConcurrentDraining(int maxConcurrentDraining) {
         this.maxConcurrentDraining = maxConcurrentDraining;
+    }
+
+    public List<CftParameter> getCftParameters() {
+        return cftParameters;
+    }
+
+    public void setCftParameters(List<CftParameter> cftParameters) {
+        this.cftParameters = cftParameters;
     }
 }
