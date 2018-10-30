@@ -16,20 +16,6 @@ import static org.mockito.Mockito.verify;
 
 public class LoggingServiceTest {
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testConstructor_NullSplunkUrl() {
-        // GIVEN
-        HermanLogger logger = mock(HermanLogger.class);
-        String splunkUrl = null;
-        ECSPushTaskProperties ecsPushTaskProperties = new ECSPushTaskProperties();
-
-        // WHEN
-        new LoggingService(logger).withSplunkInstanceValues(splunkUrl, ecsPushTaskProperties);
-
-        // THEN
-        // expect error
-    }
-
     @Test
     public void provideSplunkLog() throws Exception {
         // GIVEN

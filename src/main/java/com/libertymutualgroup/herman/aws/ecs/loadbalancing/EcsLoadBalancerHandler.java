@@ -113,8 +113,7 @@ public class EcsLoadBalancerHandler {
             elbSecurityGroups.addAll(clusterMetadata.getElbSecurityGroups());
         }
 
-        List<Listener> listeners = generateListeners(definition.getService().getElbSourcePorts(), randomPort, protocol,
-            sslCertificate.getArn());
+        List<Listener> listeners = generateListeners(definition.getService().getElbSourcePorts(), randomPort, protocol, sslCertificate);
         List<com.amazonaws.services.elasticloadbalancing.model.Tag> tags = getElbTagList(
             clusterMetadata.getClusterCftStackTags(), appName);
         CreateLoadBalancerRequest createLoadBalancerRequest = new CreateLoadBalancerRequest()
@@ -229,7 +228,7 @@ public class EcsLoadBalancerHandler {
     }
 
     private List<Listener> generateListeners(List<Integer> elbSourcePorts, Integer randomPort, String protocol,
-        String cert) {
+        SSLCertificate cert) {
         List<Listener> listenerList = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(elbSourcePorts)) {
             for (Integer elbSourceport : elbSourcePorts) {
@@ -242,9 +241,17 @@ public class EcsLoadBalancerHandler {
         return listenerList;
     }
 
-    private Listener generateListener(Integer randomPort, String protocol, String cert, Integer elbPort) {
-        return new Listener().withLoadBalancerPort(elbPort).withInstancePort(randomPort).withProtocol(protocol)
-            .withSSLCertificateId(cert).withInstanceProtocol(protocol);
+    private Listener generateListener(Integer randomPort, String protocol, SSLCertificate cert, Integer elbPort) {
+        Listener listener = new Listener()
+            .withLoadBalancerPort(elbPort)
+            .withInstancePort(randomPort)
+            .withProtocol(protocol)
+            .withInstanceProtocol(protocol);
+        if (cert != null) {
+            listener.setSSLCertificateId(cert.getArn());
+        }
+
+        return listener;
     }
 
     private List<com.amazonaws.services.elasticloadbalancing.model.Tag> getElbTagList(List<Tag> tags, String name) {

@@ -21,6 +21,7 @@ import com.amazonaws.services.ecs.model.PlacementStrategy;
 import com.amazonaws.services.ecs.model.TaskDefinitionPlacementConstraint;
 import com.amazonaws.services.ecs.model.Ulimit;
 import com.amazonaws.services.ecs.model.Volume;
+import com.libertymutualgroup.herman.aws.ecs.broker.ddoswaf.WafRuleAction;
 import com.libertymutualgroup.herman.aws.ecs.broker.dynamodb.DynamoAppDefinition;
 import com.libertymutualgroup.herman.aws.ecs.broker.dynamodb.DynamoDBTable;
 import com.libertymutualgroup.herman.aws.ecs.broker.iam.IamAppDefinition;
@@ -43,11 +44,11 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, Dy
     private String cluster;
     private EcsService service;
     private String appName;
-    private List<TaskDefinitionPlacementConstraint> placementConstraints;
+    private List<TaskDefinitionPlacementConstraint> taskPlacementConstraints;
     private List<PlacementStrategy> placementStrategies;
     private List<Volume> volumes;
     private String networkMode;
-    private Integer taskMemory;
+    private String taskMemory;
 
     private List<S3Bucket> buckets;
     private List<KinesisStream> streams;
@@ -69,6 +70,20 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, Dy
     private String iamRole;
     private String albTimeout;
     private List<Ulimit> ulimits;
+    private List<WafRuleAction> wafRuleActions;
+    private Boolean prePushOnly;
+
+    public String getNewRelicApplicationName() {
+        String newRelicApplicationName = null;
+        if (this.getContainerDefinitions() != null) {
+            newRelicApplicationName = this.getContainerDefinitions().iterator().next().getEnvironment().stream()
+                .filter(environmentVar -> "NEW_RELIC_APP_NAME".equals(environmentVar.getName()))
+                .findAny()
+                .map(KeyValuePair::getValue)
+                .orElse(null);
+        }
+        return newRelicApplicationName;
+    }
 
     public List<ContainerDefinition> getContainerDefinitions() {
         return containerDefinitions;
@@ -95,6 +110,7 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, Dy
         this.service = service;
     }
 
+    @Override
     public String getAppName() {
         return appName;
     }
@@ -103,13 +119,13 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, Dy
         this.appName = appName;
     }
 
-    public List<TaskDefinitionPlacementConstraint> getPlacementConstraints() {
-        return placementConstraints;
+    public List<TaskDefinitionPlacementConstraint> getTaskPlacementConstraints() {
+        return taskPlacementConstraints;
     }
 
-    public void setPlacementConstraints(
-        List<TaskDefinitionPlacementConstraint> placementConstraints) {
-        this.placementConstraints = placementConstraints;
+    public void setTaskPlacementConstraints(
+        List<TaskDefinitionPlacementConstraint> taskPlacementConstraints) {
+        this.taskPlacementConstraints = taskPlacementConstraints;
     }
 
     public List<PlacementStrategy> getPlacementStrategies() {
@@ -128,6 +144,22 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, Dy
         this.volumes = volumes;
     }
 
+    public String getNetworkMode() {
+        return networkMode;
+    }
+
+    public void setNetworkMode(String networkMode) {
+        this.networkMode = networkMode;
+    }
+
+    public String getTaskMemory() {
+        return taskMemory;
+    }
+
+    public void setTaskMemory(String taskMemory) {
+        this.taskMemory = taskMemory;
+    }
+
     public List<S3Bucket> getBuckets() {
         return buckets;
     }
@@ -136,6 +168,7 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, Dy
         this.buckets = buckets;
     }
 
+    @Override
     public List<KinesisStream> getStreams() {
         return streams;
     }
@@ -160,11 +193,13 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, Dy
         this.topics = topics;
     }
 
+    @Override
     public List<DynamoDBTable> getDynamoDBTables() {
         return dynamoDBTables;
     }
 
-    public void setDynamoDBTables(List<DynamoDBTable> dynamoDBTables) {
+    public void setDynamoDBTables(
+        List<DynamoDBTable> dynamoDBTables) {
         this.dynamoDBTables = dynamoDBTables;
     }
 
@@ -200,6 +235,7 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, Dy
         this.notificationWebhook = notificationWebhook;
     }
 
+    @Override
     public List<HermanTag> getTags() {
         return tags;
     }
@@ -248,6 +284,7 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, Dy
         this.useKms = useKms;
     }
 
+    @Override
     public String getKmsKeyName() {
         return kmsKeyName;
     }
@@ -272,28 +309,29 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, Dy
         this.albTimeout = albTimeout;
     }
 
-    public String getNetworkMode() {
-        return networkMode;
-    }
-
-    public void setNetworkMode(String networkMode) {
-        this.networkMode = networkMode;
-    }
-
-    public String getTaskMemory() {
-        return taskMemory == null ? null : taskMemory.toString();
-    }
-
-    public void setTaskMemory(Integer taskMemory) {
-        this.taskMemory = taskMemory;
-    }
-
     public List<Ulimit> getUlimits() {
         return ulimits;
     }
 
     public void setUlimits(List<Ulimit> ulimits) {
         this.ulimits = ulimits;
+    }
+
+    public List<WafRuleAction> getWafRuleActions() {
+        return wafRuleActions;
+    }
+
+    public void setWafRuleActions(
+        List<WafRuleAction> wafRuleActions) {
+        this.wafRuleActions = wafRuleActions;
+    }
+
+    public Boolean getPrePushOnly() {
+        return prePushOnly;
+    }
+
+    public void setPrePushOnly(Boolean prePushOnly) {
+        this.prePushOnly = prePushOnly;
     }
 
     @Override
@@ -303,19 +341,21 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, Dy
             ", cluster='" + cluster + '\'' +
             ", service=" + service +
             ", appName='" + appName + '\'' +
-            ", placementConstraints=" + placementConstraints +
+            ", taskPlacementConstraints=" + taskPlacementConstraints +
             ", placementStrategies=" + placementStrategies +
             ", volumes=" + volumes +
+            ", networkMode='" + networkMode + '\'' +
+            ", taskMemory='" + taskMemory + '\'' +
             ", buckets=" + buckets +
             ", streams=" + streams +
             ", queues=" + queues +
             ", topics=" + topics +
-            ", dynamoDbTables=" + dynamoDBTables +
+            ", dynamoDBTables=" + dynamoDBTables +
             ", database=" + database +
             ", taskRoleArn='" + taskRoleArn + '\'' +
             ", newRelic=" + newRelic +
             ", notificationWebhook='" + notificationWebhook + '\'' +
-            ", tags='" + tags + '\'' +
+            ", tags=" + tags +
             ", iamOptOut='" + iamOptOut + '\'' +
             ", useElb='" + useElb + '\'' +
             ", betaAutoscale='" + betaAutoscale + '\'' +
@@ -324,19 +364,9 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, Dy
             ", kmsKeyName='" + kmsKeyName + '\'' +
             ", iamRole='" + iamRole + '\'' +
             ", albTimeout='" + albTimeout + '\'' +
-            ", ulimits='" + ulimits + '\'' +
+            ", ulimits=" + ulimits +
+            ", wafRuleActions=" + wafRuleActions +
+            ", prePushOnly=" + prePushOnly +
             '}';
-    }
-
-    public String getNewRelicApplicationName() {
-        String newRelicApplicationName = null;
-        if (this.getContainerDefinitions() != null) {
-            newRelicApplicationName = this.getContainerDefinitions().iterator().next().getEnvironment().stream()
-                .filter(environmentVar -> "NEW_RELIC_APP_NAME".equals(environmentVar.getName()))
-                .findAny()
-                .map(KeyValuePair::getValue)
-                .orElse(null);
-        }
-        return newRelicApplicationName;
     }
 }

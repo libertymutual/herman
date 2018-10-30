@@ -49,6 +49,8 @@ import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.EcsPortHandler;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.broker.ddoswaf.DdosWafBroker;
+import com.libertymutualgroup.herman.aws.ecs.broker.ddoswaf.DdosWafBrokerProperties;
+import com.libertymutualgroup.herman.aws.ecs.broker.ddoswaf.WafRuleAction;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
@@ -213,7 +215,7 @@ public class EcsLoadBalancerV2Handler {
         String registeredUrl = urlPrefix + "." + definition.getService().getUrlSuffix();
         dnsRegistrar.registerDns(appName, "application", protocol, registeredUrl);
 
-        brokerDDoSWAFConfiguration(appName, protocol, elbScheme, loadBalancer);
+        brokerDDoSWAFConfiguration(appName, protocol, elbScheme, loadBalancer, definition);
 
         buildLogger.addLogEntry("ALB updates complete: " + loadBalancer.getLoadBalancerArn());
         return new LoadBalancer().withContainerName(containerName).withContainerPort(containerPort)
@@ -221,16 +223,31 @@ public class EcsLoadBalancerV2Handler {
     }
 
     private void brokerDDoSWAFConfiguration(String appName, String protocol, String elbScheme,
-        com.amazonaws.services.elasticloadbalancingv2.model.LoadBalancer loadBalancer) {
+        com.amazonaws.services.elasticloadbalancingv2.model.LoadBalancer loadBalancer, EcsPushDefinition definition) {
         if (INTERNET_FACING.equals(elbScheme)
                 && HTTPS.equals(protocol)) {
             if (taskProperties.getDdosWaf() != null && taskProperties.getDdosWaf().getDdosWafLambda() != null) {
-                DdosWafBroker ddosWafBroker = new DdosWafBroker(buildLogger, taskProperties.getDdosWaf(), lambdaClient);
+                DdosWafBrokerProperties customProperties = getDdosWafBrokerPropertiesForApplication(definition);
+                DdosWafBroker ddosWafBroker = new DdosWafBroker(buildLogger, customProperties, lambdaClient);
                 ddosWafBroker.brokerDDoSWAFConfiguration(appName, loadBalancer.getLoadBalancerArn());
             } else {
                 buildLogger.addLogEntry("... Skipping DDoS / WAF configuration updates");
             }
         }
+    }
+
+    private DdosWafBrokerProperties getDdosWafBrokerPropertiesForApplication(EcsPushDefinition definition) {
+        List<WafRuleAction> ruleActions;
+        if (definition.getWafRuleActions() != null) {
+            ruleActions = definition.getWafRuleActions();
+            buildLogger.addLogEntry("Using custom WAF rule actions");
+        } else {
+            ruleActions = taskProperties.getDdosWaf().getRuleActions();
+            buildLogger.addLogEntry("Using default WAF rule actions");
+        }
+        return new DdosWafBrokerProperties()
+            .withDdosWafLambda(taskProperties.getDdosWaf().getDdosWafLambda())
+            .withRuleActions(ruleActions);
     }
 
     private void modifyTargetGroupAttributes(EcsPushDefinition definition, TargetGroup grp) {

@@ -97,7 +97,7 @@ public class CftPush { ;
         // Input data outside of CFT
         String env = taskContext.getEnvName();
 
-        if (!this.taskProperties.getCftPushVariableBrokerLambda().isEmpty()) {
+        if (!StringUtils.isEmpty(this.taskProperties.getCftPushVariableBrokerLambda())) {
             buildLogger.addLogEntry(
                 "Getting CFT variables from Lambda: " + this.taskProperties.getCftPushVariableBrokerLambda());
             introspectEnvironment();

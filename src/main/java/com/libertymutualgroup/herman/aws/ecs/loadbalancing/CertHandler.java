@@ -59,7 +59,12 @@ public class CertHandler {
     }
 
     public boolean isInternetFacingUrlScheme(SSLCertificate sslCertificate, String urlSchemeOverride) {
-        return sslCertificate.isInternetFacingUrl() && !"internal".equals(urlSchemeOverride);
-
+        boolean isInternetFacingUrlScheme = false;
+        if (!"internal".equals(urlSchemeOverride)
+                && sslCertificate != null
+                && Boolean.TRUE.equals(sslCertificate.isInternetFacingUrl())) {
+            isInternetFacingUrlScheme = true;
+        }
+        return isInternetFacingUrlScheme;
     }
 }

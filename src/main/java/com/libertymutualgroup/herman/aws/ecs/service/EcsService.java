@@ -15,9 +15,12 @@
  */
 package com.libertymutualgroup.herman.aws.ecs.service;
 
-import com.amazonaws.services.ecs.model.DeploymentConfiguration;
-import com.amazonaws.services.elasticloadbalancing.model.HealthCheck;
 import java.util.List;
+
+import com.amazonaws.services.ecs.model.DeploymentConfiguration;
+import com.amazonaws.services.ecs.model.PlacementConstraint;
+import com.amazonaws.services.ecs.model.PlacementStrategy;
+import com.amazonaws.services.elasticloadbalancing.model.HealthCheck;
 
 public class EcsService {
 
@@ -32,6 +35,8 @@ public class EcsService {
     private String protocol;
     private List<Integer> elbSourcePorts;
     private Integer healthCheckGracePeriodSeconds = 0;
+    private List<PlacementConstraint> placementConstraints;
+    private List<PlacementStrategy> placementStrategies;
 
     public int getInstanceCount() {
         return instanceCount;
@@ -121,6 +126,23 @@ public class EcsService {
         this.healthCheckGracePeriodSeconds = healthCheckGracePeriodSeconds;
     }
 
+    public List<PlacementConstraint> getPlacementConstraints() {
+        return placementConstraints;
+    }
+
+    public void setPlacementConstraints(
+        List<PlacementConstraint> placementConstraints) {
+        this.placementConstraints = placementConstraints;
+    }
+
+    public List<PlacementStrategy> getPlacementStrategies() {
+        return placementStrategies;
+    }
+
+    public void setPlacementStrategies(List<PlacementStrategy> placementStrategies) {
+        this.placementStrategies = placementStrategies;
+    }
+
     @Override
     public String toString() {
         return "EcsService{" +
@@ -135,6 +157,8 @@ public class EcsService {
             ", protocol='" + protocol + '\'' +
             ", elbSourcePorts=" + elbSourcePorts +
             ", healthCheckGracePeriodSeconds=" + healthCheckGracePeriodSeconds +
+            ", placementConstraints=" + placementConstraints +
+            ", placementStrategies=" + placementStrategies +
             '}';
     }
 }
