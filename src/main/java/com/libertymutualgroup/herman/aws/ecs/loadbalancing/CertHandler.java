@@ -19,6 +19,7 @@ import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 
 import java.util.List;
+import org.springframework.util.Assert;
 
 public class CertHandler {
 
@@ -60,10 +61,11 @@ public class CertHandler {
 
     public boolean isInternetFacingUrlScheme(SSLCertificate sslCertificate, String urlSchemeOverride) {
         boolean isInternetFacingUrlScheme = false;
-        if (!"internal".equals(urlSchemeOverride)
-                && sslCertificate != null
-                && Boolean.TRUE.equals(sslCertificate.isInternetFacingUrl())) {
-            isInternetFacingUrlScheme = true;
+        if (!"internal".equals(urlSchemeOverride)) {
+            Assert.notNull(sslCertificate, "SSL cert not found");
+            if (Boolean.TRUE.equals(sslCertificate.isInternetFacingUrl())) {
+                isInternetFacingUrlScheme = true;
+            }
         }
         return isInternetFacingUrlScheme;
     }

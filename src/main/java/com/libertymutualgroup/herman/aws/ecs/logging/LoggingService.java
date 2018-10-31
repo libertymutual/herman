@@ -78,4 +78,16 @@ public class LoggingService {
         logger.addLogEntry(link);
         logger.addLogEntry(dividerEntry);
     }
+
+    public HermanLogger getLogger() {
+        return logger;
+    }
+
+    public SplunkInstance getSplunkInstance() {
+        return splunkInstance;
+    }
+
+    public void setSplunkInstance(SplunkInstance splunkInstance) {
+        this.splunkInstance = splunkInstance;
+    }
 }

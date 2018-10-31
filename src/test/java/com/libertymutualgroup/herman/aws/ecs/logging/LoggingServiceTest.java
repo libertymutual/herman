@@ -10,11 +10,25 @@ import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 import org.mockito.Matchers;
 
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class LoggingServiceTest {
+
+    @Test
+    public void testConstructor_NullSplunkUrl() {
+        // GIVEN
+        HermanLogger logger = mock(HermanLogger.class);
+        ECSPushTaskProperties ecsPushTaskProperties = new ECSPushTaskProperties();
+
+        // WHEN
+        LoggingService loggingService = new LoggingService(logger).withSplunkInstanceValues(null, ecsPushTaskProperties);
+
+        // THEN
+        assertNull("Splunk instance must be null", loggingService.getSplunkInstance());
+    }
 
     @Test
     public void provideSplunkLog() throws Exception {
