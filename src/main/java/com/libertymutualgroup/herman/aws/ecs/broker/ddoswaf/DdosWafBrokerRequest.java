@@ -21,7 +21,7 @@ public class DdosWafBrokerRequest {
 
     private String appName;
     private String elbResourceArn;
-    private List<String> rules;
+    private List<WafRuleAction> ruleActions;
 
     public String getAppName() {
         return appName;
@@ -39,12 +39,12 @@ public class DdosWafBrokerRequest {
         this.elbResourceArn = elbResourceArn;
     }
 
-    public List<String> getRules() {
-        return rules;
+    public List<WafRuleAction> getRuleActions() {
+        return ruleActions;
     }
 
-    public void setRules(List<String> rules) {
-        this.rules = rules;
+    public void setRuleActions(List<WafRuleAction> ruleActions) {
+        this.ruleActions = ruleActions;
     }
 
     public DdosWafBrokerRequest withAppName(final String appName) {
@@ -57,8 +57,9 @@ public class DdosWafBrokerRequest {
         return this;
     }
 
-    public DdosWafBrokerRequest withRules(final List<String> rules) {
-        this.rules = rules;
+    public DdosWafBrokerRequest withRuleActions(
+        final List<WafRuleAction> ruleActions) {
+        this.ruleActions = ruleActions;
         return this;
     }
 
@@ -67,7 +68,7 @@ public class DdosWafBrokerRequest {
         return "DdosWafBrokerRequest{" +
             "appName='" + appName + '\'' +
             ", elbResourceArn='" + elbResourceArn + '\'' +
-            ", rules=" + rules +
+            ", ruleActions=" + ruleActions +
             '}';
     }
 }

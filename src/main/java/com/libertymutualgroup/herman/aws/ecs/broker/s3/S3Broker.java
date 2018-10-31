@@ -273,11 +273,15 @@ public class S3Broker {
             client.setBucketTaggingConfiguration(bucketName, new BucketTaggingConfiguration().withTagSets(TagUtil.hermanToTagSet(tags)));
         }
 
-        if (StringUtils.isNotBlank(taskProperties.getLogsBucket())) {
+        if (taskProperties != null && taskProperties.getLogsBucket() != null) {
             buildLogger.addLogEntry(String.format("Enabling S3 access logging using logs bucket %s", taskProperties.getLogsBucket()));
+            String logFilePrefix = String.format("AWSLogs/%s/s3-access/%s/%s",
+                handler.lookupVariable("account.id"),
+                handler.lookupVariable("aws.region"),
+                configuration.getAppName());
             client.setBucketLoggingConfiguration(new SetBucketLoggingConfigurationRequest(
                 configuration.getAppName(),
-                new BucketLoggingConfiguration(taskProperties.getLogsBucket(), null)));
+                new BucketLoggingConfiguration(taskProperties.getLogsBucket(), logFilePrefix)));
         } else {
             buildLogger.addLogEntry("Disabling S3 access logging");
             client.setBucketLoggingConfiguration(new SetBucketLoggingConfigurationRequest(

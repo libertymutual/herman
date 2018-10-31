@@ -152,7 +152,6 @@ public class EcsPush {
     private AmazonSNS snsClient;
     private AmazonDynamoDB dynamoDbClient;
     private AWSLambda lambdaClient;
-    private AWSSecurityTokenService stsClient;
     private AmazonCloudWatch cloudWatchClient;
     private FileUtil fileUtil;
 
@@ -223,12 +222,6 @@ public class EcsPush {
             .withRegion(context.getRegion())
             .build();
 
-        this.stsClient = AWSSecurityTokenServiceClientBuilder.standard()
-            .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
-            .withClientConfiguration(context.getAwsClientConfig())
-            .withRegion(context.getRegion())
-            .build();
-
         this.cloudWatchClient = AmazonCloudWatchClientBuilder.standard()
             .withCredentials(new AWSStaticCredentialsProvider(pushContext.getSessionCredentials()))
             .withClientConfiguration(pushContext.getAwsClientConfig()).withRegion(pushContext.getRegion()).build();
@@ -239,22 +232,18 @@ public class EcsPush {
     public void push() {
         EcsPushDefinition definition = getEcsPushDefinition();
 
-        String accountId = this.stsClient.getCallerIdentity(new GetCallerIdentityRequest()).getAccount();
-        bambooPropertyHandler.addProperty("account.id", accountId);
-
-
         ArrayList<TaskDefinitionPlacementConstraint> placementConstraints;
-        if (definition.getPlacementConstraints() == null) {
+        if (definition.getTaskPlacementConstraints() == null) {
             placementConstraints = new ArrayList<>();
         }
         else {
-            placementConstraints = new ArrayList<>(definition.getPlacementConstraints());
+            placementConstraints = new ArrayList<>(definition.getTaskPlacementConstraints());
         }
         placementConstraints.add(new TaskDefinitionPlacementConstraint()
             .withExpression("attribute:state !exists or attribute:state != pre-drain")
             .withType(TaskDefinitionPlacementConstraintType.MemberOf));
 
-        definition.setPlacementConstraints(placementConstraints);
+        definition.setTaskPlacementConstraints(placementConstraints);
 
         logger.addLogEntry(definition.toString());
         logInvocationInCloudWatch(definition);
@@ -342,11 +331,15 @@ public class EcsPush {
 
     private void provideConsoleLink(LoggingService loggingService, RegisterTaskDefinitionResult task, String cluster) {
         String family = task.getTaskDefinition().getFamily();
-        String acct = ArnUtil.getAccountFromArn(task.getTaskDefinition().getTaskDefinitionArn());
         String region = pushContext.getRegion().getName();
 
         if (taskProperties.getEcsConsoleLinkPattern() != null) {
-            String consoleLink = String.format(taskProperties.getEcsConsoleLinkPattern(), acct, region, cluster, family);
+            String consoleLink = String.format(
+                taskProperties.getEcsConsoleLinkPattern(),
+                bambooPropertyHandler.lookupVariable("account.id"),
+                region,
+                cluster,
+                family);
             loggingService.logSection("ECS Console", consoleLink);
         }
     }
@@ -419,10 +412,13 @@ public class EcsPush {
         String clusterId) {
 
         RegisterTaskDefinitionResult taskResult = ecsClient.registerTaskDefinition(new RegisterTaskDefinitionRequest()
-            .withFamily(appName).withContainerDefinitions(definition.getContainerDefinitions())
-            .withVolumes(definition.getVolumes()).withPlacementConstraints(definition.getPlacementConstraints())
+            .withFamily(appName)
+            .withContainerDefinitions(definition.getContainerDefinitions())
+            .withVolumes(definition.getVolumes())
+            .withPlacementConstraints(definition.getTaskPlacementConstraints())
             .withNetworkMode(definition.getNetworkMode())
-            .withTaskRoleArn(definition.getTaskRoleArn()).withMemory(definition.getTaskMemory()));
+            .withTaskRoleArn(definition.getTaskRoleArn())
+            .withMemory(definition.getTaskMemory()));
         logger.addLogEntry("Registered new task: " + taskResult.getTaskDefinition().getTaskDefinitionArn());
 
         DescribeServicesResult serviceResult = ecsClient
@@ -490,7 +486,8 @@ public class EcsPush {
                 .withTaskDefinition(taskDefinition.getTaskDefinitionArn()).withServiceName(appName)
                 .withDeploymentConfiguration(definition.getService().getDeploymentConfiguration())
                 .withClientToken(UUID.randomUUID().toString())
-                .withPlacementStrategy(definition.getPlacementStrategies());
+                .withPlacementConstraints(definition.getService().getPlacementConstraints())
+                .withPlacementStrategy(definition.getService().getPlacementStrategies());
 
             if (balancer != null) {
                 logger.addLogEntry("Adding load balancer to service");
@@ -545,6 +542,7 @@ public class EcsPush {
                 }
 
                 ecsClient.updateService(updateRequest);
+
                 waitForRequestInitialization(appName, ecsClient, clusterMetadata);
                 boolean rollbackSuccessful = waitForDeployment(appName, ecsClient, clusterMetadata);
 

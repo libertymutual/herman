@@ -48,7 +48,7 @@ public class DdosWafBroker {
            DdosWafBrokerRequest request = new DdosWafBrokerRequest()
                .withAppName(appName)
                .withElbResourceArn(elbArn)
-               .withRules(brokerConfiguration.getRules());
+               .withRuleActions(brokerConfiguration.getRuleActions());
             payload = new ObjectMapper().writeValueAsString(request);
         } catch (Exception ex) {
             throw new RuntimeException("Error getting DDoS / WAF Broker payload", ex);

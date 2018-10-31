@@ -15,47 +15,46 @@
  */
 package com.libertymutualgroup.herman.aws.ecs.broker.ddoswaf;
 
+import com.amazonaws.services.waf.model.WafActionType;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class DdosWafBrokerProperties {
+public class WafRuleAction {
 
-    private String ddosWafLambda;
-    private List<WafRuleAction> ruleActions;
+    private String id;
+    private WafActionType action;
 
-    public String getDdosWafLambda() {
-        return ddosWafLambda;
+    public String getId() {
+        return id;
     }
 
-    public void setDdosWafLambda(String ddosWafLambda) {
-        this.ddosWafLambda = ddosWafLambda;
+    public void setId(String id) {
+        this.id = id;
     }
 
-    public List<WafRuleAction> getRuleActions() {
-        return ruleActions;
+    public WafActionType getAction() {
+        return action;
     }
 
-    public void setRuleActions(List<WafRuleAction> ruleActions) {
-        this.ruleActions = ruleActions;
+    public void setAction(WafActionType action) {
+        this.action = action;
     }
 
-    public DdosWafBrokerProperties withDdosWafLambda(final String ddosWafLambda) {
-        this.ddosWafLambda = ddosWafLambda;
+    public WafRuleAction withId(final String id) {
+        this.id = id;
         return this;
     }
 
-    public DdosWafBrokerProperties withRuleActions(
-        final List<WafRuleAction> ruleActions) {
-        this.ruleActions = ruleActions;
+    public WafRuleAction withAction(final WafActionType action) {
+        this.action = action;
         return this;
     }
 
     @Override
     public String toString() {
-        return "DdosWafBrokerProperties{" +
-            "ddosWafLambda='" + ddosWafLambda + '\'' +
-            ", ruleActions=" + ruleActions +
+        return "WafRuleAction{" +
+            "id='" + id + '\'' +
+            ", action=" + action +
             '}';
     }
 }

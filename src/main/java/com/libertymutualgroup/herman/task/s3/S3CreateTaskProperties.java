@@ -32,7 +32,8 @@ public class S3CreateTaskProperties extends CommonTaskProperties {
             .withEngine(taskProperties.getEngine())
             .withOrg(taskProperties.getOrg())
             .withSbu(taskProperties.getSbu())
-            .withS3(taskProperties.getS3());
+            .withS3(taskProperties.getS3())
+            .withLogsBucket(taskProperties.getLogsBucket());
     }
 
     public S3BrokerProperties getS3() {
@@ -62,14 +63,6 @@ public class S3CreateTaskProperties extends CommonTaskProperties {
     }
 
     @Override
-    public String toString() {
-        return "S3CreateTaskProperties{" +
-            "s3=" + s3 + '\'' +
-            ", logsBucket=" + logsBucket + '\'' +
-            "} " + super.toString();
-    }
-
-    @Override
     public S3CreateTaskProperties withCompany(final String company) {
         this.setCompany(company);
         return this;
@@ -91,5 +84,13 @@ public class S3CreateTaskProperties extends CommonTaskProperties {
     public S3CreateTaskProperties withEngine(final String engine) {
         this.setEngine(engine);
         return this;
+    }
+
+    @Override
+    public String toString() {
+        return "S3CreateTaskProperties{" +
+            "s3=" + s3 +
+            ", logsBucket='" + logsBucket + '\'' +
+            "} " + super.toString();
     }
 }

@@ -18,7 +18,6 @@ package com.libertymutualgroup.herman.aws.ecs.logging;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionResult;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
-import org.springframework.util.Assert;
 
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -33,31 +32,37 @@ public class LoggingService {
     }
 
     public LoggingService withSplunkInstanceValues(String splunkUrl, ECSPushTaskProperties taskProperties) {
-        Assert.notNull(splunkUrl, "Splunk URL for the cluster must not be null");
-        Assert.isTrue(!taskProperties.getSplunkInstances().isEmpty(),
-            "There must be one or more splunk instances defined.");
+        boolean splunkIsConfigured = true;
+        if (splunkUrl == null) {
+            splunkIsConfigured = false;
+            logger.addLogEntry("Splunk URL for the cluster is null. Skipping adding logging link...");
+        } else if (taskProperties.getSplunkInstances().isEmpty()) {
+            splunkIsConfigured = false;
+            logger.addLogEntry("Herman config doe not link any Splunk URLs. Skipping adding logging link...");
+        }
 
-        this.splunkInstance = taskProperties.getSplunkInstances().stream()
-            .filter(aSplunkInstance -> aSplunkInstance.getHttpEventCollectorUrl().equals(splunkUrl))
-            .findAny()
-            .orElseThrow(() -> new RuntimeException(
-                String.format("Splunk instance for %s could not be found.", splunkUrl)));
+        if (splunkIsConfigured) {
+            this.splunkInstance = taskProperties.getSplunkInstances().stream()
+                .filter(aSplunkInstance -> aSplunkInstance.getHttpEventCollectorUrl().equals(splunkUrl))
+                .findAny().orElse(null);
+        }
+
         return this;
     }
 
     public void provideSplunkLog(RegisterTaskDefinitionResult taskResult) {
-        Assert.notNull(splunkInstance, "Splunk instance cannot be null");
+        if (splunkInstance != null) {
+            String family = taskResult.getTaskDefinition().getFamily();
+            Integer version = taskResult.getTaskDefinition().getRevision();
 
-        String family = taskResult.getTaskDefinition().getFamily();
-        Integer version = taskResult.getTaskDefinition().getRevision();
+            String link = String.format("%s/en-US/app/search/search?q=search%%20source%%3D*%s-%s*"
+                    + "&display.page.search.mode=smart&dispatch.sample_ratio=1&earliest=-15m&latest=now",
+                splunkInstance.getWebUrl(),
+                family,
+                version);
 
-        String link = String.format("%s/en-US/app/search/search?q=search%%20source%%3D*%s-%s*"
-                + "&display.page.search.mode=smart&dispatch.sample_ratio=1&earliest=-15m&latest=now",
-            splunkInstance.getWebUrl(),
-            family,
-            version);
-
-        logSection("Splunk Logs", link);
+            logSection("Splunk Logs", link);
+        }
     }
 
     public void logSection(String title, String link) {
@@ -72,5 +77,17 @@ public class LoggingService {
         logger.addLogEntry(dividerEntry);
         logger.addLogEntry(link);
         logger.addLogEntry(dividerEntry);
+    }
+
+    public HermanLogger getLogger() {
+        return logger;
+    }
+
+    public SplunkInstance getSplunkInstance() {
+        return splunkInstance;
+    }
+
+    public void setSplunkInstance(SplunkInstance splunkInstance) {
+        this.splunkInstance = splunkInstance;
     }
 }
