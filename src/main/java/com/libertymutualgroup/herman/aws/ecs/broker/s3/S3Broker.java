@@ -56,7 +56,6 @@ import com.libertymutualgroup.herman.aws.tags.TagUtil;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.s3.S3CreateTaskProperties;
 import com.libertymutualgroup.herman.util.FileUtil;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,6 +100,9 @@ public class S3Broker {
             tags.add(new HermanTag(taskProperties.getSbuTagKey(), configuration.getSbu()));
             tags.add(new HermanTag(taskProperties.getOrgTagKey(), configuration.getOrg()));
             tags.add(new HermanTag(taskProperties.getAppTagKey(), configuration.getAppName()));
+        }
+        if (configuration.getTags() != null) {
+            tags = new ArrayList<>(TagUtil.mergeTags(tags, configuration.getTags()));
         }
 
         // Broker KMS key if required

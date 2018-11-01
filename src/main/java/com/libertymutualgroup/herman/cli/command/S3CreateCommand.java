@@ -17,22 +17,20 @@ package com.libertymutualgroup.herman.cli.command;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.regions.Regions;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.libertymutualgroup.herman.aws.credentials.CredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.BucketMeta;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3Broker;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3CreateContext;
-import com.libertymutualgroup.herman.logging.HermanLogger;
-import com.libertymutualgroup.herman.task.bamboo.s3.S3CreateTask;
-import com.libertymutualgroup.herman.task.s3.S3CreateTaskProperties;
 import com.libertymutualgroup.herman.cli.Cli;
+import com.libertymutualgroup.herman.logging.HermanLogger;
+import com.libertymutualgroup.herman.task.s3.S3CreateTaskProperties;
 import com.libertymutualgroup.herman.util.ConfigurationUtil;
 import com.libertymutualgroup.herman.util.FileUtil;
 import com.libertymutualgroup.herman.util.PropertyHandlerUtil;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -70,37 +68,32 @@ public class S3CreateCommand implements Runnable {
             Regions region,
             CredentialsHandler credentialsHandler,
             PropertyHandlerUtil propertyHandlerUtil,
-            ConfigurationUtil configurationUtil){
+            ConfigurationUtil configurationUtil) {
         String absPath = new File(this.rootPath).getAbsolutePath();
         final AWSCredentials sessionCredentials = credentialsHandler.getAWSCredentials();
 
+        PropertyHandler propertyHandler = propertyHandlerUtil.getCliPropertyHandler(sessionCredentials, logger, environmentName, absPath, customVariables);
 
-        PropertyHandler propertyHandler = propertyHandlerUtil.getCliPropertyHandler(
-                sessionCredentials,
-                logger,
-                environmentName,
-                absPath,
-                customVariables);
+        S3CreateTaskProperties properties = configurationUtil.getConfigProperties(sessionCredentials, logger, region, S3CreateTaskProperties.class);
 
-        S3CreateTaskProperties properties = configurationUtil.getConfigProperties(
-                sessionCredentials, logger, region, S3CreateTaskProperties.class
-        );
-
-        S3CreateContext s3CreateContext = new S3CreateContext()
-                .withPropertyHandler(propertyHandler)
-                .withLogger(logger)
-                .withRegion(region)
-                .withRootPath(absPath)
-                .withSessionCredentials(sessionCredentials)
-                .withTaskProperties(properties)
-                .withFileUtil(new FileUtil(absPath, logger));
+        S3CreateContext s3CreateContext = new S3CreateContext().withPropertyHandler(propertyHandler).withLogger(logger).withRegion(region).withRootPath(absPath).withSessionCredentials(sessionCredentials).withTaskProperties(properties).withFileUtil(new FileUtil(absPath, logger));
 
         S3Broker s3Broker = getBroker(s3CreateContext);
         BucketMeta meta = s3Broker.brokerFromConfigurationFile();
 
-
         logger.addLogEntry("S3 bucket name: " + meta.getName());
         logger.addLogEntry("S3 bucket region: " + meta.getRegion());
+
+        try {
+            FileWriter fileWriter = new FileWriter("s3.output.properties");
+            fileWriter.write("bamboo.s3.brokered.name=" + meta.getName());
+            fileWriter.write(System.lineSeparator());
+            fileWriter.write("bamboo.s3.brokered.region=" + meta.getRegion());
+            fileWriter.flush();
+            fileWriter.close();
+        } catch (Exception e) {
+            logger.addErrorLogEntry("Could not create file for output properties");
+        }
     }
 
     public S3Broker getBroker(S3CreateContext context){

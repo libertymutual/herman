@@ -143,6 +143,8 @@ public class CliPropertyHandler implements PropertyHandler {
                 LOGGER.debug("Error loading properties file: " + this.environmentName, e);
                 this.hermanLogger.addLogEntry("Error loading " + this.environmentName + ".properties: " + e.getMessage());
             }
+        } else {
+            hermanLogger.addErrorLogEntry("No property file was loaded - we looked for " + this.environmentName + ".properties");
         }
     }
 
