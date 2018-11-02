@@ -20,6 +20,7 @@ import com.libertymutualgroup.herman.aws.credentials.CredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecs.EcsPush;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushContext;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
+import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterPush;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushPropertyFactory;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
@@ -58,8 +59,8 @@ public class ECSClusterPushTask {
             .withRootPath(configuration.getRootPath())
             .withTaskProperties(taskProperties)
             .withCustomConfigurationBucket(configuration.getCustomConfigurationBucket());
-        EcsPush push = new EcsPush(context);
-        push.push();
+        EcsClusterPush push = new EcsClusterPush(context);
+        push.pushCluster();
 
         logger.addLogEntry("Done!");
     }
