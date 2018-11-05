@@ -143,7 +143,6 @@ public class S3CreateContext {
         return "S3CreateContext{" +
             "logger=" + logger +
             ", propertyHandler=" + propertyHandler +
-            ", sessionCredentials=" + sessionCredentials +
             ", region=" + region +
             ", rootPath='" + rootPath + '\'' +
             ", taskProperties=" + taskProperties +

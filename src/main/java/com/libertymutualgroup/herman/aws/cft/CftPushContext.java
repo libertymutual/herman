@@ -148,7 +148,6 @@ public class CftPushContext {
             "logger=" + logger +
             ", propertyHandler=" + propertyHandler +
             ", envName='" + envName + '\'' +
-            ", sessionCredentials=" + sessionCredentials +
             ", awsClientConfig=" + awsClientConfig +
             ", region=" + region +
             ", rootPath='" + rootPath + '\'' +
