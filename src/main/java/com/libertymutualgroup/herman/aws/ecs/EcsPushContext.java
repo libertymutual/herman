@@ -170,7 +170,6 @@ public class EcsPushContext {
             "logger=" + logger +
             ", propertyHandler=" + propertyHandler +
             ", envName='" + envName + '\'' +
-            ", sessionCredentials=" + sessionCredentials +
             ", awsClientConfig=" + awsClientConfig +
             ", region=" + region +
             ", timeout=" + timeout +

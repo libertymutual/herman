@@ -385,13 +385,11 @@
           </execution>
         </executions>
       </plugin>
-      <!-- Maven Shade Plugin -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
         <version>3.1.1</version>
         <executions>
-          <!-- Run shade goal on package phase -->
           <execution>
             <phase>package</phase>
             <goals>
@@ -410,6 +408,17 @@
                   </manifestEntries>
                 </transformer>
               </transformers>
+              <artifactSet>
+                <!-- Bringing in additional logging libraries into the atlassian tools can cause adverse effects -->
+                <!-- safeguard for excluding logging libraries-->
+                <excludes>
+                  <exclude>ch.qos.logback:*</exclude>
+                  <exclude>org.apache.logging.log4j:*</exclude>
+                  <exclude>log4j:*</exclude>
+                  <exclude>org.slf4j:*</exclude>
+                  <exclude>commons-logging:*</exclude>
+                </excludes>
+              </artifactSet>
             </configuration>
           </execution>
         </executions>
