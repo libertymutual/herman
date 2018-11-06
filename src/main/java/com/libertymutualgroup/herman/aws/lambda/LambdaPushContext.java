@@ -98,7 +98,6 @@ public class LambdaPushContext {
     @Override
     public String toString() {
         return "LambdaPushContext{" +
-            "sessionCredentials=" + sessionCredentials +
             ", rootPath='" + rootPath + '\'' +
             ", bambooPropertyHandler=" + bambooPropertyHandler +
             ", logger=" + logger +
