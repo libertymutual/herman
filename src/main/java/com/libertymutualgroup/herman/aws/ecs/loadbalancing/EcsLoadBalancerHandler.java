@@ -39,6 +39,7 @@ import com.amazonaws.services.elasticloadbalancing.model.SetLoadBalancerPolicies
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.EcsPortHandler;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
+import com.libertymutualgroup.herman.aws.ecs.HermanContainerDefinition;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
@@ -89,7 +90,7 @@ public class EcsLoadBalancerHandler {
         String urlSuffix = definition.getService().getUrlSuffix();
         SSLCertificate sslCertificate = certHandler.deriveCert(protocol, urlSuffix, urlPrefix);
 
-        ContainerDefinition webContainer = portHandler.findContainerWithExposedPort(definition, false);
+        HermanContainerDefinition webContainer = portHandler.findContainerWithExposedPort(definition, false);
         Integer randomPort = webContainer.getPortMappings().get(0).getHostPort();
         Integer containerPort = webContainer.getPortMappings().get(0).getContainerPort();
         String containerName = webContainer.getName();

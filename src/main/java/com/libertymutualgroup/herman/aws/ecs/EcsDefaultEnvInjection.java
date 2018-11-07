@@ -26,81 +26,81 @@ public class EcsDefaultEnvInjection {
     public void injectEnvironment(EcsPushDefinition definition, String region, String deployEnv,
         EcsClusterMetadata meta) {
 
-        for (ContainerDefinition container : definition.getContainerDefinitions()) {
+        for (HermanContainerDefinition container : definition.getContainerDefinitions()) {
             inject(container, definition.getAppName(), region, deployEnv,
                 meta.getNewrelicOrgTag(), meta.getNewrelicLicenseKey());
         }
 
     }
 
-    private void inject(ContainerDefinition def, String appName, String region, String deployEnv,
+    private void inject(HermanContainerDefinition def, String appName, String region, String deployEnv,
         String org, String key) {
-        List<KeyValuePair> env = def.getEnvironment();
+        List<EnvironmentVariableDefinition> env = def.getEnvironment();
         if (!propExists(env, "NEW_RELIC_APP_NAME")) {
             def.getEnvironment()
-                .add(new KeyValuePair().withName("NEW_RELIC_APP_NAME").withValue(appName + " (" + region + ")"));
+                .add(new EnvironmentVariableDefinition().withName("NEW_RELIC_APP_NAME").withValue(appName + " (" + region + ")"));
         }
 
         if (!propExists(env, "newrelic.config.labels")) {
-            def.getEnvironment().add(new KeyValuePair().withName("newrelic.config.labels")
+            def.getEnvironment().add(new EnvironmentVariableDefinition().withName("newrelic.config.labels")
                 .withValue("Environment:" + deployEnv + ";Region:" + region + ";Organization:" + org + ";"));
-            def.getEnvironment().add(new KeyValuePair().withName("NEWRELIC_CONFIG_LABELS")
+            def.getEnvironment().add(new EnvironmentVariableDefinition().withName("NEWRELIC_CONFIG_LABELS")
                 .withValue("Environment:" + deployEnv + ";Region:" + region + ";Organization:" + org + ";"));
         }
         if (!propExists(env, "NEW_RELIC_LICENSE_KEY") && key != null) {
-            def.getEnvironment().add(new KeyValuePair().withName("NEW_RELIC_LICENSE_KEY")
+            def.getEnvironment().add(new EnvironmentVariableDefinition().withName("NEW_RELIC_LICENSE_KEY")
                 .withValue(key));
         }
 
-        def.getEnvironment().add(new KeyValuePair().withName("aws.region").withValue(region));
+        def.getEnvironment().add(new EnvironmentVariableDefinition().withName("aws.region").withValue(region));
 
     }
 
     public void injectRds(EcsPushDefinition definition, RdsInstance rds) {
-        for (ContainerDefinition def : definition.getContainerDefinitions()) {
-            def.getEnvironment().add(new KeyValuePair().withName(rds.getInjectNames().getHost())
+        for (HermanContainerDefinition def : definition.getContainerDefinitions()) {
+            def.getEnvironment().add(new EnvironmentVariableDefinition().withName(rds.getInjectNames().getHost())
                 .withValue(rds.getEndpoint().getAddress()));
 
-            def.getEnvironment().add(new KeyValuePair().withName(rds.getInjectNames().getPort())
+            def.getEnvironment().add(new EnvironmentVariableDefinition().withName(rds.getInjectNames().getPort())
                 .withValue(rds.getEndpoint().getPort().toString()));
 
             def.getEnvironment()
-                .add(new KeyValuePair().withName(rds.getInjectNames().getDb()).withValue(rds.getDBName()));
+                .add(new EnvironmentVariableDefinition().withName(rds.getInjectNames().getDb()).withValue(rds.getDBName()));
 
-            def.getEnvironment().add(new KeyValuePair().withName(rds.getInjectNames().getConnectionString())
+            def.getEnvironment().add(new EnvironmentVariableDefinition().withName(rds.getInjectNames().getConnectionString())
                 .withValue(rds.getConnectionString()));
 
-            def.getEnvironment().add(new KeyValuePair().withName(rds.getInjectNames().getDbResourceId())
+            def.getEnvironment().add(new EnvironmentVariableDefinition().withName(rds.getInjectNames().getDbResourceId())
                 .withValue(rds.getDbiResourceId()));
 
             // liquibase apps likely need spring.datasource.url AND liquibase.url set
             if (rds.getInjectNames().getAdminUsername().toLowerCase().startsWith("liquibase")) {
                 def.getEnvironment()
-                    .add(new KeyValuePair().withName("liquibase.url").withValue(rds.getConnectionString()));
+                    .add(new EnvironmentVariableDefinition().withName("liquibase.url").withValue(rds.getConnectionString()));
             }
 
             def.getEnvironment().add(
-                new KeyValuePair().withName(rds.getInjectNames().getUsername()).withValue(rds.getMasterUsername()));
+                new EnvironmentVariableDefinition().withName(rds.getInjectNames().getUsername()).withValue(rds.getMasterUsername()));
 
-            def.getEnvironment().add(new KeyValuePair().withName(rds.getInjectNames().getEncryptedPassword())
+            def.getEnvironment().add(new EnvironmentVariableDefinition().withName(rds.getInjectNames().getEncryptedPassword())
                 .withValue(rds.getEncryptedPassword()));
 
             def.getEnvironment().add(
-                new KeyValuePair().withName(rds.getInjectNames().getAppUsername()).withValue(rds.getAppUsername()));
+                new EnvironmentVariableDefinition().withName(rds.getInjectNames().getAppUsername()).withValue(rds.getAppUsername()));
 
-            def.getEnvironment().add(new KeyValuePair().withName(rds.getInjectNames().getAppEncryptedPassword())
+            def.getEnvironment().add(new EnvironmentVariableDefinition().withName(rds.getInjectNames().getAppEncryptedPassword())
                 .withValue(rds.getAppEncryptedPassword()));
 
-            def.getEnvironment().add(new KeyValuePair().withName(rds.getInjectNames().getAdminUsername())
+            def.getEnvironment().add(new EnvironmentVariableDefinition().withName(rds.getInjectNames().getAdminUsername())
                 .withValue(rds.getAdminUsername()));
 
-            def.getEnvironment().add(new KeyValuePair().withName(rds.getInjectNames().getAdminEncryptedPassword())
+            def.getEnvironment().add(new EnvironmentVariableDefinition().withName(rds.getInjectNames().getAdminEncryptedPassword())
                 .withValue(rds.getAdminEncryptedPassword()));
         }
     }
 
-    private boolean propExists(List<KeyValuePair> env, String prop) {
-        for (KeyValuePair pair : env) {
+    private boolean propExists(List<EnvironmentVariableDefinition> env, String prop) {
+        for (EnvironmentVariableDefinition pair : env) {
             if (pair.getName().equals(prop)) {
                 return true;
             }

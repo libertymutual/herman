@@ -37,12 +37,12 @@ public class EcsPortHandler {
 
     }
 
-    public ContainerDefinition findContainerWithExposedPort(EcsPushDefinition definition, boolean isAlb) {
+    public HermanContainerDefinition findContainerWithExposedPort(EcsPushDefinition definition, boolean isAlb) {
         if (!getTaskType(definition).equals(TaskType.WEB)) {
             throw new AwsExecException("Trying to run a ELB for non-configured task: bug in runner");
         }
-        ContainerDefinition container = null;
-        for (ContainerDefinition containerDefinition : definition.getContainerDefinitions()) {
+        HermanContainerDefinition container = null;
+        for (HermanContainerDefinition containerDefinition : definition.getContainerDefinitions()) {
             if (containerDefinition.getPortMappings() != null && !containerDefinition.getPortMappings().isEmpty()) {
                 for (PortMapping p : containerDefinition.getPortMappings()) {
                     if (p.getHostPort() == 0) {

@@ -16,7 +16,9 @@
 package com.libertymutualgroup.herman.aws.ecs;
 
 import com.amazonaws.ClientConfiguration;
+import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.cloudformation.AmazonCloudFormation;
 import com.amazonaws.services.cloudformation.AmazonCloudFormationClientBuilder;
 import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
@@ -34,7 +36,6 @@ import com.amazonaws.services.ecs.AmazonECSClientBuilder;
 import com.amazonaws.services.ecs.model.AssignPublicIp;
 import com.amazonaws.services.ecs.model.AwsVpcConfiguration;
 import com.amazonaws.services.ecs.model.Container;
-import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.CreateServiceRequest;
 import com.amazonaws.services.ecs.model.CreateServiceResult;
 import com.amazonaws.services.ecs.model.DeregisterTaskDefinitionRequest;
@@ -72,9 +73,6 @@ import com.amazonaws.services.rds.AmazonRDS;
 import com.amazonaws.services.rds.AmazonRDSClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
-import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
-import com.amazonaws.services.securitytoken.model.GetCallerIdentityRequest;
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQS;
@@ -108,11 +106,11 @@ import com.libertymutualgroup.herman.aws.ecs.loadbalancing.EcsLoadBalancerV2Hand
 import com.libertymutualgroup.herman.aws.ecs.loadbalancing.ElbOrAlbDecider;
 import com.libertymutualgroup.herman.aws.ecs.loadbalancing.ServicePurger;
 import com.libertymutualgroup.herman.aws.ecs.logging.LoggingService;
+import com.libertymutualgroup.herman.aws.encrypt.EnvironmentEncryptor;
 import com.libertymutualgroup.herman.aws.tags.HermanTag;
 import com.libertymutualgroup.herman.aws.tags.TagUtil;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
-import com.libertymutualgroup.herman.util.ArnUtil;
 import com.libertymutualgroup.herman.util.FileUtil;
 import org.apache.logging.log4j.util.Strings;
 
@@ -126,6 +124,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class EcsPush {
 
@@ -380,7 +379,7 @@ public class EcsPush {
     }
 
     private void runTask(EcsClusterMetadata clusterMetadata, AmazonECS ecsClient, TaskDefinition taskDefinition,
-        List<ContainerDefinition> containerDefinitions) {
+        List<HermanContainerDefinition> containerDefinitions) {
         RunTaskRequest runTaskRequest = new RunTaskRequest().withCluster(clusterMetadata.getClusterId())
             .withTaskDefinition(taskDefinition.getTaskDefinitionArn());
         logger.addLogEntry("Running task...");
@@ -413,7 +412,7 @@ public class EcsPush {
 
         RegisterTaskDefinitionResult taskResult = ecsClient.registerTaskDefinition(new RegisterTaskDefinitionRequest()
             .withFamily(appName)
-            .withContainerDefinitions(definition.getContainerDefinitions())
+            .withContainerDefinitions(definition.getContainerDefinitions().stream().map(def -> def.toEcsContainerDefinition()).collect(Collectors.toList()))
             .withVolumes(definition.getVolumes())
             .withPlacementConstraints(definition.getTaskPlacementConstraints())
             .withNetworkMode(definition.getNetworkMode())
@@ -637,12 +636,12 @@ public class EcsPush {
     }
 
     private void waitForTaskCompletion(AmazonECS client, String taskName, String clusterName,
-        List<ContainerDefinition> definitions) {
+        List<HermanContainerDefinition> definitions) {
 
         logger.addLogEntry("Waiting for task completion: " + taskName);
 
         Set<String> essentialContainers = new HashSet<>();
-        for (ContainerDefinition container : definitions) {
+        for (HermanContainerDefinition container : definitions) {
             // autoboxing...default is essential=true if null
             if (container.isEssential() == null || container.isEssential()) {
                 essentialContainers.add(container.getName());
@@ -702,6 +701,7 @@ public class EcsPush {
         EcsClusterMetadata clusterMetadata) {
 
         String applicationKeyId = brokerKms(definition, clusterMetadata);
+        encryptEnvironmentVariables(definition, applicationKeyId);
         brokerS3(definition, clusterMetadata, applicationKeyId);
         brokerKinesisStream(definition);
         brokerSqs(definition);
@@ -710,6 +710,13 @@ public class EcsPush {
         brokerDynamoDB(definition);
     }
 
+    private void encryptEnvironmentVariables(EcsPushDefinition definition, String applicationKeyId) {
+        EnvironmentEncryptor encryptor = new EnvironmentEncryptor(kmsClient);
+        definition.getContainerDefinitions().stream()
+                .flatMap(def -> def.getEnvironment().stream())
+                .filter( e -> e.isEncrypt() )
+                .forEach( e -> e.setValue(encryptor.encrypt(e.getValue(), applicationKeyId)));
+    }
 
     private String brokerKms(EcsPushDefinition definition, EcsClusterMetadata clusterMetadata) {
         KmsBroker broker = new KmsBroker(logger, bambooPropertyHandler, fileUtil, taskProperties,

@@ -80,8 +80,8 @@ public class EcsDefinitionParser {
     }
 
 
-    private void patchJsonLogDefintionParseError(List<ContainerDefinition> containers) {
-        for (ContainerDefinition container : containers) {
+    private void patchJsonLogDefintionParseError(List<HermanContainerDefinition> containers) {
+        for (HermanContainerDefinition container : containers) {
             if (container.getLogConfiguration() != null) {
                 LogConfiguration config = container.getLogConfiguration();
                 if (config.getOptions() != null && config.getLogDriver() == null) {

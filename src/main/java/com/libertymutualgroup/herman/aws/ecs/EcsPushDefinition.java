@@ -15,8 +15,6 @@
  */
 package com.libertymutualgroup.herman.aws.ecs;
 
-import com.amazonaws.services.ecs.model.ContainerDefinition;
-import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.PlacementStrategy;
 import com.amazonaws.services.ecs.model.TaskDefinitionPlacementConstraint;
 import com.amazonaws.services.ecs.model.Ulimit;
@@ -40,7 +38,7 @@ import java.util.List;
 
 public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, DynamoAppDefinition, KinesisAppDefinition {
 
-    private List<ContainerDefinition> containerDefinitions;
+    private List<HermanContainerDefinition> containerDefinitions;
     private String cluster;
     private EcsService service;
     private String appName;
@@ -79,18 +77,18 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, Dy
             newRelicApplicationName = this.getContainerDefinitions().iterator().next().getEnvironment().stream()
                 .filter(environmentVar -> "NEW_RELIC_APP_NAME".equals(environmentVar.getName()))
                 .findAny()
-                .map(KeyValuePair::getValue)
+                .map(EnvironmentVariableDefinition::getValue)
                 .orElse(null);
         }
         return newRelicApplicationName;
     }
 
-    public List<ContainerDefinition> getContainerDefinitions() {
+    public List<HermanContainerDefinition> getContainerDefinitions() {
         return containerDefinitions;
     }
 
     public void setContainerDefinitions(
-        List<ContainerDefinition> containerDefinitions) {
+        List<HermanContainerDefinition> containerDefinitions) {
         this.containerDefinitions = containerDefinitions;
     }
 

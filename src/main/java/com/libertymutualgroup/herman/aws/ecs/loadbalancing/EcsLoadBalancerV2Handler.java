@@ -48,6 +48,7 @@ import com.amazonaws.services.lambda.AWSLambda;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.EcsPortHandler;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
+import com.libertymutualgroup.herman.aws.ecs.HermanContainerDefinition;
 import com.libertymutualgroup.herman.aws.ecs.broker.ddoswaf.DdosWafBroker;
 import com.libertymutualgroup.herman.aws.ecs.broker.ddoswaf.DdosWafBrokerProperties;
 import com.libertymutualgroup.herman.aws.ecs.broker.ddoswaf.WafRuleAction;
@@ -102,7 +103,7 @@ public class EcsLoadBalancerV2Handler {
 
         SSLCertificate sslCertificate = certHandler.deriveCert(protocol, urlSuffix, urlPrefix);
 
-        ContainerDefinition webContainer = portHandler.findContainerWithExposedPort(definition, true);
+        HermanContainerDefinition webContainer = portHandler.findContainerWithExposedPort(definition, true);
         Integer containerPort = webContainer.getPortMappings().get(0).getContainerPort();
         String containerName = webContainer.getName();
 
