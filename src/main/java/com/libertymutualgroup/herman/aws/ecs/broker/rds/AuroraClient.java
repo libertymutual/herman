@@ -62,7 +62,7 @@ import java.util.Optional;
 
 import static com.libertymutualgroup.herman.aws.ecs.broker.rds.RdsBroker.pollingIntervalMs;
 
-public class AuroraClient implements RdsClient {
+public class AuroraClient extends StandardRdsClient {
 
     public static final String AVAILABLE_STATUS = "available";
     public static final String INTERRUPTED_DURING_PROCESS = "Interrupted during process";
@@ -76,6 +76,7 @@ public class AuroraClient implements RdsClient {
 
     AuroraClient(AmazonRDS client, RdsInstance rds, EcsClusterMetadata clusterMetadata, List<HermanTag> tags,
         HermanLogger buildLogger) {
+        super(client, rds, clusterMetadata, tags, buildLogger);
         this.client = client;
         this.rds = rds;
         this.clusterMetadata = clusterMetadata;

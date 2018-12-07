@@ -112,7 +112,6 @@ import com.libertymutualgroup.herman.aws.tags.HermanTag;
 import com.libertymutualgroup.herman.aws.tags.TagUtil;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
-import com.libertymutualgroup.herman.util.ArnUtil;
 import com.libertymutualgroup.herman.util.FileUtil;
 import org.apache.logging.log4j.util.Strings;
 

@@ -48,10 +48,11 @@ import java.util.UUID;
 
 public class RdsBroker {
 
-    public static final String AURORA_ENGINE = "aurora";
-    public static final String POSTGRES_ENGINE = "postgres";
-    public static final String MYSQL_ENGINE = "mysql";
-    public static final String CIPHER_PREFIX = "{cipher}";
+    private static final String AURORA_ENGINE = "aurora";
+    private static final String POSTGRES_ENGINE = "postgres";
+    private static final String MYSQL_ENGINE = "mysql";
+    private static final String SQL_SERVER_ENGINE = "sqlserver-se";
+    private static final String CIPHER_PREFIX = "{cipher}";
     private static final int MYSQL_MAXLENGTH = 32;
     static int pollingIntervalMs = 10000;
     private AmazonRDS client;
@@ -82,7 +83,6 @@ public class RdsBroker {
 
     public RdsInstance brokerDb() {
         RdsInstance rds = definition.getDatabase();
-        rds.setDefaults(targetKeyId);
         String instanceId = rds.getDBInstanceIdentifier() != null ? rds.getDBInstanceIdentifier()
             : definition.getAppName();
         String masterUserPassword = this.generateRandomPassword();
@@ -110,9 +110,13 @@ public class RdsBroker {
             rdsClient = new AuroraClient(client, rds, clusterMetadata, tags, logger);
         } else if (rds.getEngine().contains("oracle")) {
             rdsClient = new OracleClient(client, rds, clusterMetadata, tags, logger);
+        } else if (rds.getEngine().contains("sqlserver")) {
+            rdsClient = new SqlServerClient(client, rds, clusterMetadata, tags, logger);
         } else {
             rdsClient = new StandardRdsClient(client, rds, clusterMetadata, tags, logger);
         }
+
+        rdsClient.setDefaults(targetKeyId);
 
         boolean newDb = !rdsClient.dbExists(instanceId);
 
