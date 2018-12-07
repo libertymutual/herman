@@ -32,8 +32,8 @@ public class SqlServerClient extends StandardRdsClient {
     rds.getInjectNames().setDefaults();
 
     rds.setMasterUsername(rds.getMasterUsername() == null ? "dbAdmin" : rds.getMasterUsername());
-    rds.setDBInstanceClass(rds.getDBInstanceClass() == null ? "db.t2.small" : rds.getDBInstanceClass());
-    rds.setAllocatedStorage(rds.getAllocatedStorage() == null ? 5 : rds.getAllocatedStorage());
+    rds.setDBInstanceClass(rds.getDBInstanceClass() == null ? "db.m4.large" : rds.getDBInstanceClass());
+    rds.setAllocatedStorage(rds.getAllocatedStorage() == null ? 200 : rds.getAllocatedStorage());
     rds.setPubliclyAccessible(rds.getPubliclyAccessible() == null ? false : rds.getPubliclyAccessible());
     rds.setAutoMinorVersionUpgrade(rds.getAutoMinorVersionUpgrade() == null ? true : rds.getAutoMinorVersionUpgrade());
     rds.setPreferredBackupWindow(rds.getPreferredBackupWindow() == null ? "01:00-02:00" : rds.getPreferredBackupWindow());
