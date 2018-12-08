@@ -365,6 +365,32 @@ public class StandardRdsClient implements RdsClient {
         }
     }
 
+    @Override
+    public void setDefaults(String kmsKeyId) {
+        rds.setInjectNames(rds.getInjectNames() == null ? new RdsInjectConfiguration() : rds.getInjectNames());
+
+        rds.getInjectNames().setDefaults();
+
+        rds.setMasterUsername(rds.getMasterUsername() == null ? "dbAdmin" : rds.getMasterUsername());
+        rds.setDBName(rds.getDBName() == null ? "appDb" : rds.getDBName());
+        rds.setDBInstanceClass(rds.getDBInstanceClass() == null ? "db.t2.small" : rds.getDBInstanceClass());
+        rds.setAllocatedStorage(rds.getAllocatedStorage() == null ? 5 : rds.getAllocatedStorage());
+        rds.setPubliclyAccessible(rds.getPubliclyAccessible() == null ? false : rds.getPubliclyAccessible());
+        rds.setAutoMinorVersionUpgrade(rds.getAutoMinorVersionUpgrade() == null ? true : rds.getAutoMinorVersionUpgrade());
+        rds.setPreferredBackupWindow(rds.getPreferredBackupWindow() == null ? "01:00-02:00" : rds.getPreferredBackupWindow());
+        rds.setPreferredMaintenanceWindow(
+            rds.getPreferredMaintenanceWindow() == null ? "sun:20:00-sun:21:00" : rds.getPreferredMaintenanceWindow());
+        rds.setBackupRetentionPeriod(rds.getBackupRetentionPeriod() == null ? 14 : rds.getBackupRetentionPeriod());
+        rds.setStorageType(rds.getStorageType() == null ? "gp2" : rds.getStorageType());
+        rds.setFullUpdate(rds.getFullUpdate() == null ? false : rds.getFullUpdate());
+        rds.setIAMDatabaseAuthenticationEnabled(
+            rds.getIAMDatabaseAuthenticationEnabled() == null ? false : rds.getIAMDatabaseAuthenticationEnabled());
+        rds.setAvailabilityZones(rds.getAvailabilityZones() == null ? new String[]{"us-east-1a"} : rds.getAvailabilityZones());
+        rds.setPreDeployBackup(rds.getPreDeployBackup() == null ? false : rds.getPreDeployBackup());
+        rds.setExtensions(rds.getExtensions() == null ? new ArrayList<>() : rds.getExtensions());
+        rds.setKmsKeyId(rds.getKmsKeyId() == null ? kmsKeyId : rds.getKmsKeyId());
+    }
+
     private DescribeDBSnapshotsResult getDescribeDBSnapshotsResult(String snapshotId) throws InterruptedException {
         String status = "";
         DescribeDBSnapshotsResult result = null;
