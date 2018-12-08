@@ -51,7 +51,6 @@ public class RdsBroker {
     private static final String AURORA_ENGINE = "aurora";
     private static final String POSTGRES_ENGINE = "postgres";
     private static final String MYSQL_ENGINE = "mysql";
-    private static final String SQL_SERVER_ENGINE = "sqlserver-se";
     private static final String CIPHER_PREFIX = "{cipher}";
     private static final int MYSQL_MAXLENGTH = 32;
     static int pollingIntervalMs = 10000;
