@@ -39,31 +39,6 @@ public class RdsInstance extends DBInstance {
     private Boolean preDeployBackup;
     private List<String> extensions; // Postgres-specific (optional)
 
-    public void setDefaults(String kmsKeyId) {
-        this.setInjectNames(getInjectNames() == null ? new RdsInjectConfiguration() : getInjectNames());
-
-        injectNames.setDefaults();
-
-        this.setMasterUsername(getMasterUsername() == null ? "dbAdmin" : getMasterUsername());
-        this.setDBName(getDBName() == null ? "appDb" : getDBName());
-        this.setDBInstanceClass(getDBInstanceClass() == null ? "db.t2.small" : getDBInstanceClass());
-        this.setAllocatedStorage(getAllocatedStorage() == null ? 5 : getAllocatedStorage());
-        this.setPubliclyAccessible(getPubliclyAccessible() == null ? false : getPubliclyAccessible());
-        this.setAutoMinorVersionUpgrade(getAutoMinorVersionUpgrade() == null ? true : getAutoMinorVersionUpgrade());
-        this.setPreferredBackupWindow(getPreferredBackupWindow() == null ? "01:00-02:00" : getPreferredBackupWindow());
-        this.setPreferredMaintenanceWindow(
-            getPreferredMaintenanceWindow() == null ? "sun:20:00-sun:21:00" : getPreferredMaintenanceWindow());
-        this.setBackupRetentionPeriod(getBackupRetentionPeriod() == null ? 14 : getBackupRetentionPeriod());
-        this.setStorageType(getStorageType() == null ? "gp2" : getStorageType());
-        this.setFullUpdate(getFullUpdate() == null ? false : getFullUpdate());
-        this.setIAMDatabaseAuthenticationEnabled(
-            getIAMDatabaseAuthenticationEnabled() == null ? false : getIAMDatabaseAuthenticationEnabled());
-        this.setAvailabilityZones(getAvailabilityZones() == null ? new String[]{"us-east-1a"} : getAvailabilityZones());
-        this.setPreDeployBackup(getPreDeployBackup() == null ? false : getPreDeployBackup());
-        this.setExtensions(getExtensions() == null ? new ArrayList<>() : getExtensions());
-        this.setKmsKeyId(getKmsKeyId() == null ? kmsKeyId : getKmsKeyId());
-    }
-
     public String getConnectionString() {
         String instanceType = this.getEngine().toLowerCase();
         String connectionType = instanceType.contains("postgres") ? "postgresql" : instanceType;

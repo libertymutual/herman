@@ -41,4 +41,6 @@ public interface RdsClient {
     void setOptionGroup(String instanceId, OptionGroup options);
 
     void createSnapshot(String instanceId, String snapshotId);
+
+    void setDefaults(String kmsKeyId);
 }

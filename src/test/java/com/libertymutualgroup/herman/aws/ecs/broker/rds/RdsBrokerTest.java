@@ -28,6 +28,7 @@ import java.util.Arrays;
 import static com.libertymutualgroup.herman.aws.ecs.broker.rds.RdsCommonTestObjects.initDbInstance;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.never;
@@ -86,6 +87,8 @@ public class RdsBrokerTest {
             rdsClient = new AuroraClient(client, definition.getDatabase(), clusterMetadata, tags, logger);
         } else if (definition.getDatabase().getEngine().contains("oracle")) {
             rdsClient = new OracleClient(client, definition.getDatabase(), clusterMetadata, tags, logger);
+        } else if (definition.getDatabase().getEngine().contains("sqlserver")) {
+            rdsClient = new SqlServerClient(client, definition.getDatabase(), clusterMetadata, tags, logger);
         } else {
             rdsClient = new StandardRdsClient(client, definition.getDatabase(), clusterMetadata, tags, logger);
         }
@@ -201,5 +204,56 @@ public class RdsBrokerTest {
         assertTrue(rdsResult.getAppEncryptedPassword().startsWith(prefix));
         assertTrue(rdsResult.getAdminEncryptedPassword().startsWith(prefix));
         assertTrue(rdsResult.getEncryptedPassword().startsWith(prefix));
+    }
+
+    @Test
+    public void dbNameNullForSQLServer() {
+        EcsPushDefinition definition = new EcsPushDefinition();
+        RdsInstance instance = initSqlServerInstanceDefinition();
+        definition.setDatabase(instance);
+
+        RdsBroker broker = initBroker(definition);
+        mockEncryptionResult("123");
+        definition.setUseKms(Boolean.TRUE.toString());
+
+        DescribeDBInstancesResult result = new DescribeDBInstancesResult();
+        result.setDBInstances(Arrays.asList(initDbInstance()));
+
+        Mockito.when(client.describeDBInstances(any()))
+            .thenThrow(new DBInstanceNotFoundException(""))
+            .thenReturn(result);
+
+        RdsInstance rdsResult = broker.brokerDb();
+        assertNull(rdsResult.getDBName());
+    }
+
+    @Test
+    public void dbNameNotNullForMySql() {
+        EcsPushDefinition definition = new EcsPushDefinition();
+        RdsInstance instance = initInstanceDefinition();
+        definition.setDatabase(instance);
+
+        RdsBroker broker = initBroker(definition);
+        mockEncryptionResult("123");
+        definition.setUseKms(Boolean.TRUE.toString());
+
+        DescribeDBInstancesResult result = new DescribeDBInstancesResult();
+        result.setDBInstances(Arrays.asList(initDbInstance()));
+
+        Mockito.when(client.describeDBInstances(any()))
+            .thenThrow(new DBInstanceNotFoundException(""))
+            .thenReturn(result);
+
+        RdsInstance rdsResult = broker.brokerDb();
+        assertNotNull(rdsResult.getDBName());
+        assertEquals("appDb", rdsResult.getDBName());
+    }
+
+    private RdsInstance initSqlServerInstanceDefinition() {
+        RdsInstance instance = new RdsInstance();
+        instance.setEngine("sqlserver-se");
+        instance.setEngineVersion("13.00.4466.4.v1");
+
+        return instance;
     }
 }
