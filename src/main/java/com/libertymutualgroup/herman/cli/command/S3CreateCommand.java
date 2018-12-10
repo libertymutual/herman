@@ -17,11 +17,14 @@ package com.libertymutualgroup.herman.cli.command;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.libertymutualgroup.herman.aws.credentials.CredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.BucketMeta;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3Broker;
+import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3BrokerProperties;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3CreateContext;
+import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3EncryptionOption;
 import com.libertymutualgroup.herman.cli.Cli;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.s3.S3CreateTaskProperties;
@@ -74,7 +77,15 @@ public class S3CreateCommand implements Runnable {
 
         PropertyHandler propertyHandler = propertyHandlerUtil.getCliPropertyHandler(sessionCredentials, logger, environmentName, absPath, customVariables);
 
-        S3CreateTaskProperties properties = configurationUtil.getConfigProperties(sessionCredentials, logger, region, S3CreateTaskProperties.class);
+        S3CreateTaskProperties properties;
+
+        try {
+            properties = configurationUtil.getConfigProperties(sessionCredentials, logger, region, S3CreateTaskProperties.class);
+        } catch(AmazonS3Exception ex) {
+            logger.addLogEntry("Could not locate existing herman configuaration bucket, continuing with defaults.");
+            S3BrokerProperties brokerProperties = new S3BrokerProperties().withDefaultEncryption(S3EncryptionOption.AES256);
+            properties = new S3CreateTaskProperties().withS3(brokerProperties);
+        }
 
         S3CreateContext s3CreateContext = new S3CreateContext().withPropertyHandler(propertyHandler).withLogger(logger).withRegion(region).withRootPath(absPath).withSessionCredentials(sessionCredentials).withTaskProperties(properties).withFileUtil(new FileUtil(absPath, logger));
 

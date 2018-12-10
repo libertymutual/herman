@@ -23,7 +23,7 @@ notifications:
 deploy:
   - provider: releases
     api_key: $GH_DEPLOY_TOKEN
-    file: target/herman-bamboo-plugin-$BUILD_VERSION.jar
+    file: target/herman-$BUILD_VERSION.jar
     skip_cleanup: true
     on:
       repo: libertymutual/herman
