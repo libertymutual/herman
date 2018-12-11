@@ -17,6 +17,7 @@ package com.libertymutualgroup.herman.cli.command;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.libertymutualgroup.herman.aws.credentials.CredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.BucketMeta;
@@ -80,19 +81,13 @@ public class S3CreateCommand implements Runnable {
 
         try {
             properties = configurationUtil.getConfigProperties(sessionCredentials, logger, region, S3CreateTaskProperties.class);
-        } catch (Exception ex) {
+        } catch(AmazonS3Exception ex) {
+            logger.addLogEntry("Could not locate existing herman configuaration bucket, continuing with defaults.");
             S3BrokerProperties brokerProperties = new S3BrokerProperties().withDefaultEncryption(S3EncryptionOption.AES256);
             properties = new S3CreateTaskProperties().withS3(brokerProperties);
         }
 
-        S3CreateContext s3CreateContext = new S3CreateContext()
-            .withPropertyHandler(propertyHandler)
-            .withLogger(logger)
-            .withRegion(region)
-            .withRootPath(absPath)
-            .withSessionCredentials(sessionCredentials)
-            .withTaskProperties(properties)
-            .withFileUtil(new FileUtil(absPath, logger));
+        S3CreateContext s3CreateContext = new S3CreateContext().withPropertyHandler(propertyHandler).withLogger(logger).withRegion(region).withRootPath(absPath).withSessionCredentials(sessionCredentials).withTaskProperties(properties).withFileUtil(new FileUtil(absPath, logger));
 
         S3Broker s3Broker = getBroker(s3CreateContext);
         BucketMeta meta = s3Broker.brokerFromConfigurationFile();

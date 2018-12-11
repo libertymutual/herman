@@ -15,7 +15,7 @@ public class SqlServerClient extends StandardRdsClient {
   private List<HermanTag> tags;
   private HermanLogger logger;
 
-  public SqlServerClient(AmazonRDS client, RdsInstance rds, EcsClusterMetadata clusterMetadata, List<HermanTag> tags,
+  SqlServerClient(AmazonRDS client, RdsInstance rds, EcsClusterMetadata clusterMetadata, List<HermanTag> tags,
       HermanLogger logger) {
     super(client, rds, clusterMetadata, tags, logger);
     this.client = client;
@@ -49,5 +49,4 @@ public class SqlServerClient extends StandardRdsClient {
     rds.setExtensions(rds.getExtensions() == null ? new ArrayList<>() : rds.getExtensions());
     rds.setKmsKeyId(rds.getKmsKeyId() == null ? kmsKeyId : rds.getKmsKeyId());
   }
-
 }

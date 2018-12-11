@@ -14,6 +14,7 @@
   </organization>
 
   <name>herman</name>
+  <description>This is the task suite for AWS ECS application deployment</description>
   <packaging>atlassian-plugin</packaging>
 
   <properties>
