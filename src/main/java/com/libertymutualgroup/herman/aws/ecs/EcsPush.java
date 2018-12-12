@@ -72,9 +72,6 @@ import com.amazonaws.services.rds.AmazonRDS;
 import com.amazonaws.services.rds.AmazonRDSClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
-import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
-import com.amazonaws.services.securitytoken.model.GetCallerIdentityRequest;
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQS;
@@ -795,9 +792,6 @@ public class EcsPush {
 
     private void brokerKinesisStream(EcsPushDefinition definition) {
         KinesisBroker kinesisBroker = new KinesisBroker(logger, kinesisClient, definition, taskProperties);
-
-        // delete any streams tied to this app that are no longer specified in the PushDefinition
-        kinesisBroker.checkStreamsToBeDeleted();
 
         if (definition.getStreams() != null) {
             for (KinesisStream stream : definition.getStreams()) {
