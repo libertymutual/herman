@@ -36,6 +36,11 @@ public class BambooCredentialsHandler extends CredentialsHandler {
                 lookupVar("custom.aws.secretAccessKey.password", context),
                 lookupVar("custom.aws.sessionToken.password", context));
 
+        } else if (lookupVar("secret.sts.accessKeyId", context) != null) {
+            return new BasicSessionCredentials(lookupVar("secret.sts.accessKeyId", context),
+                lookupVar("secret.sts.secretAccessKey", context),
+                lookupVar("secret.sts.sessionToken", context));
+
         } else {
             try (InstanceProfileCredentialsProvider provider = InstanceProfileCredentialsProvider.getInstance()) {
                 return provider.getCredentials();
