@@ -29,7 +29,6 @@ public class NewRelicConfiguration {
     private String nrqlConditions;
     private String infrastructureConditions;
     private String synthetics;
-    private String dbName;
     private String apdex;
 
     public String getConditions() {
@@ -80,14 +79,6 @@ public class NewRelicConfiguration {
         this.synthetics = synthetics;
     }
 
-    public String getDbName() {
-        return dbName;
-    }
-
-    public void setDbName(String dbName) {
-        this.dbName = dbName;
-    }
-
     public String getApdex() {
         return apdex;
     }
@@ -126,11 +117,6 @@ public class NewRelicConfiguration {
         return this;
     }
 
-    public NewRelicConfiguration withDbName(final String dbName) {
-        this.dbName = dbName;
-        return this;
-    }
-
     public NewRelicConfiguration withApdex(final String apdex) {
         this.apdex = apdex;
         return this;
@@ -145,7 +131,6 @@ public class NewRelicConfiguration {
             ", nrqlConditions='" + nrqlConditions + '\'' +
             ", infrastructureConditions='" + infrastructureConditions + '\'' +
             ", synthetics='" + synthetics + '\'' +
-            ", dbName='" + dbName + '\'' +
             ", apdex='" + apdex + '\'' +
             '}';
     }

@@ -127,7 +127,6 @@ public class NewRelicBroker {
         if (newRelicConfigurationDefinition != null) {
             String channels = propertyHandler
                 .mapInProperties(fileUtil.findFile(newRelicConfigurationDefinition.getChannels(), false));
-            String dbName = newRelicConfigurationDefinition.getDbName();
 
             String conditions = null;
             if (StringUtils.isNotBlank(newRelicConfigurationDefinition.getConditions())) {
@@ -160,7 +159,6 @@ public class NewRelicBroker {
             }
 
             newRelicConfiguration = new NewRelicConfiguration()
-                .withDbName(dbName)
                 .withChannels(channels)
                 .withConditions(conditions)
                 .withPluginConditions(pluginConditions)
