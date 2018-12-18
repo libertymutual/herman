@@ -25,11 +25,10 @@ public class NewRelicConfiguration {
 
     private String conditions;
     private String channels;
-    private String rdsPluginsConditions;
+    private String pluginConditions;
     private String nrqlConditions;
     private String infrastructureConditions;
     private String synthetics;
-    private String dbName;
     private String apdex;
 
     public String getConditions() {
@@ -48,12 +47,12 @@ public class NewRelicConfiguration {
         this.channels = channels;
     }
 
-    public String getRdsPluginsConditions() {
-        return rdsPluginsConditions;
+    public String getPluginConditions() {
+        return pluginConditions;
     }
 
-    public void setRdsPluginsConditions(String rdsPluginsConditions) {
-        this.rdsPluginsConditions = rdsPluginsConditions;
+    public void setPluginConditions(String pluginConditions) {
+        this.pluginConditions = pluginConditions;
     }
 
     public String getNrqlConditions() {
@@ -80,34 +79,12 @@ public class NewRelicConfiguration {
         this.synthetics = synthetics;
     }
 
-    public String getDbName() {
-        return dbName;
-    }
-
-    public void setDbName(String dbName) {
-        this.dbName = dbName;
-    }
-
     public String getApdex() {
         return apdex;
     }
 
     public void setApdex(String apdex) {
         this.apdex = apdex;
-    }
-
-    @Override
-    public String toString() {
-        return "NewRelicConfiguration{" +
-            "conditions='" + conditions + '\'' +
-            ", channels='" + channels + '\'' +
-            ", rdsPluginsConditions='" + rdsPluginsConditions + '\'' +
-            ", nrqlConditions='" + nrqlConditions + '\'' +
-            ", infrastructureConditions='" + infrastructureConditions + '\'' +
-            ", synthetics='" + synthetics + '\'' +
-            ", dbName='" + dbName + '\'' +
-            ", apdex='" + apdex + '\'' +
-            '}';
     }
 
     public NewRelicConfiguration withConditions(final String conditions) {
@@ -120,13 +97,8 @@ public class NewRelicConfiguration {
         return this;
     }
 
-    public NewRelicConfiguration withRdsPluginsConditions(final String rdsPluginsConditions) {
-        this.rdsPluginsConditions = rdsPluginsConditions;
-        return this;
-    }
-
-    public NewRelicConfiguration withInfrastructureConditions(final String infrastructureConditions) {
-        this.infrastructureConditions = infrastructureConditions;
+    public NewRelicConfiguration withPluginConditions(final String pluginConditions) {
+        this.pluginConditions = pluginConditions;
         return this;
     }
 
@@ -135,18 +107,31 @@ public class NewRelicConfiguration {
         return this;
     }
 
-    public NewRelicConfiguration withSynthetics(final String synthetics) {
-        this.synthetics = synthetics;
+    public NewRelicConfiguration withInfrastructureConditions(final String infrastructureConditions) {
+        this.infrastructureConditions = infrastructureConditions;
         return this;
     }
 
-    public NewRelicConfiguration withDbName(final String dbName) {
-        this.dbName = dbName;
+    public NewRelicConfiguration withSynthetics(final String synthetics) {
+        this.synthetics = synthetics;
         return this;
     }
 
     public NewRelicConfiguration withApdex(final String apdex) {
         this.apdex = apdex;
         return this;
+    }
+
+    @Override
+    public String toString() {
+        return "NewRelicConfiguration{" +
+            "conditions='" + conditions + '\'' +
+            ", channels='" + channels + '\'' +
+            ", pluginConditions='" + pluginConditions + '\'' +
+            ", nrqlConditions='" + nrqlConditions + '\'' +
+            ", infrastructureConditions='" + infrastructureConditions + '\'' +
+            ", synthetics='" + synthetics + '\'' +
+            ", apdex='" + apdex + '\'' +
+            '}';
     }
 }
