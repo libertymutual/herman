@@ -100,11 +100,10 @@ public class S3InjectConfiguration implements KmsAppDefinition {
     }
 
     public List<S3NotificationConfiguration> getSnsNotifications() {
-        return lambdaNotifications;
+        return snsNotifications;
     }
 
-    public void setSnsNotifications(
-        List<S3NotificationConfiguration> snsNotifications) {
+    public void setSnsNotifications(List<S3NotificationConfiguration> snsNotifications) {
         this.snsNotifications = snsNotifications;
     }
 
