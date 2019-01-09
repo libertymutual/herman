@@ -301,6 +301,7 @@ public class S3Broker {
                 configuration.getAppName(),
                 new BucketLoggingConfiguration()));
         }
+      updateNotificationConfiguration(configuration, client);
     }
 
     private void setBucketPolicy(AmazonS3 client, String bucketPolicy, String bucketName) {
