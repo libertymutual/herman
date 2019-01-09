@@ -16,6 +16,7 @@
 package com.libertymutualgroup.herman.aws.ecs.broker.s3;
 
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.services.kinesisanalytics.model.S3Configuration;
 import com.amazonaws.services.kms.AWSKMS;
 import com.amazonaws.services.kms.AWSKMSClientBuilder;
 import com.amazonaws.services.kms.model.DescribeKeyRequest;
@@ -42,6 +43,7 @@ import com.amazonaws.services.s3.model.SetBucketEncryptionRequest;
 import com.amazonaws.services.s3.model.SetBucketLoggingConfigurationRequest;
 import com.amazonaws.services.s3.model.SetBucketNotificationConfigurationRequest;
 import com.amazonaws.services.s3.model.SetBucketPolicyRequest;
+import com.amazonaws.services.s3.model.TopicConfiguration;
 import com.amazonaws.util.IOUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -185,17 +187,24 @@ public class S3Broker {
     }
 
     private void updateNotificationConfiguration(S3InjectConfiguration configuration, AmazonS3 client) {
+        Map<String, NotificationConfiguration> configurationMap = new HashMap<>();
         if (configuration.getLambdaNotifications() != null) {
             buildLogger.addLogEntry("Setting Lambda notification configurations: " + configuration.getLambdaNotifications());
-            Map<String, NotificationConfiguration> lambdaConfigurationMap = new HashMap<>();
-            configuration.getLambdaNotifications().stream().forEach(it -> lambdaConfigurationMap.put(
+            configuration.getLambdaNotifications().stream().forEach(it -> configurationMap.put(
                 it.getName(),
-                new LambdaConfiguration(it.getFunctionARN(), it.getEvents())));
-
-            client.setBucketNotificationConfiguration(new SetBucketNotificationConfigurationRequest(
-                configuration.getAppName(),
-                new BucketNotificationConfiguration().withNotificationConfiguration(lambdaConfigurationMap)));
+                new LambdaConfiguration(it.getArn(), it.getEvents())));
         }
+        if (configuration.getSnsNotifications() != null) {
+            buildLogger.addLogEntry("Setting SNS notification configurations: " + configuration.getSnsNotifications());
+            configuration.getSnsNotifications().stream().forEach(it -> configurationMap.put(
+                it.getName(),
+                new TopicConfiguration(it.getArn(), it.getEvents())
+            ));
+        }
+
+        client.setBucketNotificationConfiguration(new SetBucketNotificationConfigurationRequest(
+            configuration.getAppName(),
+            new BucketNotificationConfiguration().withNotificationConfiguration(configurationMap)));
     }
 
     private void brokerBucket(AmazonS3 client, S3InjectConfiguration configuration, List<HermanTag> tags, String bucketPolicy) {
