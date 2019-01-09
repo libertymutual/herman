@@ -190,15 +190,17 @@ public class S3Broker {
 
     private void updateNotificationConfiguration(S3InjectConfiguration configuration, AmazonS3 client) {
         Map<String, NotificationConfiguration> configurationMap = new HashMap<>();
+        buildLogger.addLogEntry("Updating S3 Events Configuration...");
+        buildLogger.addLogEntry(configuration.getSnsNotifications().toString());
         if (configuration.getLambdaNotifications() != null) {
             buildLogger.addLogEntry("Setting Lambda notification configurations: " + configuration.getLambdaNotifications());
-            configuration.getLambdaNotifications().stream().forEach(it -> configurationMap.put(
+            configuration.getLambdaNotifications().forEach(it -> configurationMap.put(
                 it.getName(),
                 new LambdaConfiguration(it.getArn(), it.getEvents())));
         }
         if (configuration.getSnsNotifications() != null) {
             buildLogger.addLogEntry("Setting SNS notification configurations: " + configuration.getSnsNotifications());
-            configuration.getSnsNotifications().stream().forEach(it -> configurationMap.put(
+            configuration.getSnsNotifications().forEach(it -> configurationMap.put(
                 it.getName(),
                 new TopicConfiguration(it.getArn(), it.getEvents())
             ));
