@@ -174,6 +174,8 @@ public class S3Broker {
         configuration.setOrg(clusterMetadata.getNewrelicOrgTag());
         configuration.setEncryptionOption(bucket.getEncryptionOption() == null ?
             taskProperties.getS3().getDefaultEncryption() : bucket.getEncryptionOption());
+        configuration.setSnsNotifications(bucket.getSnsNotifications());
+        configuration.setLambdaNotifications(bucket.getLambdaNotifications());
 
         if (S3EncryptionOption.KMS.equals(configuration.getEncryptionOption()) && kmsKeyId != null) {
             String kmsKeyArn = kmsClient.describeKey(new DescribeKeyRequest().withKeyId(kmsKeyId)).getKeyMetadata().getArn();

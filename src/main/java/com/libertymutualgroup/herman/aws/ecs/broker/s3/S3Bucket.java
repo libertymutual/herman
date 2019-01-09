@@ -15,11 +15,16 @@
  */
 package com.libertymutualgroup.herman.aws.ecs.broker.s3;
 
+import java.util.List;
+
 public class S3Bucket {
 
     private String name;
     private String policyName;
     private S3EncryptionOption encryptionOption;
+    private List<S3NotificationConfiguration> snsNotifications;
+    private List<S3NotificationConfiguration> lambdaNotifications;
+
 
     public String getName() {
         return name;
@@ -45,6 +50,29 @@ public class S3Bucket {
         this.encryptionOption = encryptionOption;
     }
 
+    public List<S3NotificationConfiguration> getSnsNotifications() {
+        return snsNotifications;
+    }
+
+    public void setSnsNotificaations(
+        List<S3NotificationConfiguration> snsNotifications) {
+        this.snsNotifications = snsNotifications;
+    }
+
+    public void setSnsNotifications(
+        List<S3NotificationConfiguration> snsNotifications) {
+        this.snsNotifications = snsNotifications;
+    }
+
+    public List<S3NotificationConfiguration> getLambdaNotifications() {
+        return lambdaNotifications;
+    }
+
+    public void setLambdaNotifications(
+        List<S3NotificationConfiguration> lambdaNotifications) {
+        this.lambdaNotifications = lambdaNotifications;
+    }
+
     public S3Bucket withName(final String name) {
         this.name = name;
         return this;
@@ -61,12 +89,24 @@ public class S3Bucket {
         return this;
     }
 
+    public S3Bucket withSnsNotifications(final List<S3NotificationConfiguration> snsNotifications) {
+        this.snsNotifications = snsNotifications;
+        return this;
+    }
+
+    public S3Bucket withLambdaNotifications(final List<S3NotificationConfiguration> lambdaNotifications) {
+        this.lambdaNotifications = lambdaNotifications;
+        return this;
+    }
+
     @Override
     public String toString() {
         return "S3Bucket{" +
             "name='" + name + '\'' +
             ", policyName='" + policyName + '\'' +
-            ", encryptionOption=" + encryptionOption +
+            ", encryptionOption=" + encryptionOption + '\'' +
+            ", snsNotifications=" + snsNotifications + '\'' +
+            ", lambdaNotifications=" + lambdaNotifications +
             '}';
     }
 }
