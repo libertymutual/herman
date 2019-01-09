@@ -174,6 +174,7 @@ public class S3Broker {
         configuration.setOrg(clusterMetadata.getNewrelicOrgTag());
         configuration.setEncryptionOption(bucket.getEncryptionOption() == null ?
             taskProperties.getS3().getDefaultEncryption() : bucket.getEncryptionOption());
+        buildLogger.addLogEntry("Bucket: " + bucket);
         configuration.setSnsNotifications(bucket.getSnsNotifications());
         configuration.setLambdaNotifications(bucket.getLambdaNotifications());
 
