@@ -182,18 +182,6 @@ public class EcsPush {
             .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
             .withClientConfiguration(context.getAwsClientConfig()).withRegion(context.getRegion()).build();
 
-        this.s3Client = AmazonS3ClientBuilder.standard()
-            .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
-            .withClientConfiguration(context.getAwsClientConfig()).withRegion(context.getRegion()).build();
-
-        this.kinesisClient = AmazonKinesisClientBuilder.standard()
-            .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
-            .withClientConfiguration(context.getAwsClientConfig()).withRegion(context.getRegion()).build();
-
-        this.rdsClient = AmazonRDSClientBuilder.standard()
-            .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
-            .withClientConfiguration(context.getAwsClientConfig()).withRegion(context.getRegion()).build();
-
         this.kmsClient = AWSKMSClientBuilder.standard()
             .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
             .withClientConfiguration(context.getAwsClientConfig()).withRegion(context.getRegion()).build();
@@ -203,6 +191,18 @@ public class EcsPush {
             .withClientConfiguration(context.getAwsClientConfig()).withRegion(context.getRegion()).build();
 
         this.snsClient = AmazonSNSClientBuilder.standard()
+            .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
+            .withClientConfiguration(context.getAwsClientConfig()).withRegion(context.getRegion()).build();
+
+        this.s3Client = AmazonS3ClientBuilder.standard()
+            .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
+            .withClientConfiguration(context.getAwsClientConfig()).withRegion(context.getRegion()).build();
+
+        this.kinesisClient = AmazonKinesisClientBuilder.standard()
+            .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
+            .withClientConfiguration(context.getAwsClientConfig()).withRegion(context.getRegion()).build();
+
+        this.rdsClient = AmazonRDSClientBuilder.standard()
             .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
             .withClientConfiguration(context.getAwsClientConfig()).withRegion(context.getRegion()).build();
 
