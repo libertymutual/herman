@@ -175,8 +175,10 @@ public class S3Broker {
         configuration.setEncryptionOption(bucket.getEncryptionOption() == null ?
             taskProperties.getS3().getDefaultEncryption() : bucket.getEncryptionOption());
         buildLogger.addLogEntry("Bucket: " + bucket);
+        buildLogger.addLogEntry("SnsNotifications: " + bucket.getSnsNotifications());
         configuration.setSnsNotifications(bucket.getSnsNotifications());
         configuration.setLambdaNotifications(bucket.getLambdaNotifications());
+        buildLogger.addLogEntry("Config: " + configuration);
 
         if (S3EncryptionOption.KMS.equals(configuration.getEncryptionOption()) && kmsKeyId != null) {
             String kmsKeyArn = kmsClient.describeKey(new DescribeKeyRequest().withKeyId(kmsKeyId)).getKeyMetadata().getArn();
