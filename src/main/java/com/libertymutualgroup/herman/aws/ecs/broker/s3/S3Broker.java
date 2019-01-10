@@ -174,11 +174,8 @@ public class S3Broker {
         configuration.setOrg(clusterMetadata.getNewrelicOrgTag());
         configuration.setEncryptionOption(bucket.getEncryptionOption() == null ?
             taskProperties.getS3().getDefaultEncryption() : bucket.getEncryptionOption());
-        buildLogger.addLogEntry("Bucket: " + bucket);
-        buildLogger.addLogEntry("SnsNotifications: " + bucket.getSnsNotifications());
         configuration.setSnsNotifications(bucket.getSnsNotifications());
         configuration.setLambdaNotifications(bucket.getLambdaNotifications());
-        buildLogger.addLogEntry("Config: " + configuration);
 
         if (S3EncryptionOption.KMS.equals(configuration.getEncryptionOption()) && kmsKeyId != null) {
             String kmsKeyArn = kmsClient.describeKey(new DescribeKeyRequest().withKeyId(kmsKeyId)).getKeyMetadata().getArn();
@@ -193,8 +190,7 @@ public class S3Broker {
 
     private void updateNotificationConfiguration(S3InjectConfiguration configuration, AmazonS3 client) {
         Map<String, NotificationConfiguration> configurationMap = new HashMap<>();
-        buildLogger.addLogEntry("Updating S3 Events Configuration...");
-        buildLogger.addLogEntry(configuration.getSnsNotifications().toString());
+        buildLogger.addLogEntry("Updating S3 Events Configuration");
         if (configuration.getLambdaNotifications() != null) {
             buildLogger.addLogEntry("Setting Lambda notification configurations: " + configuration.getLambdaNotifications());
             configuration.getLambdaNotifications().forEach(it -> configurationMap.put(
