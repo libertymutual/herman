@@ -127,7 +127,6 @@ public class NewRelicBroker {
         if (newRelicConfigurationDefinition != null) {
             String channels = propertyHandler
                 .mapInProperties(fileUtil.findFile(newRelicConfigurationDefinition.getChannels(), false));
-            String dbName = newRelicConfigurationDefinition.getDbName();
 
             String conditions = null;
             if (StringUtils.isNotBlank(newRelicConfigurationDefinition.getConditions())) {
@@ -135,10 +134,10 @@ public class NewRelicBroker {
                     .mapInProperties(fileUtil.findFile(newRelicConfigurationDefinition.getConditions(), false));
             }
 
-            String rdsPluginsConditions = null;
-            if (StringUtils.isNotBlank(newRelicConfigurationDefinition.getRdsPluginsConditions())) {
-                rdsPluginsConditions = propertyHandler.mapInProperties(
-                    fileUtil.findFile(newRelicConfigurationDefinition.getRdsPluginsConditions(), false));
+            String pluginConditions = null;
+            if (StringUtils.isNotBlank(newRelicConfigurationDefinition.getPluginConditions())) {
+                pluginConditions = propertyHandler.mapInProperties(
+                    fileUtil.findFile(newRelicConfigurationDefinition.getPluginConditions(), false));
             }
 
             String nrqlConditions = null;
@@ -160,10 +159,9 @@ public class NewRelicBroker {
             }
 
             newRelicConfiguration = new NewRelicConfiguration()
-                .withDbName(dbName)
                 .withChannels(channels)
                 .withConditions(conditions)
-                .withRdsPluginsConditions(rdsPluginsConditions)
+                .withPluginConditions(pluginConditions)
                 .withNrqlConditions(nrqlConditions)
                 .withInfrastructureConditions(infrastructureConditions)
                 .withSynthetics(synthetics)
