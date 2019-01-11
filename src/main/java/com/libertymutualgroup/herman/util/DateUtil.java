@@ -16,6 +16,7 @@
 package com.libertymutualgroup.herman.util;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
@@ -26,7 +27,8 @@ public class DateUtil {
     }
 
     public static String getDateAsString(DateTime dateTime) {
-        DateTimeFormatter fmt = DateTimeFormat.forPattern("MM-dd-yy-hh-mm-ss");
+        DateTimeFormatter fmt = DateTimeFormat.forPattern("MM-dd-yy-hh-mm-ss")
+            .withZone(DateTimeZone.UTC);
         return fmt.print(dateTime);
     }
 }

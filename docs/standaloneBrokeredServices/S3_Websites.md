@@ -56,6 +56,8 @@ properties files per environment.
 | indexFile  | No       | Configure the index file if website hosting is enabled, defaults to index.html                                                                                         |
 | errorFile  | No       | Configure the error file if website hosting is enabled ([AWS Docs](http://docs.aws.amazon.com/AmazonS3/latest/dev/CustomErrorDocSupport.html)), defaults to error.html |
 | tags       | No       | List of tags to be applied to lambda and provisioned resources                                                                                                         |
+| snsNotifications | No | List of SNS Event Notifications for the S3 Bucket |
+| lambdaNotifications | No | List of Lambda Event Notifications for the S3 Bucket |
 
   
 
