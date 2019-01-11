@@ -22,8 +22,8 @@ public class S3Bucket {
     private String name;
     private String policyName;
     private S3EncryptionOption encryptionOption;
-    private List<S3NotificationConfiguration> snsNotifications;
-    private List<S3NotificationConfiguration> lambdaNotifications;
+    private List<S3EventConfiguration> snsNotifications;
+    private List<S3EventConfiguration> lambdaNotifications;
 
 
     public String getName() {
@@ -50,26 +50,26 @@ public class S3Bucket {
         this.encryptionOption = encryptionOption;
     }
 
-    public List<S3NotificationConfiguration> getSnsNotifications() {
+    public List<S3EventConfiguration> getSnsNotifications() {
         return snsNotifications;
     }
 
     public void setSnsNotificaations(
-        List<S3NotificationConfiguration> snsNotifications) {
+        List<S3EventConfiguration> snsNotifications) {
         this.snsNotifications = snsNotifications;
     }
 
     public void setSnsNotifications(
-        List<S3NotificationConfiguration> snsNotifications) {
+        List<S3EventConfiguration> snsNotifications) {
         this.snsNotifications = snsNotifications;
     }
 
-    public List<S3NotificationConfiguration> getLambdaNotifications() {
+    public List<S3EventConfiguration> getLambdaNotifications() {
         return lambdaNotifications;
     }
 
     public void setLambdaNotifications(
-        List<S3NotificationConfiguration> lambdaNotifications) {
+        List<S3EventConfiguration> lambdaNotifications) {
         this.lambdaNotifications = lambdaNotifications;
     }
 
@@ -89,12 +89,12 @@ public class S3Bucket {
         return this;
     }
 
-    public S3Bucket withSnsNotifications(final List<S3NotificationConfiguration> snsNotifications) {
+    public S3Bucket withSnsNotifications(final List<S3EventConfiguration> snsNotifications) {
         this.snsNotifications = snsNotifications;
         return this;
     }
 
-    public S3Bucket withLambdaNotifications(final List<S3NotificationConfiguration> lambdaNotifications) {
+    public S3Bucket withLambdaNotifications(final List<S3EventConfiguration> lambdaNotifications) {
         this.lambdaNotifications = lambdaNotifications;
         return this;
     }

@@ -3,7 +3,7 @@ package com.libertymutualgroup.herman.aws.ecs.broker.s3;
 import com.amazonaws.services.s3.model.S3Event;
 import java.util.EnumSet;
 
-public class S3NotificationConfiguration {
+public class S3EventConfiguration {
 
     private String name;
     private String arn;
@@ -33,24 +33,24 @@ public class S3NotificationConfiguration {
         this.events = events;
     }
 
-    public S3NotificationConfiguration withName(final String name) {
+    public S3EventConfiguration withName(final String name) {
         this.name = name;
         return this;
     }
 
-    public S3NotificationConfiguration withARN(final String arn) {
+    public S3EventConfiguration withARN(final String arn) {
         this.arn = arn;
         return this;
     }
 
-    public S3NotificationConfiguration withEvents(final EnumSet<S3Event> events) {
+    public S3EventConfiguration withEvents(final EnumSet<S3Event> events) {
         this.events = events;
         return this;
     }
 
     @Override
     public String toString() {
-        return "S3NotificationConfiguration{" +
+        return "S3EventConfiguration{" +
             "name='" + name + '\'' +
             ", functionARN='" + arn + '\'' +
             ", events=" + events +
