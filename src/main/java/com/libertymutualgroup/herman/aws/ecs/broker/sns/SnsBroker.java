@@ -32,6 +32,7 @@ public class SnsBroker {
     public static final String AND_ENDPOINT = " and endpoint: ";
     public static final String AND_RAW_MESSAGE_DELIVERY = " and RawMessageDelivery: ";
     public static final String RAW_MESSAGE_DELIVERY = "RawMessageDelivery";
+    public static final String DEFAULT_STATUS = "false";
     private HermanLogger logger;
     private PropertyHandler handler;
 
@@ -84,6 +85,9 @@ public class SnsBroker {
                     logger.addLogEntry("Update subscription with RawMessageDelivery: " + protocol + AND_ENDPOINT + endpoint
                             + AND_RAW_MESSAGE_DELIVERY + rawMessageDelivery);
                     client.setSubscriptionAttributes(subscribeResult.getSubscriptionArn(), RAW_MESSAGE_DELIVERY, rawMessageDelivery);
+                } else {
+                    logger.addLogEntry("Update RawMessageDelivery to default status - false");
+                    client.setSubscriptionAttributes(subscribeResult.getSubscriptionArn(), RAW_MESSAGE_DELIVERY, DEFAULT_STATUS);
                 }
             } else {
                 logger.addLogEntry("Skipping subscription with protocol: " + protocol + AND_ENDPOINT + endpoint);
