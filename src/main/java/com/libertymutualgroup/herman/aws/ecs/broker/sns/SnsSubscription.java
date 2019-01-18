@@ -19,6 +19,7 @@ public class SnsSubscription {
 
     private String protocol;
     private String endpoint;
+    private String rawMessageDelivery;
 
     public String getProtocol() {
         return protocol;
@@ -34,5 +35,13 @@ public class SnsSubscription {
 
     public void setEndpoint(String endpoint) {
         this.endpoint = endpoint;
+    }
+
+    public String getRawMessageDelivery() {
+        return rawMessageDelivery;
+    }
+
+    public void setRawMessageDelivery(String rawMessageDelivery) {
+        this.rawMessageDelivery = rawMessageDelivery;
     }
 }
