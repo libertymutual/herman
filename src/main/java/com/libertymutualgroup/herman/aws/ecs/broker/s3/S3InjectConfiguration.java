@@ -30,7 +30,8 @@ public class S3InjectConfiguration implements KmsAppDefinition {
     private String policyName;
     private Boolean website = false;
     private S3EncryptionOption encryptionOption;
-    private List<S3LambdaNotificationConfiguration> lambdaNotifications;
+    private List<S3EventConfiguration> lambdaNotifications;
+    private List<S3EventConfiguration> snsNotifications;
     private Boolean createBucketKey;
     private String kmsKeyArn;
     private String kmsKeyName;
@@ -89,13 +90,20 @@ public class S3InjectConfiguration implements KmsAppDefinition {
         this.encryptionOption = encryptionOption;
     }
 
-    public List<S3LambdaNotificationConfiguration> getLambdaNotifications() {
+    public List<S3EventConfiguration> getLambdaNotifications() {
         return lambdaNotifications;
     }
 
-    public void setLambdaNotifications(
-        List<S3LambdaNotificationConfiguration> lambdaNotifications) {
+    public void setLambdaNotifications(List<S3EventConfiguration> lambdaNotifications) {
         this.lambdaNotifications = lambdaNotifications;
+    }
+
+    public List<S3EventConfiguration> getSnsNotifications() {
+        return snsNotifications;
+    }
+
+    public void setSnsNotifications(List<S3EventConfiguration> snsNotifications) {
+        this.snsNotifications = snsNotifications;
     }
 
     public Boolean getCreateBucketKey() {
@@ -179,8 +187,14 @@ public class S3InjectConfiguration implements KmsAppDefinition {
     }
 
     public S3InjectConfiguration withLambdaNotifications(
-        final List<S3LambdaNotificationConfiguration> lambdaNotifications) {
+        final List<S3EventConfiguration> lambdaNotifications) {
         this.lambdaNotifications = lambdaNotifications;
+        return this;
+    }
+
+    public S3InjectConfiguration withSnsNotifications(
+        final List<S3EventConfiguration> snsNotifications) {
+        this.snsNotifications = snsNotifications;
         return this;
     }
 

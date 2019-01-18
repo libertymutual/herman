@@ -698,10 +698,10 @@ public class EcsPush {
         EcsClusterMetadata clusterMetadata) {
 
         String applicationKeyId = brokerKms(definition, clusterMetadata);
-        brokerS3(definition, clusterMetadata, applicationKeyId);
-        brokerKinesisStream(definition);
         brokerSqs(definition);
         brokerSns(definition);
+        brokerS3(definition, clusterMetadata, applicationKeyId);
+        brokerKinesisStream(definition);
         brokerRds(definition, injectMagic, clusterMetadata, applicationKeyId);
         brokerDynamoDB(definition);
     }
