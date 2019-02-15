@@ -1,1 +1,48 @@
-brokers:
+company: lm
+sbu: USCM
+org: Products
+engine: LMBDT
+rdsCredentialBrokerImage: "repo.forge.lmig.com/docker/grm/ah/ecs/rds-credential-broker:BUILD6-Rb63a8812e36fc465e855ca5066e753bf9fef3c0f"
+rdsCredentialBrokerLambda: "rds-credential-broker"
+cftPushVariableBrokerLambda: "herman-cft-push-variable-broker"
+dnsBrokerLambda: "herman-dns-broker"
+s3:
+  defaultEncryption: "AES256"
+newRelic:
+  accountId: 1851893
+  nrLambda: "herman-newrelic-broker-v2"
+externalElbSecurityGroups:
+  - "sg-40eaf83b"
+  - "sg-47eaf83c"
+sslCertificates:
+  - urlPrefix:          "*"
+    urlSuffix:          "np-ah.grm.lmig.com"
+    arn:                "arn:aws:iam::448855094770:server-certificate/aws-grm-ah-herman-configuration/np-ah.grm.lmig.com"
+    internetFacingUrl:  false
+splunkInstances:
+  - httpEventCollectorUrl:  "https://logshaper-us-east-1.lmb.lmig.com"
+    webUrl:                 "https://libertymutual.splunkcloud.com"
+  - httpEventCollectorUrl:  "https://http-inputs-libertymutual.splunkcloud.com"
+    webUrl:                 "https://libertymutual.splunkcloud.com"
+  - httpEventCollectorUrl:  "https://splunk-np.np-lmb.lmig.com"
+    webUrl:                 "https://developer.np-lmb.libertymutual.com/logs/272846225719"
+  - httpEventCollectorUrl:  "https://splunk-prod.np-lmb.lmig.com"
+    webUrl:                 "https://developer.np-lmb.libertymutual.com/logs/543944794056"
+  - httpEventCollectorUrl:  "https://splunk-np.lmb.lmig.com"
+    webUrl:                 "https://developer.lmb.libertymutual.com/logs/272846225719"
+  - httpEventCollectorUrl:  "https://splunk-prod.lmb.lmig.com"
+    webUrl:                 "https://developer.lmb.libertymutual.com/logs/543944794056"
+customBrokers:
+  - name: "herman-rds-broker-papi"
+    phase: "PREPUSH"
+    variablesToPass:
+      - "bamboo.secret.papi-index"
+      - "bamboo.secret.vault-token.token"
+      - "bamboo.forge.deployment.guid"
+    defaults:
+      vpcId: vpc-06b8e561
+      subnetIds:
+        - subnet-1cf71b47
+        - subnet-5c07d915
+        - subnet-0e331aad3f01c56c2
+      sbu: USCM

@@ -72,6 +72,7 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, Dy
     private List<Ulimit> ulimits;
     private List<WafRuleAction> wafRuleActions;
     private Boolean prePushOnly;
+    private List<CustomBrokerDefinition> customBrokers;
 
     public String getNewRelicApplicationName() {
         String newRelicApplicationName = null;
@@ -332,6 +333,14 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, Dy
 
     public void setPrePushOnly(Boolean prePushOnly) {
         this.prePushOnly = prePushOnly;
+    }
+
+    public List<CustomBrokerDefinition> getCustomBrokers() {
+        return customBrokers;
+    }
+
+    public void setCustomBrokers(List<CustomBrokerDefinition> customBrokers) {
+        this.customBrokers = customBrokers;
     }
 
     @Override

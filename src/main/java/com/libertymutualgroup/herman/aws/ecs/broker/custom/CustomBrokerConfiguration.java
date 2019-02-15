@@ -1,32 +1,27 @@
 package com.libertymutualgroup.herman.aws.ecs.broker.custom;
 
 import java.util.List;
+import java.util.Map;
 
 public class CustomBrokerConfiguration {
-    private CustomBrokerRuntime type;
-    private String name;
+    private CustomBrokerPhase phase;
     private List<String> variablesToPass;
+    private Map<String,Object> defaults;
 
-    public CustomBrokerConfiguration(CustomBrokerRuntime type, String name, List<String> variablesToPass) {
-        this.type = type;
-        this.name = name;
+    public CustomBrokerConfiguration() {}
+
+    public CustomBrokerConfiguration(CustomBrokerPhase phase, List<String> variablesToPass, Map<String, Object> defaults) {
+        this.phase = phase;
         this.variablesToPass = variablesToPass;
+        this.defaults = defaults;
     }
 
-    public CustomBrokerRuntime getType() {
-        return type;
+    public CustomBrokerPhase getPhase() {
+        return phase;
     }
 
-    public void setType(CustomBrokerRuntime type) {
-        this.type = type;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
+    public void setPhase(CustomBrokerPhase phase) {
+        this.phase = phase;
     }
 
     public List<String> getVariablesToPass() {
@@ -35,5 +30,13 @@ public class CustomBrokerConfiguration {
 
     public void setVariablesToPass(List<String> variablesToPass) {
         this.variablesToPass = variablesToPass;
+    }
+
+    public Map<String, Object> getDefaults() {
+        return defaults;
+    }
+
+    public void setDefaults(Map<String, Object> defaults) {
+        this.defaults = defaults;
     }
 }
