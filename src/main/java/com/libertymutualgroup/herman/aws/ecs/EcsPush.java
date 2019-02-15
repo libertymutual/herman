@@ -889,11 +889,13 @@ public class EcsPush {
         AWSLambda lambdaClient,
         CustomBrokerPhase phase
     ) {
-        for(CustomBrokerDefinition brokerDefinition: definition.getCustomBrokers()){
-            CustomBrokerConfiguration config = pushContext.getTaskProperties().getCustomBrokers().get(brokerDefinition.getName());
-            if(config.getPhase() == phase){
-                CustomBroker customBroker = new CustomBroker(brokerDefinition, pushContext, definition, config, lambdaClient);
-                customBroker.runBroker();
+        if(definition.getCustomBrokers() != null){
+            for(CustomBrokerDefinition brokerDefinition: definition.getCustomBrokers()){
+                CustomBrokerConfiguration config = pushContext.getTaskProperties().getCustomBrokers().get(brokerDefinition.getName());
+                if(config.getPhase() == phase){
+                    CustomBroker customBroker = new CustomBroker(brokerDefinition, pushContext, definition, config, lambdaClient);
+                    customBroker.runBroker();
+                }
             }
         }
     }
