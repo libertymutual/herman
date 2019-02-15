@@ -67,6 +67,7 @@ import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 import com.amazonaws.services.kms.AWSKMS;
 import com.amazonaws.services.kms.AWSKMSClientBuilder;
 import com.amazonaws.services.lambda.AWSLambda;
+import com.amazonaws.services.lambda.AWSLambdaClient;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
 import com.amazonaws.services.rds.AmazonRDS;
 import com.amazonaws.services.rds.AmazonRDSClientBuilder;
@@ -79,6 +80,8 @@ import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.amazonaws.util.IOUtils;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.broker.autoscaling.AutoscalingBroker;
+import com.libertymutualgroup.herman.aws.ecs.broker.custom.CustomBroker;
+import com.libertymutualgroup.herman.aws.ecs.broker.custom.CustomBrokerConfiguration;
 import com.libertymutualgroup.herman.aws.ecs.broker.dynamodb.DynamoDBBroker;
 import com.libertymutualgroup.herman.aws.ecs.broker.iam.IAMBroker;
 import com.libertymutualgroup.herman.aws.ecs.broker.kinesis.KinesisBroker;
@@ -704,6 +707,7 @@ public class EcsPush {
         brokerKinesisStream(definition);
         brokerRds(definition, injectMagic, clusterMetadata, applicationKeyId);
         brokerDynamoDB(definition);
+        brokerCustom(definition, pushContext, lambdaClient);
     }
 
 
@@ -874,6 +878,13 @@ public class EcsPush {
             cloudWatchClient.putMetricData(new PutMetricDataRequest().withNamespace("Herman/Deploy").withMetricData(d));
         } catch (Exception e) { // NOSONAR
             pushContext.getLogger().addLogEntry("Error logging result to CW: " + e.getMessage());// nothing to do
+        }
+    }
+
+    private void brokerCustom(EcsPushDefinition definition, EcsPushContext pushContext, AWSLambda lambdaClient) {
+        for(CustomBrokerConfiguration config : pushContext.getTaskProperties().getCustomBrokers()) {
+            CustomBroker customBroker = new CustomBroker(pushContext, definition, config, lambdaClient);
+            customBroker.runBroker();
         }
     }
 }

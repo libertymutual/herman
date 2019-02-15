@@ -16,6 +16,7 @@
 package com.libertymutualgroup.herman.task.ecs;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.libertymutualgroup.herman.aws.ecs.broker.custom.CustomBrokerConfiguration;
 import com.libertymutualgroup.herman.aws.ecs.broker.ddoswaf.DdosWafBrokerProperties;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3BrokerProperties;
 import com.libertymutualgroup.herman.aws.ecs.loadbalancing.SSLCertificate;
@@ -38,6 +39,7 @@ public class ECSPushTaskProperties extends CommonTaskProperties {
     private List<String> externalElbSecurityGroups = new ArrayList<>();
     private S3BrokerProperties s3;
     private String logsBucket;
+    private List<CustomBrokerConfiguration> customBrokers = new ArrayList<>();
 
     @Override
     public ECSPushTaskProperties withCompany(final String company) {
@@ -142,6 +144,14 @@ public class ECSPushTaskProperties extends CommonTaskProperties {
 
     public void setLogsBucket(String logsBucket) {
         this.logsBucket = logsBucket;
+    }
+
+    public List<CustomBrokerConfiguration> getCustomBrokers() {
+        return customBrokers;
+    }
+
+    public void setCustomBrokers(List<CustomBrokerConfiguration> customBrokers) {
+        this.customBrokers = customBrokers;
     }
 
     public ECSPushTaskProperties withNewRelic(
