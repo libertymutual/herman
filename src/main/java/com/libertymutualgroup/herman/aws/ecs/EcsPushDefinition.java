@@ -376,6 +376,7 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, Dy
             ", ulimits=" + ulimits +
             ", wafRuleActions=" + wafRuleActions +
             ", prePushOnly=" + prePushOnly +
+            ", customBrokers=" + customBrokers +
             '}';
     }
 }

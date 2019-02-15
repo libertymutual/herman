@@ -27,4 +27,12 @@ public class CustomBrokerDefinition {
     public void setProperties(Object properties) {
         this.properties = properties;
     }
+
+    @Override
+    public String toString() {
+        return "CustomBrokerDefinition{" +
+            "name='" + name + '\'' +
+            ", properties=" + properties +
+            '}';
+    }
 }
