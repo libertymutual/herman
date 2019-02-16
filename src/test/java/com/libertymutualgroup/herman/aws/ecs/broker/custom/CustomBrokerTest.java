@@ -42,7 +42,7 @@ public class CustomBrokerTest {
     private PropertyHandler propertyHandler;
     private HermanLogger logger = new SysoutLogger();
     private Map<String,String> customVariables = new HashMap<>();
-    private List<String> variablesToPass = new ArrayList<>();
+    private Map<String, String> variablesToPass = new HashMap<>();
     private Map<String,Object> defaults = new HashMap<>();
     private CustomBrokerDefinition customBrokerDefinition;
     private EcsPushDefinition pushDefinition;
@@ -65,9 +65,9 @@ public class CustomBrokerTest {
 
     @Test
     public void shouldIncludePropertiesFromPropertyHandler() {
-        variablesToPass.add("bamboo.secret.papi-index");
-        variablesToPass.add("bamboo.secret.vault-token.token");
-        variablesToPass.add("bamboo.forge.deployment.guid");
+        variablesToPass.put("bamboo.secret.papi-index", "papiIndex");
+        variablesToPass.put("bamboo.secret.vault-token.token", "papiVaultToken");
+        variablesToPass.put("bamboo.forge.deployment.guid", "artifactDeploymentGuid");
 
         ObjectNode database = mapper.createObjectNode();
         database.put("instanceName", "test");

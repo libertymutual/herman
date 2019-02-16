@@ -41,7 +41,7 @@ public class CustomBroker {
 
     public void runBroker(){
         Properties props = pushContext.getPropertyHandler()
-            .lookupProperties(configuration.getVariablesToPass().toArray(new String[configuration.getVariablesToPass().size()]));
+            .lookupProperties(configuration.getVariablesToPass().keySet().toArray(new String[configuration.getVariablesToPass().size()]));
 
         ObjectMapper mapper = new ObjectMapper();
         mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
@@ -50,7 +50,7 @@ public class CustomBroker {
 
         if(props != null){
             for(Entry<Object, Object> entry : props.entrySet()){
-                environment.set(entry.getKey().toString(), mapper.valueToTree(entry.getValue()));
+                environment.set(configuration.getVariablesToPass().get(entry.getKey().toString()), mapper.valueToTree(entry.getValue()));
             }
         }
 
