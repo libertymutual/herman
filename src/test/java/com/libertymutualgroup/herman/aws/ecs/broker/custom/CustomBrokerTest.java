@@ -1,6 +1,7 @@
 package com.libertymutualgroup.herman.aws.ecs.broker.custom;
 
 import com.amazonaws.services.lambda.AWSLambdaClient;
+import com.amazonaws.services.lambda.model.InvokeResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -11,6 +12,7 @@ import com.libertymutualgroup.herman.aws.ecs.EcsPushContext;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.TaskContextPropertyHandler;
+import com.libertymutualgroup.herman.aws.ecs.broker.custom.CustomBrokerResponse.Status;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.logging.SysoutLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
@@ -25,6 +27,7 @@ import org.mockito.MockitoAnnotations;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -64,7 +67,11 @@ public class CustomBrokerTest {
     }
 
     @Test
-    public void shouldIncludePropertiesFromPropertyHandler() {
+    public void shouldIncludePropertiesFromPropertyHandler() throws IOException {
+        CustomBrokerResponse response = new CustomBrokerResponse();
+        response.setStatus(Status.SUCCESS);
+        Mockito.when(client.invoke(any()))
+            .thenReturn(new InvokeResult().withPayload(ByteBuffer.wrap(mapper.writeValueAsBytes(response))));
         variablesToPass.put("bamboo.secret.papi-index", "papiIndex");
         variablesToPass.put("bamboo.secret.vault-token.token", "papiVaultToken");
         variablesToPass.put("bamboo.forge.deployment.guid", "artifactDeploymentGuid");

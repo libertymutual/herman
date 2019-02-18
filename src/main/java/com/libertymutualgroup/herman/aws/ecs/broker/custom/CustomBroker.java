@@ -73,10 +73,12 @@ public class CustomBroker {
             CustomBrokerResponse response =
                 mapper.readValue(result.getPayload().array(), CustomBrokerResponse.class);
 
-            for(Entry<String,String> entry: response.getVariablesToInject().entrySet()) {
-                for(ContainerDefinition containerDef: pushDefinition.getContainerDefinitions()) {
-                    KeyValuePair pair = new KeyValuePair().withName(entry.getKey()).withValue(entry.getValue());
-                    containerDef.getEnvironment().add(pair);
+            if(response.getVariablesToInject() != null){
+                for(Entry<String,String> entry: response.getVariablesToInject().entrySet()) {
+                    for(ContainerDefinition containerDef: pushDefinition.getContainerDefinitions()) {
+                        KeyValuePair pair = new KeyValuePair().withName(entry.getKey()).withValue(entry.getValue());
+                        containerDef.getEnvironment().add(pair);
+                    }
                 }
             }
 
