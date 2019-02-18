@@ -1,8 +1,10 @@
 package com.libertymutualgroup.herman.aws.ecs.broker.custom;
 
+import com.amazonaws.services.ecs.model.ContainerDefinition;
+import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.model.InvokeRequest;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.amazonaws.services.lambda.model.InvokeResult;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -12,6 +14,7 @@ import com.libertymutualgroup.herman.aws.ecs.EcsPushContext;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -58,17 +61,30 @@ public class CustomBroker {
 
         CustomBrokerPayload payload = new CustomBrokerPayload(pushDefinition, brokerDefinition, environment);
 
-        try {
+        try{
             InvokeRequest request = new InvokeRequest()
                 .withFunctionName(definition.getName())
                 .withPayload(mapper.writeValueAsString(payload));
 
             logger.addLogEntry("Invoking Lambda " + definition.getName());
             logger.addLogEntry("With payload: " + mapper.writeValueAsString(payload));
-            lambdaClient.invoke(request);
+            InvokeResult result = lambdaClient.invoke(request);
+
+            CustomBrokerResponse response =
+                mapper.readValue(result.getPayload().array(), CustomBrokerResponse.class);
+
+            for(Entry<String,String> entry: response.getVariablesToInject().entrySet()) {
+                for(ContainerDefinition containerDef: pushDefinition.getContainerDefinitions()) {
+                    KeyValuePair pair = new KeyValuePair().withName(entry.getKey()).withValue(entry.getValue());
+                    containerDef.getEnvironment().add(pair);
+                }
+            }
+
             logger.addLogEntry("Lambda " + definition.getName() + " finished");
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
+            logger.addLogEntry("Lambda response: " + response.getMessage());
+
+        } catch(IOException exception){
+            logger.addErrorLogEntry("Custom broker failed", exception);
         }
     }
 
