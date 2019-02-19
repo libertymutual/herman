@@ -5,6 +5,7 @@ import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.lambda.AWSLambdaAsync;
 import com.amazonaws.services.lambda.model.InvokeRequest;
 import com.amazonaws.services.lambda.model.InvokeResult;
+import com.amazonaws.services.lambda.model.LogType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -66,7 +67,8 @@ public class CustomBroker {
         try{
             InvokeRequest request = new InvokeRequest()
                 .withFunctionName(definition.getName())
-                .withPayload(mapper.writeValueAsString(payload));
+                .withPayload(mapper.writeValueAsString(payload))
+                .withLogType(LogType.Tail);
 
             logger.addLogEntry("Invoking Lambda " + definition.getName());
             logger.addLogEntry("With payload: " + mapper.writeValueAsString(payload));
