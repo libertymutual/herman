@@ -70,9 +70,6 @@ import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.AWSLambdaAsync;
 import com.amazonaws.services.lambda.AWSLambdaAsyncClientBuilder;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
-import com.amazonaws.services.logs.AWSLogs;
-import com.amazonaws.services.logs.AWSLogsClient;
-import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.rds.AmazonRDS;
 import com.amazonaws.services.rds.AmazonRDSClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
@@ -158,7 +155,6 @@ public class EcsPush {
     private AWSLambda lambdaClient;
     private AWSLambdaAsync lambdaAsyncClient;
     private AmazonCloudWatch cloudWatchClient;
-    private AWSLogs logsClient;
     private FileUtil fileUtil;
 
     public EcsPush(EcsPushContext context) {
@@ -235,10 +231,6 @@ public class EcsPush {
             .build();
 
         this.cloudWatchClient = AmazonCloudWatchClientBuilder.standard()
-            .withCredentials(new AWSStaticCredentialsProvider(pushContext.getSessionCredentials()))
-            .withClientConfiguration(pushContext.getAwsClientConfig()).withRegion(pushContext.getRegion()).build();
-
-        this.logsClient = AWSLogsClientBuilder.standard()
             .withCredentials(new AWSStaticCredentialsProvider(pushContext.getSessionCredentials()))
             .withClientConfiguration(pushContext.getAwsClientConfig()).withRegion(pushContext.getRegion()).build();
 
@@ -724,7 +716,7 @@ public class EcsPush {
         brokerKinesisStream(definition);
         brokerRds(definition, injectMagic, clusterMetadata, applicationKeyId);
         brokerDynamoDB(definition);
-        brokerCustom(definition, pushContext, lambdaClient, CustomBrokerPhase.PREPUSH);
+        brokerCustom(definition, pushContext, lambdaAsyncClient, CustomBrokerPhase.PREPUSH);
     }
 
 
@@ -851,7 +843,7 @@ public class EcsPush {
             asb.broker(meta, definition);
         }
 
-        brokerCustom(definition, pushContext, lambdaClient, CustomBrokerPhase.POSTPUSH);
+        brokerCustom(definition, pushContext, lambdaAsyncClient, CustomBrokerPhase.POSTPUSH);
     }
 
     private void logInvocationInCloudWatch(EcsPushDefinition definition) {
@@ -903,7 +895,7 @@ public class EcsPush {
     private void brokerCustom(
         EcsPushDefinition definition,
         EcsPushContext pushContext,
-        AWSLambda lambdaClient,
+        AWSLambdaAsync lambdaAsyncClient,
         CustomBrokerPhase phase
     ) {
         if(definition != null && definition.getCustomBrokers() != null){
@@ -915,8 +907,7 @@ public class EcsPush {
                         pushContext,
                         definition,
                         config,
-                        lambdaAsyncClient,
-                        logsClient
+                        lambdaAsyncClient
                     );
                     customBroker.runBroker();
                 }

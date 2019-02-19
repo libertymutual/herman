@@ -5,12 +5,6 @@ import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.lambda.AWSLambdaAsync;
 import com.amazonaws.services.lambda.model.InvokeRequest;
 import com.amazonaws.services.lambda.model.InvokeResult;
-import com.amazonaws.services.logs.AWSLogs;
-import com.amazonaws.services.logs.model.DescribeLogStreamsRequest;
-import com.amazonaws.services.logs.model.GetLogEventsRequest;
-import com.amazonaws.services.logs.model.GetLogEventsResult;
-import com.amazonaws.services.logs.model.LogStream;
-import com.amazonaws.services.logs.model.OutputLogEvent;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -21,7 +15,6 @@ import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 
 import java.io.IOException;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -34,7 +27,6 @@ public class CustomBroker {
     private EcsPushDefinition pushDefinition;
     private CustomBrokerConfiguration configuration;
     private AWSLambdaAsync lambdaClient;
-    private AWSLogs logsClient;
     private HermanLogger logger;
 
     public CustomBroker(
@@ -42,8 +34,7 @@ public class CustomBroker {
         EcsPushContext pushContext,
         EcsPushDefinition pushDefinition,
         CustomBrokerConfiguration configuration,
-        AWSLambdaAsync lambdaClient,
-        AWSLogs logsClient
+        AWSLambdaAsync lambdaClient
     ){
         this.definition = definition;
         this.pushContext = pushContext;
@@ -51,7 +42,6 @@ public class CustomBroker {
         this.logger = pushContext.getLogger();
         this.configuration = configuration;
         this.lambdaClient = lambdaClient;
-        this.logsClient = logsClient;
     }
 
     public void runBroker(){
@@ -74,7 +64,6 @@ public class CustomBroker {
         CustomBrokerPayload payload = new CustomBrokerPayload(pushDefinition, brokerDefinition, environment);
 
         try{
-            Long lastLogTime = System.currentTimeMillis();
             InvokeRequest request = new InvokeRequest()
                 .withFunctionName(definition.getName())
                 .withPayload(mapper.writeValueAsString(payload));
@@ -82,14 +71,11 @@ public class CustomBroker {
             logger.addLogEntry("Invoking Lambda " + definition.getName());
             logger.addLogEntry("With payload: " + mapper.writeValueAsString(payload));
             Future<InvokeResult> future = lambdaClient.invokeAsync(request);
-            String logGroupName = "/aws/lambda/" + definition.getName();
             while(!future.isDone()){
                 logger.addLogEntry("Custom broker Lambda running...");
                 Thread.sleep(2000);
             }
 
-            Thread.sleep(2000);
-            printLogs(logGroupName, lastLogTime);
             InvokeResult result = future.get();
             logger.addLogEntry(result.getLogResult());
 
@@ -126,28 +112,5 @@ public class CustomBroker {
                 from.set(field.getKey(), field.getValue());
             }
         }
-    }
-
-    private Long printLogs(String logGroup, Long since) {
-        DescribeLogStreamsRequest streamsRequest = new DescribeLogStreamsRequest()
-            .withLogGroupName(logGroup)
-            .withOrderBy("LastEventTime")
-            .withDescending(true);
-
-        LogStream stream = logsClient.describeLogStreams(streamsRequest).getLogStreams().get(0);
-
-        logger.addLogEntry("Checking from logs since " + since + " in stream " + stream.getLogStreamName());
-        GetLogEventsRequest eventsRequest = new GetLogEventsRequest()
-            .withLogGroupName(logGroup)
-            .withLogStreamName(stream.getLogStreamName());
-
-        GetLogEventsResult logsResult = logsClient.getLogEvents(eventsRequest);
-        for(OutputLogEvent event : logsResult.getEvents()){
-            logger.addLogEntry(new Date(event.getTimestamp()) + ": " + event.getMessage());
-        }
-
-        if(logsResult.getEvents().isEmpty()) return since;
-
-        return logsResult.getEvents().get(logsResult.getEvents().size() - 1).getTimestamp();
     }
 }

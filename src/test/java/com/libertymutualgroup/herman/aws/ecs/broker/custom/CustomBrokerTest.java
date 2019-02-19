@@ -3,11 +3,6 @@ package com.libertymutualgroup.herman.aws.ecs.broker.custom;
 import com.amazonaws.services.lambda.AWSLambdaAsync;
 import com.amazonaws.services.lambda.model.InvokeRequest;
 import com.amazonaws.services.lambda.model.InvokeResult;
-import com.amazonaws.services.logs.AWSLogs;
-import com.amazonaws.services.logs.model.DescribeLogStreamsResult;
-import com.amazonaws.services.logs.model.GetLogEventsResult;
-import com.amazonaws.services.logs.model.LogStream;
-import com.amazonaws.services.logs.model.OutputLogEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -24,7 +19,6 @@ import com.libertymutualgroup.herman.logging.SysoutLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
 import edu.emory.mathcs.backport.java.util.Arrays;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.concurrent.ConcurrentUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -47,8 +41,6 @@ import static org.mockito.Mockito.when;
 public class CustomBrokerTest {
     @Mock
     AWSLambdaAsync lambdaClient;
-    @Mock
-    AWSLogs logsClient;
     @Mock
     EcsPushContext pushContext;
     private PropertyHandler propertyHandler;
@@ -87,18 +79,6 @@ public class CustomBrokerTest {
         Mockito.when(lambdaClient.invokeAsync(any(InvokeRequest.class)))
             .thenReturn(resultFuture);
 
-        Mockito.when(logsClient.describeLogStreams(any())).thenReturn(
-            new DescribeLogStreamsResult().withLogStreams(
-                new LogStream().withLogStreamName("test")
-            )
-        );
-
-        Mockito.when(logsClient.getLogEvents(any())).thenReturn(
-            new GetLogEventsResult().withEvents(
-                new OutputLogEvent().withTimestamp(0L).withMessage("Running mock lambda..")
-            )
-        );
-
         variablesToPass.put("bamboo.secret.papi-index", "papiIndex");
         variablesToPass.put("bamboo.secret.vault-token.token", "papiVaultToken");
         variablesToPass.put("bamboo.forge.deployment.guid", "artifactDeploymentGuid");
@@ -120,7 +100,7 @@ public class CustomBrokerTest {
         propertyHandler.addProperty("bamboo.secret.vault-token.token", "somevalue");
         propertyHandler.addProperty("bamboo.forge.deployment.guid", "somevalue");
 
-        CustomBroker broker = new CustomBroker(customBrokerDefinition, pushContext, pushDefinition, config, lambdaClient, logsClient);
+        CustomBroker broker = new CustomBroker(customBrokerDefinition, pushContext, pushDefinition, config, lambdaClient);
         broker.runBroker();
     }
 
