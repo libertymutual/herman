@@ -133,7 +133,6 @@ public class CustomBroker {
 
         LogStream stream = logsClient.describeLogStreams(streamsRequest).getLogStreams().get(0);
 
-
         GetLogEventsRequest eventsRequest = new GetLogEventsRequest()
             .withStartFromHead(since == null)
             .withLogGroupName(logGroup)
@@ -147,6 +146,8 @@ public class CustomBroker {
         for(OutputLogEvent event : logsResult.getEvents()){
             logger.addLogEntry(new Date(event.getTimestamp()) + ": " + event.getMessage());
         }
+
+        if(logsResult.getEvents().isEmpty()) return since;
 
         return logsResult.getEvents().get(logsResult.getEvents().size() - 1).getTimestamp();
     }
