@@ -84,12 +84,14 @@ public class CustomBroker {
             Future<InvokeResult> future = lambdaClient.invokeAsync(request);
             String logGroupName = "/aws/lambda/" + definition.getName();
             while(!future.isDone()){
-                lastLogTime = printLogs(logGroupName, lastLogTime);
+                logger.addLogEntry("Custom broker Lambda running...");
                 Thread.sleep(2000);
             }
 
+            Thread.sleep(2000);
             printLogs(logGroupName, lastLogTime);
             InvokeResult result = future.get();
+            logger.addLogEntry(result.getLogResult());
 
             CustomBrokerResponse response =
                 mapper.readValue(result.getPayload().array(), CustomBrokerResponse.class);
@@ -136,7 +138,6 @@ public class CustomBroker {
 
         logger.addLogEntry("Checking from logs since " + since + " in stream " + stream.getLogStreamName());
         GetLogEventsRequest eventsRequest = new GetLogEventsRequest()
-            .withStartTime(since)
             .withLogGroupName(logGroup)
             .withLogStreamName(stream.getLogStreamName());
 
