@@ -74,6 +74,7 @@ public class CustomBroker {
         CustomBrokerPayload payload = new CustomBrokerPayload(pushDefinition, brokerDefinition, environment);
 
         try{
+            Long lastLogTime = new Date().getTime();
             InvokeRequest request = new InvokeRequest()
                 .withFunctionName(definition.getName())
                 .withPayload(mapper.writeValueAsString(payload));
@@ -82,7 +83,6 @@ public class CustomBroker {
             logger.addLogEntry("With payload: " + mapper.writeValueAsString(payload));
             Future<InvokeResult> future = lambdaClient.invokeAsync(request);
             String logGroupName = "/aws/lambda/" + definition.getName();
-            Long lastLogTime = null;
             while(!future.isDone()){
                 lastLogTime = printLogs(logGroupName, lastLogTime);
                 Thread.sleep(2000);
