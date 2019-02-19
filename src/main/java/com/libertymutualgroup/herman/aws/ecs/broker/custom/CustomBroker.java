@@ -129,6 +129,7 @@ public class CustomBroker {
     private Long printLogs(String logGroup, Long since) {
         DescribeLogStreamsRequest streamsRequest = new DescribeLogStreamsRequest()
             .withLogGroupName(logGroup)
+            .withOrderBy("LastEventTime")
             .withDescending(true);
 
         LogStream stream = logsClient.describeLogStreams(streamsRequest).getLogStreams().get(0);
