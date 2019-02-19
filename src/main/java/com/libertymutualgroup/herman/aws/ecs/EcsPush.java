@@ -67,7 +67,12 @@ import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 import com.amazonaws.services.kms.AWSKMS;
 import com.amazonaws.services.kms.AWSKMSClientBuilder;
 import com.amazonaws.services.lambda.AWSLambda;
+import com.amazonaws.services.lambda.AWSLambdaAsync;
+import com.amazonaws.services.lambda.AWSLambdaAsyncClientBuilder;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
+import com.amazonaws.services.logs.AWSLogs;
+import com.amazonaws.services.logs.AWSLogsClient;
+import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.rds.AmazonRDS;
 import com.amazonaws.services.rds.AmazonRDSClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
@@ -151,7 +156,9 @@ public class EcsPush {
     private AmazonSNS snsClient;
     private AmazonDynamoDB dynamoDbClient;
     private AWSLambda lambdaClient;
+    private AWSLambdaAsync lambdaAsyncClient;
     private AmazonCloudWatch cloudWatchClient;
+    private AWSLogs logsClient;
     private FileUtil fileUtil;
 
     public EcsPush(EcsPushContext context) {
@@ -221,7 +228,17 @@ public class EcsPush {
             .withRegion(context.getRegion())
             .build();
 
+        this.lambdaAsyncClient = AWSLambdaAsyncClientBuilder.standard()
+            .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
+            .withClientConfiguration(new ClientConfiguration().withClientExecutionTimeout(900000).withSocketTimeout(900000))
+            .withRegion(context.getRegion())
+            .build();
+
         this.cloudWatchClient = AmazonCloudWatchClientBuilder.standard()
+            .withCredentials(new AWSStaticCredentialsProvider(pushContext.getSessionCredentials()))
+            .withClientConfiguration(pushContext.getAwsClientConfig()).withRegion(pushContext.getRegion()).build();
+
+        this.logsClient = AWSLogsClientBuilder.standard()
             .withCredentials(new AWSStaticCredentialsProvider(pushContext.getSessionCredentials()))
             .withClientConfiguration(pushContext.getAwsClientConfig()).withRegion(pushContext.getRegion()).build();
 
@@ -893,7 +910,14 @@ public class EcsPush {
             for(CustomBrokerDefinition brokerDefinition: definition.getCustomBrokers()){
                 CustomBrokerConfiguration config = pushContext.getTaskProperties().getCustomBrokers().get(brokerDefinition.getName());
                 if(config.getPhase() == phase){
-                    CustomBroker customBroker = new CustomBroker(brokerDefinition, pushContext, definition, config, lambdaClient);
+                    CustomBroker customBroker = new CustomBroker(
+                        brokerDefinition,
+                        pushContext,
+                        definition,
+                        config,
+                        lambdaAsyncClient,
+                        logsClient
+                    );
                     customBroker.runBroker();
                 }
             }

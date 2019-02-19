@@ -226,6 +226,10 @@
       <groupId>com.amazonaws</groupId>
       <artifactId>aws-java-sdk-waf</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-logs</artifactId>
+    </dependency>
 
     <!-- 3rd Party Libs -->
     <dependency>
