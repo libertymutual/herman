@@ -16,6 +16,7 @@ import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 
 import java.io.IOException;
+import java.util.Base64;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -79,7 +80,7 @@ public class CustomBroker {
             }
 
             InvokeResult result = future.get();
-            logger.addLogEntry(result.getLogResult());
+            logger.addLogEntry(new String(Base64.getDecoder().decode(result.getLogResult())));
 
             CustomBrokerResponse response =
                 mapper.readValue(result.getPayload().array(), CustomBrokerResponse.class);
