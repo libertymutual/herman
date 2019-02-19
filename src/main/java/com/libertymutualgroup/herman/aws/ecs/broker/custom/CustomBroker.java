@@ -74,7 +74,7 @@ public class CustomBroker {
         CustomBrokerPayload payload = new CustomBrokerPayload(pushDefinition, brokerDefinition, environment);
 
         try{
-            Long lastLogTime = new Date().getTime();
+            Long lastLogTime = System.currentTimeMillis();
             InvokeRequest request = new InvokeRequest()
                 .withFunctionName(definition.getName())
                 .withPayload(mapper.writeValueAsString(payload));
@@ -133,6 +133,7 @@ public class CustomBroker {
 
         LogStream stream = logsClient.describeLogStreams(streamsRequest).getLogStreams().get(0);
 
+        logger.addLogEntry("Checking from logs since " + since + " in stream " + stream.getLogStreamName());
         GetLogEventsRequest eventsRequest = new GetLogEventsRequest()
             .withStartFromHead(since == null)
             .withLogGroupName(logGroup)
