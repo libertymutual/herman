@@ -4,7 +4,9 @@ import com.amazonaws.services.lambda.AWSLambdaAsync;
 import com.amazonaws.services.lambda.model.InvokeRequest;
 import com.amazonaws.services.lambda.model.InvokeResult;
 import com.amazonaws.services.logs.AWSLogs;
+import com.amazonaws.services.logs.model.DescribeLogStreamsResult;
 import com.amazonaws.services.logs.model.GetLogEventsResult;
+import com.amazonaws.services.logs.model.LogStream;
 import com.amazonaws.services.logs.model.OutputLogEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -84,6 +86,12 @@ public class CustomBrokerTest {
 
         Mockito.when(lambdaClient.invokeAsync(any(InvokeRequest.class)))
             .thenReturn(resultFuture);
+
+        Mockito.when(logsClient.describeLogStreams(any())).thenReturn(
+            new DescribeLogStreamsResult().withLogStreams(
+                new LogStream().withLogStreamName("test")
+            )
+        );
 
         Mockito.when(logsClient.getLogEvents(any())).thenReturn(
             new GetLogEventsResult().withEvents(

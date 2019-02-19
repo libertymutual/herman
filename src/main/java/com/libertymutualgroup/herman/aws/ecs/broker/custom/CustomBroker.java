@@ -6,8 +6,10 @@ import com.amazonaws.services.lambda.AWSLambdaAsync;
 import com.amazonaws.services.lambda.model.InvokeRequest;
 import com.amazonaws.services.lambda.model.InvokeResult;
 import com.amazonaws.services.logs.AWSLogs;
+import com.amazonaws.services.logs.model.DescribeLogStreamsRequest;
 import com.amazonaws.services.logs.model.GetLogEventsRequest;
 import com.amazonaws.services.logs.model.GetLogEventsResult;
+import com.amazonaws.services.logs.model.LogStream;
 import com.amazonaws.services.logs.model.OutputLogEvent;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -125,9 +127,17 @@ public class CustomBroker {
     }
 
     private Long printLogs(String logGroup, Long since) {
+        DescribeLogStreamsRequest streamsRequest = new DescribeLogStreamsRequest()
+            .withLogGroupName(logGroup)
+            .withDescending(true);
+
+        LogStream stream = logsClient.describeLogStreams(streamsRequest).getLogStreams().get(0);
+
+
         GetLogEventsRequest eventsRequest = new GetLogEventsRequest()
             .withStartFromHead(since == null)
-            .withLogGroupName(logGroup);
+            .withLogGroupName(logGroup)
+            .withLogStreamName(stream.getLogStreamName());
 
         if(since != null){
             eventsRequest.withStartTime(since);
