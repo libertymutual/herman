@@ -17,6 +17,7 @@ import com.libertymutualgroup.herman.aws.ecs.broker.custom.CustomBrokerResponse.
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.logging.SysoutLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
+import com.sun.syndication.io.impl.Base64;
 import edu.emory.mathcs.backport.java.util.Arrays;
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
@@ -73,7 +74,9 @@ public class CustomBrokerTest {
         response.setStatus(Status.SUCCESS);
 
         Future<InvokeResult> resultFuture = CompletableFuture.completedFuture(
-            new InvokeResult().withPayload(ByteBuffer.wrap(mapper.writeValueAsBytes(response)))
+            new InvokeResult()
+                .withPayload(ByteBuffer.wrap(mapper.writeValueAsBytes(response)))
+                .withLogResult(Base64.encode("lambda log result"))
         );
 
         Mockito.when(lambdaClient.invokeAsync(any(InvokeRequest.class)))
