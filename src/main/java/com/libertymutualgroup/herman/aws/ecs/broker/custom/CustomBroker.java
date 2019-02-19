@@ -136,13 +136,9 @@ public class CustomBroker {
 
         logger.addLogEntry("Checking from logs since " + since + " in stream " + stream.getLogStreamName());
         GetLogEventsRequest eventsRequest = new GetLogEventsRequest()
-            .withStartFromHead(since == null)
+            .withStartTime(since)
             .withLogGroupName(logGroup)
             .withLogStreamName(stream.getLogStreamName());
-
-        if(since != null){
-            eventsRequest.withStartTime(since);
-        }
 
         GetLogEventsResult logsResult = logsClient.getLogEvents(eventsRequest);
         for(OutputLogEvent event : logsResult.getEvents()){
