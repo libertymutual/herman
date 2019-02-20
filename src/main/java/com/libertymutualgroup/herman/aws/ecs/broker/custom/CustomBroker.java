@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.libertymutualgroup.herman.aws.ecs.CustomBrokerDefinition;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushContext;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
+import com.libertymutualgroup.herman.aws.ecs.broker.custom.CustomBrokerResponse.Status;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 
 import java.io.IOException;
@@ -100,7 +101,13 @@ public class CustomBroker {
             }
 
             logger.addLogEntry("Lambda " + definition.getName() + " finished");
-            logger.addLogEntry("Lambda response: " + response.getMessage());
+
+            if(response.getStatus() == Status.SUCCESS){
+                logger.addLogEntry("Lambda response: " + response.getMessage());
+            }
+            else {
+                logger.addErrorLogEntry("Lambda error: " + response.getMessage());
+            }
 
         } catch(IOException | InterruptedException | ExecutionException exception){
             logger.addErrorLogEntry("Custom broker failed", exception);
