@@ -3,10 +3,10 @@ package com.libertymutualgroup.herman.aws.ecs.broker.s3;
 import com.amazonaws.services.s3.model.S3Event;
 import java.util.EnumSet;
 
-public class S3LambdaNotificationConfiguration {
+public class S3EventConfiguration {
 
     private String name;
-    private String functionARN;
+    private String arn;
     private EnumSet<S3Event> events;
 
     public String getName() {
@@ -17,12 +17,12 @@ public class S3LambdaNotificationConfiguration {
         this.name = name;
     }
 
-    public String getFunctionARN() {
-        return functionARN;
+    public String getArn() {
+        return arn;
     }
 
-    public void setFunctionARN(String functionARN) {
-        this.functionARN = functionARN;
+    public void setArn(String arn) {
+        this.arn = arn;
     }
 
     public EnumSet<S3Event> getEvents() {
@@ -33,26 +33,26 @@ public class S3LambdaNotificationConfiguration {
         this.events = events;
     }
 
-    public S3LambdaNotificationConfiguration withName(final String name) {
+    public S3EventConfiguration withName(final String name) {
         this.name = name;
         return this;
     }
 
-    public S3LambdaNotificationConfiguration withFunctionARN(final String functionARN) {
-        this.functionARN = functionARN;
+    public S3EventConfiguration withARN(final String functionARN) {
+        this.arn = functionARN;
         return this;
     }
 
-    public S3LambdaNotificationConfiguration withEvents(final EnumSet<S3Event> events) {
+    public S3EventConfiguration withEvents(final EnumSet<S3Event> events) {
         this.events = events;
         return this;
     }
 
     @Override
     public String toString() {
-        return "S3LambdaNotificationConfiguration{" +
+        return "S3EventConfiguration{" +
             "name='" + name + '\'' +
-            ", functionARN='" + functionARN + '\'' +
+            ", arn='" + arn + '\'' +
             ", events=" + events +
             '}';
     }

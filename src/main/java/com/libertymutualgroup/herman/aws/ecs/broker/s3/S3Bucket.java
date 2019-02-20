@@ -15,11 +15,15 @@
  */
 package com.libertymutualgroup.herman.aws.ecs.broker.s3;
 
+import java.util.List;
+
 public class S3Bucket {
 
     private String name;
     private String policyName;
     private S3EncryptionOption encryptionOption;
+    private List<S3EventConfiguration> snsNotifications;
+    private List<S3EventConfiguration> lambdaNotifications;
 
     public String getName() {
         return name;
@@ -45,6 +49,24 @@ public class S3Bucket {
         this.encryptionOption = encryptionOption;
     }
 
+    public List<S3EventConfiguration> getSnsNotifications() {
+        return snsNotifications;
+    }
+
+    public void setSnsNotifications(
+        List<S3EventConfiguration> snsNotifications) {
+        this.snsNotifications = snsNotifications;
+    }
+
+    public List<S3EventConfiguration> getLambdaNotifications() {
+        return lambdaNotifications;
+    }
+
+    public void setLambdaNotifications(
+        List<S3EventConfiguration> lambdaNotifications) {
+        this.lambdaNotifications = lambdaNotifications;
+    }
+
     public S3Bucket withName(final String name) {
         this.name = name;
         return this;
@@ -61,12 +83,24 @@ public class S3Bucket {
         return this;
     }
 
+    public S3Bucket withLambdaNotifications(final List<S3EventConfiguration> lambdaNotifications) {
+        this.lambdaNotifications = lambdaNotifications;
+        return this;
+    }
+
+    public S3Bucket withSnsNotifications(final List<S3EventConfiguration> snsNotifications) {
+        this.snsNotifications = snsNotifications;
+        return this;
+    }
+
     @Override
     public String toString() {
         return "S3Bucket{" +
             "name='" + name + '\'' +
             ", policyName='" + policyName + '\'' +
-            ", encryptionOption=" + encryptionOption +
-            '}';
+            ", encryptionOption=" + encryptionOption + '\'' +
+            ", lambdaNotifications=" + lambdaNotifications + '\'' +
+            ", snsNotifications=" + snsNotifications +
+             '}';
     }
 }
