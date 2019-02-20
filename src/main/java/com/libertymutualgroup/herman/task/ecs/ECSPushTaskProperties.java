@@ -16,14 +16,18 @@
 package com.libertymutualgroup.herman.task.ecs;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.libertymutualgroup.herman.aws.ecs.broker.custom.CustomBrokerConfiguration;
 import com.libertymutualgroup.herman.aws.ecs.broker.ddoswaf.DdosWafBrokerProperties;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3BrokerProperties;
 import com.libertymutualgroup.herman.aws.ecs.loadbalancing.SSLCertificate;
 import com.libertymutualgroup.herman.aws.ecs.logging.SplunkInstance;
 import com.libertymutualgroup.herman.task.common.CommonTaskProperties;
 import com.libertymutualgroup.herman.task.newrelic.NewRelicBrokerProperties;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ECSPushTaskProperties extends CommonTaskProperties {
@@ -38,6 +42,7 @@ public class ECSPushTaskProperties extends CommonTaskProperties {
     private List<String> externalElbSecurityGroups = new ArrayList<>();
     private S3BrokerProperties s3;
     private String logsBucket;
+    private Map<String, CustomBrokerConfiguration> customBrokers = new HashMap<>();
 
     @Override
     public ECSPushTaskProperties withCompany(final String company) {
@@ -142,6 +147,14 @@ public class ECSPushTaskProperties extends CommonTaskProperties {
 
     public void setLogsBucket(String logsBucket) {
         this.logsBucket = logsBucket;
+    }
+
+    public Map<String, CustomBrokerConfiguration> getCustomBrokers() {
+        return customBrokers;
+    }
+
+    public void setCustomBrokers(Map<String, CustomBrokerConfiguration> customBrokers) {
+        this.customBrokers = customBrokers;
     }
 
     public ECSPushTaskProperties withNewRelic(

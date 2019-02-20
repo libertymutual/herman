@@ -38,8 +38,8 @@ public class S3EventConfiguration {
         return this;
     }
 
-    public S3EventConfiguration withARN(final String arn) {
-        this.arn = arn;
+    public S3EventConfiguration withARN(final String functionARN) {
+        this.arn = functionARN;
         return this;
     }
 
@@ -52,7 +52,7 @@ public class S3EventConfiguration {
     public String toString() {
         return "S3EventConfiguration{" +
             "name='" + name + '\'' +
-            ", functionARN='" + arn + '\'' +
+            ", arn='" + arn + '\'' +
             ", events=" + events +
             '}';
     }

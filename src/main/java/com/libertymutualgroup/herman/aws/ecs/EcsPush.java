@@ -67,6 +67,8 @@ import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 import com.amazonaws.services.kms.AWSKMS;
 import com.amazonaws.services.kms.AWSKMSClientBuilder;
 import com.amazonaws.services.lambda.AWSLambda;
+import com.amazonaws.services.lambda.AWSLambdaAsync;
+import com.amazonaws.services.lambda.AWSLambdaAsyncClientBuilder;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
 import com.amazonaws.services.rds.AmazonRDS;
 import com.amazonaws.services.rds.AmazonRDSClientBuilder;
@@ -79,6 +81,9 @@ import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.amazonaws.util.IOUtils;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.broker.autoscaling.AutoscalingBroker;
+import com.libertymutualgroup.herman.aws.ecs.broker.custom.CustomBroker;
+import com.libertymutualgroup.herman.aws.ecs.broker.custom.CustomBrokerConfiguration;
+import com.libertymutualgroup.herman.aws.ecs.broker.custom.CustomBrokerPhase;
 import com.libertymutualgroup.herman.aws.ecs.broker.dynamodb.DynamoDBBroker;
 import com.libertymutualgroup.herman.aws.ecs.broker.iam.IAMBroker;
 import com.libertymutualgroup.herman.aws.ecs.broker.kinesis.KinesisBroker;
@@ -148,6 +153,7 @@ public class EcsPush {
     private AmazonSNS snsClient;
     private AmazonDynamoDB dynamoDbClient;
     private AWSLambda lambdaClient;
+    private AWSLambdaAsync lambdaAsyncClient;
     private AmazonCloudWatch cloudWatchClient;
     private FileUtil fileUtil;
 
@@ -215,6 +221,12 @@ public class EcsPush {
         this.lambdaClient = AWSLambdaClientBuilder.standard()
             .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
             .withClientConfiguration(new ClientConfiguration().withClientExecutionTimeout(300000).withSocketTimeout(300000))
+            .withRegion(context.getRegion())
+            .build();
+
+        this.lambdaAsyncClient = AWSLambdaAsyncClientBuilder.standard()
+            .withCredentials(new AWSStaticCredentialsProvider(context.getSessionCredentials()))
+            .withClientConfiguration(new ClientConfiguration().withClientExecutionTimeout(900000).withSocketTimeout(900000))
             .withRegion(context.getRegion())
             .build();
 
@@ -704,6 +716,7 @@ public class EcsPush {
         brokerKinesisStream(definition);
         brokerRds(definition, injectMagic, clusterMetadata, applicationKeyId);
         brokerDynamoDB(definition);
+        brokerCustom(definition, pushContext, lambdaAsyncClient, CustomBrokerPhase.PREPUSH);
     }
 
 
@@ -829,6 +842,8 @@ public class EcsPush {
             AutoscalingBroker asb = new AutoscalingBroker(pushContext);
             asb.broker(meta, definition);
         }
+
+        brokerCustom(definition, pushContext, lambdaAsyncClient, CustomBrokerPhase.POSTPUSH);
     }
 
     private void logInvocationInCloudWatch(EcsPushDefinition definition) {
@@ -874,6 +889,29 @@ public class EcsPush {
             cloudWatchClient.putMetricData(new PutMetricDataRequest().withNamespace("Herman/Deploy").withMetricData(d));
         } catch (Exception e) { // NOSONAR
             pushContext.getLogger().addLogEntry("Error logging result to CW: " + e.getMessage());// nothing to do
+        }
+    }
+
+    private void brokerCustom(
+        EcsPushDefinition definition,
+        EcsPushContext pushContext,
+        AWSLambdaAsync lambdaAsyncClient,
+        CustomBrokerPhase phase
+    ) {
+        if(definition != null && definition.getCustomBrokers() != null){
+            for(CustomBrokerDefinition brokerDefinition: definition.getCustomBrokers()){
+                CustomBrokerConfiguration config = pushContext.getTaskProperties().getCustomBrokers().get(brokerDefinition.getName());
+                if(config.getPhase() == phase){
+                    CustomBroker customBroker = new CustomBroker(
+                        brokerDefinition,
+                        pushContext,
+                        definition,
+                        config,
+                        lambdaAsyncClient
+                    );
+                    customBroker.runBroker();
+                }
+            }
         }
     }
 }

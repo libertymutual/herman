@@ -94,16 +94,9 @@ public class S3InjectConfiguration implements KmsAppDefinition {
         return lambdaNotifications;
     }
 
-    public void setLambdaNotifications(List<S3EventConfiguration> lambdaNotifications) {
+    public void setLambdaNotifications(
+        List<S3EventConfiguration> lambdaNotifications) {
         this.lambdaNotifications = lambdaNotifications;
-    }
-
-    public List<S3EventConfiguration> getSnsNotifications() {
-        return snsNotifications;
-    }
-
-    public void setSnsNotifications(List<S3EventConfiguration> snsNotifications) {
-        this.snsNotifications = snsNotifications;
     }
 
     public Boolean getCreateBucketKey() {
@@ -155,6 +148,15 @@ public class S3InjectConfiguration implements KmsAppDefinition {
         this.tags = tags;
     }
 
+    public List<S3EventConfiguration> getSnsNotifications() {
+        return snsNotifications;
+    }
+
+    public void setSnsNotifications(
+        List<S3EventConfiguration> snsNotifications) {
+        this.snsNotifications = snsNotifications;
+    }
+
     public S3InjectConfiguration withAppName(final String appName) {
         this.appName = appName;
         return this;
@@ -192,12 +194,6 @@ public class S3InjectConfiguration implements KmsAppDefinition {
         return this;
     }
 
-    public S3InjectConfiguration withSnsNotifications(
-        final List<S3EventConfiguration> snsNotifications) {
-        this.snsNotifications = snsNotifications;
-        return this;
-    }
-
     public S3InjectConfiguration withCreateBucketKey(final Boolean createBucketKey) {
         this.createBucketKey = createBucketKey;
         return this;
@@ -223,6 +219,11 @@ public class S3InjectConfiguration implements KmsAppDefinition {
         return this;
     }
 
+    public S3InjectConfiguration withSnsNotifications(final List<S3EventConfiguration> snsNotifications) {
+        this.snsNotifications = snsNotifications;
+        return this;
+    }
+
     @Override
     public String toString() {
         return "S3InjectConfiguration{" +
@@ -233,9 +234,11 @@ public class S3InjectConfiguration implements KmsAppDefinition {
             ", website=" + website +
             ", encryptionOption=" + encryptionOption +
             ", lambdaNotifications=" + lambdaNotifications +
+            ", snsNotifications=" + snsNotifications +
             ", createBucketKey=" + createBucketKey +
             ", kmsKeyArn='" + kmsKeyArn + '\'' +
             ", kmsKeyName='" + kmsKeyName + '\'' +
+            ", tags=" + tags +
             ", indexFile='" + indexFile + '\'' +
             ", errorFile='" + errorFile + '\'' +
             '}';

@@ -37,8 +37,7 @@ buckets:
     - ObjectCreatedByPut
     - ObjectCreatedByPost
     - ObjectCreatedByCopy
-    - ObjectCreatedByCompleteMultipartUpload
-      
+    - ObjectCreatedByCompleteMultipartUpload  
 ```
 
 Corresponding policy if only used by your application (specified by
@@ -116,6 +115,4 @@ To use SNS Events, you must configure your SNS Topic Policy to be similar to bel
     }
   ]
 }
-
-```
 ```

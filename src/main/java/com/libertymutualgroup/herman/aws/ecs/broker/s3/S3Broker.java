@@ -16,7 +16,6 @@
 package com.libertymutualgroup.herman.aws.ecs.broker.s3;
 
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.services.kinesisanalytics.model.S3Configuration;
 import com.amazonaws.services.kms.AWSKMS;
 import com.amazonaws.services.kms.AWSKMSClientBuilder;
 import com.amazonaws.services.kms.model.DescribeKeyRequest;
@@ -302,7 +301,7 @@ public class S3Broker {
                 configuration.getAppName(),
                 new BucketLoggingConfiguration()));
         }
-      updateNotificationConfiguration(configuration, client);
+        updateNotificationConfiguration(configuration, client);
     }
 
     private void setBucketPolicy(AmazonS3 client, String bucketPolicy, String bucketName) {

@@ -25,7 +25,6 @@ public class S3Bucket {
     private List<S3EventConfiguration> snsNotifications;
     private List<S3EventConfiguration> lambdaNotifications;
 
-
     public String getName() {
         return name;
     }
@@ -52,11 +51,6 @@ public class S3Bucket {
 
     public List<S3EventConfiguration> getSnsNotifications() {
         return snsNotifications;
-    }
-
-    public void setSnsNotificaations(
-        List<S3EventConfiguration> snsNotifications) {
-        this.snsNotifications = snsNotifications;
     }
 
     public void setSnsNotifications(
@@ -89,13 +83,13 @@ public class S3Bucket {
         return this;
     }
 
-    public S3Bucket withSnsNotifications(final List<S3EventConfiguration> snsNotifications) {
-        this.snsNotifications = snsNotifications;
+    public S3Bucket withLambdaNotifications(final List<S3EventConfiguration> lambdaNotifications) {
+        this.lambdaNotifications = lambdaNotifications;
         return this;
     }
 
-    public S3Bucket withLambdaNotifications(final List<S3EventConfiguration> lambdaNotifications) {
-        this.lambdaNotifications = lambdaNotifications;
+    public S3Bucket withSnsNotifications(final List<S3EventConfiguration> snsNotifications) {
+        this.snsNotifications = snsNotifications;
         return this;
     }
 
@@ -105,8 +99,8 @@ public class S3Bucket {
             "name='" + name + '\'' +
             ", policyName='" + policyName + '\'' +
             ", encryptionOption=" + encryptionOption + '\'' +
-            ", snsNotifications=" + snsNotifications + '\'' +
-            ", lambdaNotifications=" + lambdaNotifications +
-            '}';
+            ", lambdaNotifications=" + lambdaNotifications + '\'' +
+            ", snsNotifications=" + snsNotifications +
+             '}';
     }
 }
