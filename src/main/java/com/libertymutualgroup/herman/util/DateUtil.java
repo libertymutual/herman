@@ -27,8 +27,8 @@ public class DateUtil {
     }
 
     public static String getDateAsString(DateTime dateTime) {
-        DateTimeFormatter fmt = DateTimeFormat.forPattern("MM-dd-yy-hh-mm-ss").withZone(
-            DateTimeZone.forTimeZone(DateTimeZone.UTC.toTimeZone()));
+        DateTimeFormatter fmt = DateTimeFormat.forPattern("MM-dd-yy-hh-mm-ss")
+            .withZone(DateTimeZone.UTC);
         return fmt.print(dateTime);
     }
 }

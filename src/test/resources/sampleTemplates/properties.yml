@@ -1,48 +1,38 @@
-company: lm
-sbu: USCM
-org: Products
-engine: LMBDT
-rdsCredentialBrokerImage: "repo.forge.lmig.com/docker/grm/ah/ecs/rds-credential-broker:BUILD6-Rb63a8812e36fc465e855ca5066e753bf9fef3c0f"
+company: mycompany
+sbu: mysbu
+org: myorg
+engine: herman
+rdsCredentialBrokerImage: "rds-credential-broker-image-url"
 rdsCredentialBrokerLambda: "rds-credential-broker"
 cftPushVariableBrokerLambda: "herman-cft-push-variable-broker"
 dnsBrokerLambda: "herman-dns-broker"
 s3:
   defaultEncryption: "AES256"
 newRelic:
-  accountId: 1851893
-  nrLambda: "herman-newrelic-broker-v2"
+  accountId: 1234567
+  nrLambda: "herman-newrelic-broker"
 externalElbSecurityGroups:
-  - "sg-40eaf83b"
-  - "sg-47eaf83c"
+  - "sg-1"
+  - "sg-2"
 sslCertificates:
   - urlPrefix:          "*"
-    urlSuffix:          "np-ah.grm.lmig.com"
-    arn:                "arn:aws:iam::448855094770:server-certificate/aws-grm-ah-herman-configuration/np-ah.grm.lmig.com"
+    urlSuffix:          "mysite.com"
+    arn:                "arn:mycert"
     internetFacingUrl:  false
 splunkInstances:
-  - httpEventCollectorUrl:  "https://logshaper-us-east-1.lmb.lmig.com"
-    webUrl:                 "https://libertymutual.splunkcloud.com"
-  - httpEventCollectorUrl:  "https://http-inputs-libertymutual.splunkcloud.com"
-    webUrl:                 "https://libertymutual.splunkcloud.com"
-  - httpEventCollectorUrl:  "https://splunk-np.np-lmb.lmig.com"
-    webUrl:                 "https://developer.np-lmb.libertymutual.com/logs/272846225719"
-  - httpEventCollectorUrl:  "https://splunk-prod.np-lmb.lmig.com"
-    webUrl:                 "https://developer.np-lmb.libertymutual.com/logs/543944794056"
-  - httpEventCollectorUrl:  "https://splunk-np.lmb.lmig.com"
-    webUrl:                 "https://developer.lmb.libertymutual.com/logs/272846225719"
-  - httpEventCollectorUrl:  "https://splunk-prod.lmb.lmig.com"
-    webUrl:                 "https://developer.lmb.libertymutual.com/logs/543944794056"
+  - httpEventCollectorUrl:  "https://logshaper.com"
+    webUrl:                 "https://splunkcloud.com"
 customBrokers:
-  - name: "herman-rds-broker-papi"
+  - name: "herman-rds-broker"
     phase: "PREPUSH"
     variablesToPass:
-      - "bamboo.secret.papi-index"
-      - "bamboo.secret.vault-token.token"
-      - "bamboo.forge.deployment.guid"
+      - "bamboo.var1"
+      - "bamboo.var2"
+      - "bamboo.var3"
     defaults:
-      vpcId: vpc-06b8e561
+      vpcId: vpc-1
       subnetIds:
-        - subnet-1cf71b47
-        - subnet-5c07d915
-        - subnet-0e331aad3f01c56c2
-      sbu: USCM
+        - subnet-1
+        - subnet-2
+        - subnet-3
+      sbu: SBU
