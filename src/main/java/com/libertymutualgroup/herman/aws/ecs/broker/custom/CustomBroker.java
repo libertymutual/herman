@@ -81,8 +81,8 @@ public class CustomBroker {
             logger.addLogEntry("With payload: " + mapper.writeValueAsString(payload));
             Future<InvokeResult> future = lambdaClient.invokeAsync(request);
             while(!future.isDone()){
-                logger.addLogEntry("Custom broker Lambda running...");
-                Thread.sleep(2000);
+                logger.addLogEntry("Custom broker " + definition.getName() + " running...");
+                Thread.sleep(5000);
             }
 
             InvokeResult result = future.get();
