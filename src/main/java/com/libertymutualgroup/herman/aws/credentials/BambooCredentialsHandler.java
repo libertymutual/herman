@@ -22,6 +22,8 @@ import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.atlassian.bamboo.task.CommonTaskContext;
 import com.atlassian.bamboo.variable.VariableContext;
 import com.atlassian.bamboo.variable.VariableDefinitionContext;
+import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
+
 import java.util.Map;
 
 public class BambooCredentialsHandler extends CredentialsHandler {
@@ -31,12 +33,23 @@ public class BambooCredentialsHandler extends CredentialsHandler {
     }
 
     public static AWSCredentials getCredentials(CommonTaskContext context) {
+        final AtlassianBuildLogger logger = new AtlassianBuildLogger(context.getBuildLogger());
+        logger.addLogEntry("Looking for credentials...");
+
         if (lookupVar("custom.aws.accessKeyId", context) != null) {
+            logger.addLogEntry("Found credentials using custom.aws.accessKeyId");
             return new BasicSessionCredentials(lookupVar("custom.aws.accessKeyId", context),
                 lookupVar("custom.aws.secretAccessKey.password", context),
                 lookupVar("custom.aws.sessionToken.password", context));
 
+        } else if (lookupVar("secret.sts.accessKeyId", context) != null) {
+            logger.addLogEntry("Found credentials using secret.sts.accessKeyId");
+            return new BasicSessionCredentials(lookupVar("secret.sts.accessKeyId", context),
+                lookupVar("secret.sts.secretAccessKey", context),
+                lookupVar("secret.sts.sessionToken", context));
+
         } else {
+            logger.addLogEntry("Could not find credentials as custom variables - falling back to instance profile.");
             try (InstanceProfileCredentialsProvider provider = InstanceProfileCredentialsProvider.getInstance()) {
                 return provider.getCredentials();
             } catch (Exception ex) {

@@ -1,0 +1,38 @@
+company: mycompany
+sbu: mysbu
+org: myorg
+engine: herman
+rdsCredentialBrokerImage: "rds-credential-broker-image-url"
+rdsCredentialBrokerLambda: "rds-credential-broker"
+cftPushVariableBrokerLambda: "herman-cft-push-variable-broker"
+dnsBrokerLambda: "herman-dns-broker"
+s3:
+  defaultEncryption: "AES256"
+newRelic:
+  accountId: 1234567
+  nrLambda: "herman-newrelic-broker"
+externalElbSecurityGroups:
+  - "sg-1"
+  - "sg-2"
+sslCertificates:
+  - urlPrefix:          "*"
+    urlSuffix:          "mysite.com"
+    arn:                "arn:mycert"
+    internetFacingUrl:  false
+splunkInstances:
+  - httpEventCollectorUrl:  "https://logshaper.com"
+    webUrl:                 "https://splunkcloud.com"
+customBrokers:
+  - name: "herman-rds-broker"
+    phase: "PREPUSH"
+    variablesToPass:
+      - "bamboo.var1"
+      - "bamboo.var2"
+      - "bamboo.var3"
+    defaults:
+      vpcId: vpc-1
+      subnetIds:
+        - subnet-1
+        - subnet-2
+        - subnet-3
+      sbu: SBU
