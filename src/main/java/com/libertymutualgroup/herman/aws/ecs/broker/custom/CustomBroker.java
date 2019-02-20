@@ -71,6 +71,11 @@ public class CustomBroker {
                 .withPayload(mapper.writeValueAsString(payload))
                 .withLogType(LogType.Tail);
 
+            logger.addLogEntry("**************************************************************");
+            logger.addLogEntry("Custom broker - " + definition.getName());
+            logger.addLogEntry(configuration.getDescription());
+            logger.addLogEntry("**************************************************************");
+
             logger.addLogEntry("Invoking Lambda " + definition.getName());
             logger.addLogEntry("With payload: " + mapper.writeValueAsString(payload));
             Future<InvokeResult> future = lambdaClient.invokeAsync(request);

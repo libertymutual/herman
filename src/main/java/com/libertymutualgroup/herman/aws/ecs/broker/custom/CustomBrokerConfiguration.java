@@ -3,13 +3,15 @@ package com.libertymutualgroup.herman.aws.ecs.broker.custom;
 import java.util.Map;
 
 public class CustomBrokerConfiguration {
+    private String description;
     private CustomBrokerPhase phase;
     private Map<String, String> variablesToPass;
     private Map<String,Object> defaults;
 
     public CustomBrokerConfiguration() {}
 
-    public CustomBrokerConfiguration(CustomBrokerPhase phase, Map<String, String> variablesToPass, Map<String, Object> defaults) {
+    public CustomBrokerConfiguration(String description, CustomBrokerPhase phase, Map<String, String> variablesToPass, Map<String, Object> defaults) {
+        this.description = description;
         this.phase = phase;
         this.variablesToPass = variablesToPass;
         this.defaults = defaults;
@@ -17,6 +19,14 @@ public class CustomBrokerConfiguration {
 
     public CustomBrokerPhase getPhase() {
         return phase;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public void setPhase(CustomBrokerPhase phase) {

@@ -62,7 +62,7 @@ public class CustomBrokerTest {
         customBrokerDefinition = new CustomBrokerDefinition("herman-rds-broker-papi", props);
         propertyHandler = new CliPropertyHandler(logger, "test", ".", customVariables);
         pushDefinition = loadTemplate("template.yml");
-        config = new CustomBrokerConfiguration(CustomBrokerPhase.PREPUSH, variablesToPass, defaults);
+        config = new CustomBrokerConfiguration("this is a test broker config", CustomBrokerPhase.PREPUSH, variablesToPass, defaults);
         MockitoAnnotations.initMocks(this);
         Mockito.when(pushContext.getPropertyHandler()).thenReturn(propertyHandler);
         Mockito.when(pushContext.getLogger()).thenReturn(logger);
