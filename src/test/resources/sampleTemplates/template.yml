@@ -27,4 +27,7 @@ volumes:
 - name: solr-data
   host:
     sourcePath: /solr/cores
-
+customBrokers:
+  herman-custom-broker:
+    var2: override
+    var3: ${env.var}

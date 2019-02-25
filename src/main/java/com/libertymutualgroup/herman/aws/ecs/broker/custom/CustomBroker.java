@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.libertymutualgroup.herman.aws.ecs.CustomBrokerDefinition;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushContext;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.broker.custom.CustomBrokerResponse.Status;
@@ -20,27 +19,27 @@ import java.io.IOException;
 import java.util.Base64;
 import java.util.Iterator;
 import java.util.Map.Entry;
-import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 public class CustomBroker {
-    private CustomBrokerDefinition definition;
-    private EcsPushContext pushContext;
+    private String name;
+    private Object definition;
     private EcsPushDefinition pushDefinition;
     private CustomBrokerConfiguration configuration;
     private AWSLambdaAsync lambdaClient;
     private HermanLogger logger;
 
     public CustomBroker(
-        CustomBrokerDefinition definition,
+        String name,
+        Object definition,
         EcsPushContext pushContext,
         EcsPushDefinition pushDefinition,
         CustomBrokerConfiguration configuration,
         AWSLambdaAsync lambdaClient
     ){
+        this.name = name;
         this.definition = definition;
-        this.pushContext = pushContext;
         this.pushDefinition = pushDefinition;
         this.logger = pushContext.getLogger();
         this.configuration = configuration;
@@ -48,40 +47,28 @@ public class CustomBroker {
     }
 
     public void runBroker(){
-        Properties props = pushContext.getPropertyHandler()
-            .lookupProperties(configuration.getVariablesToPass().keySet().toArray(new String[configuration.getVariablesToPass().size()]));
-
         ObjectMapper mapper = new ObjectMapper();
         mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
-        ObjectNode environment = mapper.createObjectNode();
         ObjectNode brokerDefinition = mapper.valueToTree(configuration.getDefaults());
-
-        if(props != null){
-            for(Entry<Object, Object> entry : props.entrySet()){
-                environment.set(configuration.getVariablesToPass().get(entry.getKey().toString()), mapper.valueToTree(entry.getValue()));
-            }
-        }
-
-        overlay(brokerDefinition, mapper.valueToTree(definition.getProperties()));
-
-        CustomBrokerPayload payload = new CustomBrokerPayload(pushDefinition, brokerDefinition, environment);
+        overlay(brokerDefinition, mapper.valueToTree(definition));
+        CustomBrokerPayload payload = new CustomBrokerPayload(pushDefinition, brokerDefinition);
 
         try{
             InvokeRequest request = new InvokeRequest()
-                .withFunctionName(definition.getName())
+                .withFunctionName(name)
                 .withPayload(mapper.writeValueAsString(payload))
                 .withLogType(LogType.Tail);
 
             logger.addLogEntry("**************************************************************");
-            logger.addLogEntry("Custom broker - " + definition.getName());
+            logger.addLogEntry("Custom broker - " + name);
             logger.addLogEntry(configuration.getDescription());
             logger.addLogEntry("**************************************************************");
 
-            logger.addLogEntry("Invoking Lambda " + definition.getName());
+            logger.addLogEntry("Invoking Lambda " + name);
             logger.addLogEntry("With payload: " + mapper.writeValueAsString(payload));
             Future<InvokeResult> future = lambdaClient.invokeAsync(request);
             while(!future.isDone()){
-                logger.addLogEntry("Custom broker " + definition.getName() + " running...");
+                logger.addLogEntry("Custom broker " + name + " running...");
                 Thread.sleep(5000);
             }
 
@@ -100,7 +87,7 @@ public class CustomBroker {
                 }
             }
 
-            logger.addLogEntry("Lambda " + definition.getName() + " finished");
+            logger.addLogEntry("Lambda " + name + " finished");
 
             if(response.getStatus() == Status.SUCCESS){
                 logger.addLogEntry("Lambda response: " + response.getMessage());
@@ -115,6 +102,8 @@ public class CustomBroker {
     }
 
     private void overlay(ObjectNode from, JsonNode with) {
+        if(from == null) return;
+
         for (Iterator<Entry<String, JsonNode>> i = with.fields(); i.hasNext();){
             Entry<String, JsonNode> field = i.next();
             if(field.getValue().isObject()){

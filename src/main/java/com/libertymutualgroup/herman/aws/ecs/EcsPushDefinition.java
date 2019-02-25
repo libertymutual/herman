@@ -37,6 +37,7 @@ import com.libertymutualgroup.herman.aws.ecs.service.EcsService;
 import com.libertymutualgroup.herman.aws.tags.HermanTag;
 
 import java.util.List;
+import java.util.Map;
 
 public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, DynamoAppDefinition, KinesisAppDefinition {
 
@@ -72,7 +73,7 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, Dy
     private List<Ulimit> ulimits;
     private List<WafRuleAction> wafRuleActions;
     private Boolean prePushOnly;
-    private List<CustomBrokerDefinition> customBrokers;
+    private Map<String, Object> customBrokers;
 
     public String getNewRelicApplicationName() {
         String newRelicApplicationName = null;
@@ -335,11 +336,11 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, Dy
         this.prePushOnly = prePushOnly;
     }
 
-    public List<CustomBrokerDefinition> getCustomBrokers() {
+    public Map<String, Object> getCustomBrokers() {
         return customBrokers;
     }
 
-    public void setCustomBrokers(List<CustomBrokerDefinition> customBrokers) {
+    public void setCustomBrokers(Map<String, Object> customBrokers) {
         this.customBrokers = customBrokers;
     }
 
