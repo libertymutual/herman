@@ -50,6 +50,11 @@ public class CustomBroker {
         ObjectMapper mapper = new ObjectMapper();
         mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
         ObjectNode brokerDefinition = mapper.valueToTree(configuration.getDefaults());
+
+        if(brokerDefinition == null){
+            brokerDefinition = mapper.createObjectNode();
+        }
+
         overlay(brokerDefinition, mapper.valueToTree(definition));
         CustomBrokerPayload payload = new CustomBrokerPayload(pushDefinition, brokerDefinition);
 
@@ -102,8 +107,6 @@ public class CustomBroker {
     }
 
     private void overlay(ObjectNode from, JsonNode with) {
-        if(from == null) return;
-
         for (Iterator<Entry<String, JsonNode>> i = with.fields(); i.hasNext();){
             Entry<String, JsonNode> field = i.next();
             if(field.getValue().isObject()){
