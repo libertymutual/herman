@@ -4,6 +4,7 @@ import java.util.Map;
 
 public class CustomBrokerConfiguration {
     private String description;
+    private String readme;
     private CustomBrokerPhase phase;
     private Map<String,Object> defaults;
 
@@ -25,6 +26,14 @@ public class CustomBrokerConfiguration {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getReadme() {
+        return readme;
+    }
+
+    public void setReadme(String readme) {
+        this.readme = readme;
     }
 
     public void setPhase(CustomBrokerPhase phase) {

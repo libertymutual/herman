@@ -67,6 +67,11 @@ public class CustomBroker {
             logger.addLogEntry("**************************************************************");
             logger.addLogEntry("Custom broker - " + name);
             logger.addLogEntry(configuration.getDescription());
+
+            if(configuration.getReadme() != null){
+                logger.addLogEntry("README: " + configuration.getReadme());
+            }
+
             logger.addLogEntry("**************************************************************");
 
             logger.addLogEntry("Invoking Lambda " + name);
