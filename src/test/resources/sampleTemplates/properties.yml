@@ -23,12 +23,9 @@ splunkInstances:
   - httpEventCollectorUrl:  "https://logshaper.com"
     webUrl:                 "https://splunkcloud.com"
 customBrokers:
-  - name: "herman-rds-broker"
+  herman-custom-broker:
+    description: this is a test description of the custom broker
     phase: "PREPUSH"
-    variablesToPass:
-      - "bamboo.var1"
-      - "bamboo.var2"
-      - "bamboo.var3"
     defaults:
       vpcId: vpc-1
       subnetIds:
@@ -36,3 +33,5 @@ customBrokers:
         - subnet-2
         - subnet-3
       sbu: SBU
+      var1: test
+      var2: other

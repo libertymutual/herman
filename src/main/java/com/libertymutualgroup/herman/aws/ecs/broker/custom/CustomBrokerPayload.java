@@ -6,12 +6,10 @@ import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 public class CustomBrokerPayload {
     private EcsPushDefinition pushDefinition;
     private JsonNode brokerDefinition;
-    private JsonNode environment;
 
-    public CustomBrokerPayload(EcsPushDefinition pushDefinition, JsonNode brokerDefinition, JsonNode environment) {
+    public CustomBrokerPayload(EcsPushDefinition pushDefinition, JsonNode brokerDefinition) {
         this.pushDefinition = pushDefinition;
         this.brokerDefinition = brokerDefinition;
-        this.environment = environment;
     }
 
     public EcsPushDefinition getPushDefinition() {
@@ -28,13 +26,5 @@ public class CustomBrokerPayload {
 
     public void setBrokerDefinition(JsonNode brokerDefinition) {
         this.brokerDefinition = brokerDefinition;
-    }
-
-    public JsonNode getEnvironment() {
-        return environment;
-    }
-
-    public void setEnvironment(JsonNode environment) {
-        this.environment = environment;
     }
 }

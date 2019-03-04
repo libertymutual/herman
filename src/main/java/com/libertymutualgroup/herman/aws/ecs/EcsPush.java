@@ -123,6 +123,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -899,11 +900,12 @@ public class EcsPush {
         CustomBrokerPhase phase
     ) {
         if(definition != null && definition.getCustomBrokers() != null){
-            for(CustomBrokerDefinition brokerDefinition: definition.getCustomBrokers()){
-                CustomBrokerConfiguration config = pushContext.getTaskProperties().getCustomBrokers().get(brokerDefinition.getName());
+            for(Entry<String, Object> entry: definition.getCustomBrokers().entrySet()){
+                CustomBrokerConfiguration config = pushContext.getTaskProperties().getCustomBrokers().get(entry.getKey());
                 if(config.getPhase() == phase){
                     CustomBroker customBroker = new CustomBroker(
-                        brokerDefinition,
+                        entry.getKey(),
+                        entry.getValue(),
                         pushContext,
                         definition,
                         config,
