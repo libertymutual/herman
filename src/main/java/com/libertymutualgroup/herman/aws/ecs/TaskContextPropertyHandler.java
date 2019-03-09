@@ -19,101 +19,26 @@ import com.atlassian.bamboo.deployments.execution.DeploymentTaskContext;
 import com.atlassian.bamboo.variable.CustomVariableContext;
 import com.atlassian.bamboo.variable.VariableContext;
 import com.atlassian.bamboo.variable.VariableDefinitionContext;
-import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
-import com.libertymutualgroup.herman.util.FileUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-public class TaskContextPropertyHandler implements PropertyHandler {
-
-    static final Pattern PROPERTY_PATTERN = Pattern.compile("\\$\\{([a-zA-Z0-9\\.\\_\\-]+)\\}");
-    private static final Logger LOGGER = LoggerFactory.getLogger(TaskContextPropertyHandler.class);
-    private Properties props = new Properties();
+public class TaskContextPropertyHandler extends PropertyHandler {
     private DeploymentTaskContext deploymentTaskContext;
     private CustomVariableContext customVariableContext;
     private Set<String> propertyKeysUsed = new HashSet<>();
 
     public TaskContextPropertyHandler(DeploymentTaskContext deploymentTaskContext,
         CustomVariableContext customVariableContext) {
+        super(
+            new AtlassianBuildLogger(deploymentTaskContext.getBuildLogger()),
+            deploymentTaskContext.getDeploymentContext().getEnvironmentName(),
+            deploymentTaskContext.getRootDirectory().getAbsolutePath()
+        );
         this.deploymentTaskContext = deploymentTaskContext;
         this.customVariableContext = customVariableContext;
-    }
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see com.libertymutualgroup.herman.aws.ecs.PropertyHandler#addProperty(java.lang.String,
-     * java.lang.String)
-     */
-    @Override
-    public void addProperty(String key, String value) {
-        props.put(key, value);
-    }
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * com.libertymutualgroup.herman.aws.ecs.PropertyHandler#mapInProperties(java.lang.String)
-     */
-    @Override
-    public String mapInProperties(String template) {
-        importPropFiles();
-
-        Set<String> propertiesToMatch = getPropertiesToMatch(template);
-        String result = template;
-        for (String prop : propertiesToMatch) {
-            String token = prop.replace("${", "");
-            token = token.replace("}", "");
-            Pattern groupPattern = Pattern.compile("\\$\\{(" + token + ")\\}");
-            Matcher matcher = groupPattern.matcher(result);
-            String value = lookupVariable(token);
-            if (value == null) {
-                throw new AwsExecException("Missing property set for " + token);
-            }
-            result = matcher.replaceAll(value);
-        }
-        return result;
-
-    }
-
-    Set<String> getPropertiesToMatch(String template) {
-        Set<String> propertiesToMatch = new HashSet<>();
-        Matcher propMatcher = PROPERTY_PATTERN.matcher(template);
-        while (propMatcher.find()) {
-            String propVal = propMatcher.group();
-            propertiesToMatch.add(propVal);
-        }
-        return propertiesToMatch;
-    }
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * com.libertymutualgroup.herman.aws.ecs.PropertyHandler#lookupProperties(java.lang.String)
-     */
-    @Override
-    public Properties lookupProperties(String... propList) {
-        Properties newProps = new Properties();
-        for (String prop : propList) {
-            String val = lookupVariable(prop);
-            if (val != null) {
-                newProps.put(prop, val);
-            }
-        }
-        return newProps;
     }
 
     /*
@@ -189,26 +114,7 @@ public class TaskContextPropertyHandler implements PropertyHandler {
         }
     }
 
-    private void importPropFiles() {
-        String env = deploymentTaskContext.getDeploymentContext().getEnvironmentName();
-        FileUtil util = new FileUtil(deploymentTaskContext.getRootDirectory().getAbsolutePath(),
-            new AtlassianBuildLogger(deploymentTaskContext.getBuildLogger()));
-        String envProps = util.findFile(env + ".properties", true);
-
-        if (props != null && envProps != null) {
-            try {
-                InputStream propStream = new ByteArrayInputStream(envProps.getBytes());
-                props.load(propStream);
-            } catch (IOException e) {
-                LOGGER.debug("Error loading properties file: " + env, e);
-                deploymentTaskContext.getBuildLogger()
-                    .addBuildLogEntry("Error loading " + env + ".properties: " + e.getMessage());
-            }
-        }
-    }
-
-    public Set<String> getPropertyKeysUsed() {
+    Set<String> getPropertyKeysUsed() {
         return propertyKeysUsed;
     }
-
 }
