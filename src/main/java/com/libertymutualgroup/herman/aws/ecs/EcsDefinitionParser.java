@@ -71,7 +71,7 @@ public class EcsDefinitionParser {
         EcsPushDefinition ecsPushDefinition;
         try {
             // parse out any YAML comments
-            template = mapper.writeValueAsString(mapper.readValue(handler.mapInProperties(template), Object.class));
+            template = mapper.writeValueAsString(mapper.readValue(template, Object.class));
             ecsPushDefinition = mapper.readValue(handler.mapInProperties(template), EcsPushDefinition.class);
         } catch (Exception e) {
             throw new AwsExecException(e);

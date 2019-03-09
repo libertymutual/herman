@@ -2,6 +2,7 @@ package com.libertymutualgroup.herman.aws.ecs;
 
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.logging.SysoutLogger;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -30,14 +31,15 @@ public class EcsDefinitionParserTest {
 
     @Test
     public void shouldMapInProperties(){
-        handler.addProperty("myVar", "testvalue");
+        String var = "testValue";
+        handler.addProperty("myVar", var);
         String template = baseTemplate.append("appName: ${myVar}").toString();
-        parser.parse(template, false);
+        EcsPushDefinition def = parser.parse(template, false);
+        Assert.assertEquals(var, def.getAppName());
     }
 
     @Test
     public void shouldNotMapPropertiesIntoComments(){
-        handler.addProperty("test", "value");
         String template = baseTemplate.append("# ${test}").toString();
         parser.parse(template, false);
     }
