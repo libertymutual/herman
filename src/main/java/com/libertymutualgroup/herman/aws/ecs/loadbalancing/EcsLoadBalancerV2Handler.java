@@ -56,6 +56,8 @@ import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,6 +133,10 @@ public class EcsLoadBalancerV2Handler {
 
         List<com.amazonaws.services.elasticloadbalancingv2.model.Tag> tags = getElbTagList(
             clusterMetadata.getClusterCftStackTags(), appName);
+        tags.addAll(definition.getTags().stream().map(hermanTag ->
+            new com.amazonaws.services.elasticloadbalancingv2.model.Tag().withKey(hermanTag.getKey()).withValue(hermanTag.getValue())
+        ).collect(Collectors.toList()));
+
         if (definition.getNotificationWebhook() != null) {
             tags.add(new com.amazonaws.services.elasticloadbalancingv2.model.Tag().withKey("NotificationWebhook")
                 .withValue(definition.getNotificationWebhook()));
