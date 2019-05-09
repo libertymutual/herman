@@ -56,6 +56,8 @@ import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,7 +77,7 @@ public class EcsLoadBalancerV2Handler {
     private ECSPushTaskProperties taskProperties;
 
     public EcsLoadBalancerV2Handler(AmazonElasticLoadBalancing elbClient, AWSLambda lambdaClient, CertHandler certHandler,
-        DnsRegistrar dnsRegistrar, HermanLogger buildLogger, ECSPushTaskProperties taskProperties) {
+                                    DnsRegistrar dnsRegistrar, HermanLogger buildLogger, ECSPushTaskProperties taskProperties) {
         this.elbClient = elbClient;
         this.lambdaClient = lambdaClient;
         this.certHandler = certHandler;
@@ -131,6 +133,10 @@ public class EcsLoadBalancerV2Handler {
 
         List<com.amazonaws.services.elasticloadbalancingv2.model.Tag> tags = getElbTagList(
             clusterMetadata.getClusterCftStackTags(), appName);
+        tags.addAll(definition.getTags().stream().map(hermanTag ->
+            new com.amazonaws.services.elasticloadbalancingv2.model.Tag().withKey(hermanTag.getKey()).withValue(hermanTag.getValue())
+        ).collect(Collectors.toList()));
+
         if (definition.getNotificationWebhook() != null) {
             tags.add(new com.amazonaws.services.elasticloadbalancingv2.model.Tag().withKey("NotificationWebhook")
                 .withValue(definition.getNotificationWebhook()));
@@ -223,9 +229,9 @@ public class EcsLoadBalancerV2Handler {
     }
 
     private void brokerDDoSWAFConfiguration(String appName, String protocol, String elbScheme,
-        com.amazonaws.services.elasticloadbalancingv2.model.LoadBalancer loadBalancer, EcsPushDefinition definition) {
+                                            com.amazonaws.services.elasticloadbalancingv2.model.LoadBalancer loadBalancer, EcsPushDefinition definition) {
         if (INTERNET_FACING.equals(elbScheme)
-                && HTTPS.equals(protocol)) {
+            && HTTPS.equals(protocol)) {
             if (taskProperties.getDdosWaf() != null && taskProperties.getDdosWaf().getDdosWafLambda() != null) {
                 DdosWafBrokerProperties customProperties = getDdosWafBrokerPropertiesForApplication(definition);
                 DdosWafBroker ddosWafBroker = new DdosWafBroker(buildLogger, customProperties, lambdaClient);
@@ -332,7 +338,7 @@ public class EcsLoadBalancerV2Handler {
     }
 
     private List<com.amazonaws.services.elasticloadbalancingv2.model.Tag> getElbTagList(List<Tag> tags,
-        String appName) {
+                                                                                        String appName) {
         List<com.amazonaws.services.elasticloadbalancingv2.model.Tag> result = new ArrayList<>();
         for (Tag cftTag: tags) {
             if ("Name".equals(cftTag.getKey())) {
