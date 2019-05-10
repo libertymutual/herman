@@ -133,9 +133,11 @@ public class EcsLoadBalancerV2Handler {
 
         List<com.amazonaws.services.elasticloadbalancingv2.model.Tag> tags = getElbTagList(
             clusterMetadata.getClusterCftStackTags(), appName);
-        tags.addAll(definition.getTags().stream().map(hermanTag ->
-            new com.amazonaws.services.elasticloadbalancingv2.model.Tag().withKey(hermanTag.getKey()).withValue(hermanTag.getValue())
-        ).collect(Collectors.toList()));
+        if (definition.getTags() != null) {
+            tags.addAll(definition.getTags().stream().map(hermanTag ->
+                new com.amazonaws.services.elasticloadbalancingv2.model.Tag().withKey(hermanTag.getKey()).withValue(hermanTag.getValue())
+            ).collect(Collectors.toList()));
+        }
 
         if (definition.getNotificationWebhook() != null) {
             tags.add(new com.amazonaws.services.elasticloadbalancingv2.model.Tag().withKey("NotificationWebhook")
