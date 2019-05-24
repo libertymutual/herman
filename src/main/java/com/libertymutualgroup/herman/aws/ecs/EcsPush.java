@@ -717,7 +717,7 @@ public class EcsPush {
         brokerKinesisStream(definition);
         brokerRds(definition, injectMagic, clusterMetadata, applicationKeyId);
         brokerDynamoDB(definition);
-        brokerCustom(definition, pushContext, lambdaAsyncClient, CustomBrokerPhase.PREPUSH);
+        brokerCustom(definition, pushContext, clusterMetadata, lambdaAsyncClient, CustomBrokerPhase.PREPUSH);
     }
 
 
@@ -822,7 +822,7 @@ public class EcsPush {
         }
     }
 
-    private void brokerServicesPostPush(EcsPushDefinition definition, EcsClusterMetadata meta) {
+    private void brokerServicesPostPush(EcsPushDefinition definition, EcsClusterMetadata clusterMetadata) {
         if (taskProperties.getNewRelic() != null) {
             NewRelicBrokerConfiguration newRelicBrokerConfiguration = new NewRelicBrokerConfiguration()
                 .withBrokerProperties(taskProperties.getNewRelic());
@@ -836,15 +836,15 @@ public class EcsPush {
                 definition.getNewRelic(),
                 definition.getAppName(),
                 definition.getNewRelicApplicationName(),
-                meta.getNewrelicLicenseKey());
+                clusterMetadata.getNewrelicLicenseKey());
         }
 
         if (definition.getBetaAutoscale() != null) {
             AutoscalingBroker asb = new AutoscalingBroker(pushContext);
-            asb.broker(meta, definition);
+            asb.broker(clusterMetadata, definition);
         }
 
-        brokerCustom(definition, pushContext, lambdaAsyncClient, CustomBrokerPhase.POSTPUSH);
+        brokerCustom(definition, pushContext, clusterMetadata, lambdaAsyncClient, CustomBrokerPhase.POSTPUSH);
     }
 
     private void logInvocationInCloudWatch(EcsPushDefinition definition) {
@@ -896,6 +896,7 @@ public class EcsPush {
     private void brokerCustom(
         EcsPushDefinition definition,
         EcsPushContext pushContext,
+        EcsClusterMetadata clusterMetadata,
         AWSLambdaAsync lambdaAsyncClient,
         CustomBrokerPhase phase
     ) {
@@ -908,6 +909,7 @@ public class EcsPush {
                         entry.getValue(),
                         pushContext,
                         definition,
+                        clusterMetadata,
                         config,
                         lambdaAsyncClient
                     );
