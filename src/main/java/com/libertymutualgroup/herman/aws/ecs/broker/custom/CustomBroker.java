@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushContext;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.broker.custom.CustomBrokerResponse.Status;
+import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 
 import java.io.IOException;
@@ -26,6 +27,7 @@ public class CustomBroker {
     private String name;
     private Object definition;
     private EcsPushDefinition pushDefinition;
+    private EcsClusterMetadata clusterMetadata;
     private CustomBrokerConfiguration configuration;
     private AWSLambdaAsync lambdaClient;
     private HermanLogger logger;
@@ -35,12 +37,14 @@ public class CustomBroker {
         Object definition,
         EcsPushContext pushContext,
         EcsPushDefinition pushDefinition,
+        EcsClusterMetadata clusterMetadata,
         CustomBrokerConfiguration configuration,
         AWSLambdaAsync lambdaClient
     ){
         this.name = name;
         this.definition = definition;
         this.pushDefinition = pushDefinition;
+        this.clusterMetadata = clusterMetadata;
         this.logger = pushContext.getLogger();
         this.configuration = configuration;
         this.lambdaClient = lambdaClient;
@@ -56,7 +60,7 @@ public class CustomBroker {
         }
 
         overlay(brokerDefinition, mapper.valueToTree(definition));
-        CustomBrokerPayload payload = new CustomBrokerPayload(pushDefinition, brokerDefinition);
+        CustomBrokerPayload payload = new CustomBrokerPayload(pushDefinition, clusterMetadata, brokerDefinition);
 
         try{
             InvokeRequest request = new InvokeRequest()
