@@ -11,6 +11,7 @@ import com.libertymutualgroup.herman.aws.ecs.EcsPushContext;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.broker.custom.CustomBrokerResponse.Status;
+import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.logging.SysoutLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
@@ -40,6 +41,7 @@ public class CustomBrokerTest {
     private PropertyHandler propertyHandler;
     private HermanLogger logger = new SysoutLogger();
     private EcsPushDefinition pushDefinition;
+    private EcsClusterMetadata clusterMetadata;
     private CustomBrokerConfiguration config;
     private ObjectMapper mapper = new ObjectMapper();
     private Object brokerDefinition;
@@ -51,6 +53,7 @@ public class CustomBrokerTest {
         propertyHandler = new CliPropertyHandler(logger, "test", ".", new HashMap<>());
         propertyHandler.addProperty("env.var", "envvarvalue");
         pushDefinition = loadTemplate("template.yml", propertyHandler);
+        clusterMetadata = new EcsClusterMetadata();
         ECSPushTaskProperties ecsPushTaskProperties = loadTaskProperties("properties.yml", propertyHandler);
         config = ecsPushTaskProperties.getCustomBrokers().get(brokerName);
         brokerDefinition = pushDefinition.getCustomBrokers().get(brokerName);
@@ -78,6 +81,7 @@ public class CustomBrokerTest {
             brokerDefinition,
             pushContext,
             pushDefinition,
+            clusterMetadata,
             config,
             lambdaClient
         );
