@@ -30,4 +30,12 @@ public class CustomBrokerPayload {
     public void setBrokerDefinition(JsonNode brokerDefinition) {
         this.brokerDefinition = brokerDefinition;
     }
+
+    public EcsClusterMetadata getClusterMetadata() {
+        return clusterMetadata;
+    }
+
+    public void setClusterMetadata(EcsClusterMetadata clusterMetadata) {
+        this.clusterMetadata = clusterMetadata;
+    }
 }
