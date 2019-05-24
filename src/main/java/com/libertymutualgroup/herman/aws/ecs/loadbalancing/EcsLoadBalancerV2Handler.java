@@ -52,6 +52,7 @@ import com.libertymutualgroup.herman.aws.ecs.broker.ddoswaf.DdosWafBroker;
 import com.libertymutualgroup.herman.aws.ecs.broker.ddoswaf.DdosWafBrokerProperties;
 import com.libertymutualgroup.herman.aws.ecs.broker.ddoswaf.WafRuleAction;
 import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
+import com.libertymutualgroup.herman.aws.tags.HermanTag;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
 import java.util.ArrayList;
@@ -134,6 +135,9 @@ public class EcsLoadBalancerV2Handler {
         List<com.amazonaws.services.elasticloadbalancingv2.model.Tag> tags = getElbTagList(
             clusterMetadata.getClusterCftStackTags(), appName);
         if (definition.getTags() != null) {
+            for (HermanTag deftag : definition.getTags()) {
+                tags.removeIf(elbtag -> deftag.getKey().equals(elbtag.getKey()));
+            }
             tags.addAll(definition.getTags().stream().map(hermanTag ->
                 new com.amazonaws.services.elasticloadbalancingv2.model.Tag().withKey(hermanTag.getKey()).withValue(hermanTag.getValue())
             ).collect(Collectors.toList()));
