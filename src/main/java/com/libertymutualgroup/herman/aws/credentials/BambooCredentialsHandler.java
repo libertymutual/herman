@@ -19,6 +19,7 @@ import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.auth.InstanceProfileCredentialsProvider;
+import com.amazonaws.retry.PredefinedRetryPolicies;
 import com.atlassian.bamboo.task.CommonTaskContext;
 import com.atlassian.bamboo.variable.VariableContext;
 import com.atlassian.bamboo.variable.VariableDefinitionContext;
@@ -59,7 +60,9 @@ public class BambooCredentialsHandler extends CredentialsHandler {
     }
 
     public static ClientConfiguration getConfiguration() {
-        return new ClientConfiguration().withMaxErrorRetry(10);
+        return new ClientConfiguration()
+            .withMaxErrorRetry(10)
+            .withRetryPolicy(PredefinedRetryPolicies.getDefaultRetryPolicyWithCustomMaxRetries(10));
     }
 
     private static String lookupVar(String key, CommonTaskContext context) {

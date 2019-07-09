@@ -18,15 +18,12 @@ package com.libertymutualgroup.herman.aws.credentials;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.retry.PredefinedRetryPolicies;
 
 public class CredentialsHandler {
 
     public AWSCredentials getAWSCredentials() {
         return new DefaultAWSCredentialsProviderChain().getCredentials();
-    }
-
-    public ClientConfiguration getAWSConfiguration() {
-        return new ClientConfiguration().withMaxErrorRetry(10);
     }
 
     // Don't want to change every file in this PR, will refactor later
@@ -35,6 +32,8 @@ public class CredentialsHandler {
     }
 
     public static ClientConfiguration getConfiguration() {
-        return new ClientConfiguration().withMaxErrorRetry(10);
+        return new ClientConfiguration()
+            .withMaxErrorRetry(10)
+            .withRetryPolicy(PredefinedRetryPolicies.getDefaultRetryPolicyWithCustomMaxRetries(10));
     }
 }
