@@ -16,7 +16,13 @@
 package com.libertymutualgroup.herman.aws.ecs.broker.sns;
 
 import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.model.*;
+import com.amazonaws.services.sns.model.CreateTopicRequest;
+import com.amazonaws.services.sns.model.CreateTopicResult;
+import com.amazonaws.services.sns.model.SetTopicAttributesRequest;
+import com.amazonaws.services.sns.model.SubscribeRequest;
+import com.amazonaws.services.sns.model.SubscribeResult;
+import com.amazonaws.services.sns.model.Subscription;
+import com.amazonaws.services.sns.model.UnsubscribeRequest;
 import com.amazonaws.util.StringUtils;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.logging.HermanLogger;
@@ -78,17 +84,24 @@ public class SnsBroker {
             String endpoint = subscription.getEndpoint();
             String rawMessageDelivery = subscription.getRawMessageDelivery();
             if (!StringUtils.isNullOrEmpty(protocol) && !StringUtils.isNullOrEmpty(endpoint)) {
-                logger.addLogEntry("Adding subscription with protocol: " + protocol + AND_ENDPOINT + endpoint);
-                SubscribeRequest subscribeRequest = new SubscribeRequest(topicArn, protocol, endpoint);
-                SubscribeResult subscribeResult = client.subscribe(subscribeRequest);
+
+                Map<String,String> attributes = new HashMap<>();
+
                 if(!StringUtils.isNullOrEmpty(rawMessageDelivery)){
                     logger.addLogEntry("Update subscription with RawMessageDelivery: " + protocol + AND_ENDPOINT + endpoint
-                            + AND_RAW_MESSAGE_DELIVERY + rawMessageDelivery);
-                    client.setSubscriptionAttributes(subscribeResult.getSubscriptionArn(), RAW_MESSAGE_DELIVERY, rawMessageDelivery);
-                } else {
-                    logger.addLogEntry("Update RawMessageDelivery to default status - false");
-                    client.setSubscriptionAttributes(subscribeResult.getSubscriptionArn(), RAW_MESSAGE_DELIVERY, DEFAULT_STATUS);
+                        + AND_RAW_MESSAGE_DELIVERY + rawMessageDelivery);
+                    attributes.put(RAW_MESSAGE_DELIVERY, rawMessageDelivery);
                 }
+
+                logger.addLogEntry("Adding subscription with protocol: " + protocol + AND_ENDPOINT + endpoint);
+                SubscribeRequest subscribeRequest = new SubscribeRequest()
+                    .withTopicArn(topicArn)
+                    .withProtocol(protocol)
+                    .withEndpoint(endpoint)
+                    .withAttributes(attributes);
+
+                SubscribeResult subscribeResult = client.subscribe(subscribeRequest);
+                logger.addLogEntry("Subscription created successfully with ARN: " + subscribeResult.getSubscriptionArn());
             } else {
                 logger.addLogEntry("Skipping subscription with protocol: " + protocol + AND_ENDPOINT + endpoint);
             }

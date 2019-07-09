@@ -5,6 +5,8 @@ import com.amazonaws.services.sns.model.CreateTopicRequest;
 import com.amazonaws.services.sns.model.CreateTopicResult;
 import com.amazonaws.services.sns.model.GetTopicAttributesResult;
 import com.amazonaws.services.sns.model.SetTopicAttributesRequest;
+import com.amazonaws.services.sns.model.SubscribeRequest;
+import com.amazonaws.services.sns.model.SubscribeResult;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import org.junit.Before;
@@ -12,7 +14,9 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.mockito.Matchers.any;
@@ -58,6 +62,49 @@ public class SnsBrokerTest {
         when(client.getTopicAttributes(topicArn)).thenReturn(result);
         snsBroker.brokerTopic(client, snsTopic, null);
         verify(client, times(12)).setTopicAttributes(any(SetTopicAttributesRequest.class));
+    }
+
+    @Test
+    public void shouldNotSetRawMessageDeliveryIfNotSpecified() throws Exception {
+        SnsTopic snsTopic = new SnsTopic();
+        SnsSubscription sqs = new SnsSubscription();
+        sqs.setProtocol("sqs");
+        sqs.setEndpoint("test");
+        sqs.setRawMessageDelivery("true");
+
+        SnsSubscription lambda = new SnsSubscription();
+        lambda.setProtocol("lambda");
+        lambda.setEndpoint("test");
+
+        List<SnsSubscription> subscriptions = new ArrayList<>();
+        subscriptions.add(sqs);
+        subscriptions.add(lambda);
+
+        snsTopic.setSubscriptions(subscriptions);
+
+        when(client.createTopic(any(CreateTopicRequest.class)))
+            .thenReturn(new CreateTopicResult().withTopicArn("test"));
+
+        when(client.getTopicAttributes(any(String.class))).thenReturn(new GetTopicAttributesResult());
+        when(client.subscribe(any(SubscribeRequest.class))).thenReturn(new SubscribeResult().withSubscriptionArn("test"));
+
+        snsBroker.brokerTopic(client, snsTopic, null);
+
+        verify(client).subscribe(new SubscribeRequest()
+            .withTopicArn("test")
+            .withProtocol(lambda.getProtocol())
+            .withEndpoint(lambda.getEndpoint())
+        );
+
+        Map<String,String> expectedAttributes = new HashMap<>();
+        expectedAttributes.put("RawMessageDelivery", "true");
+
+        verify(client).subscribe(new SubscribeRequest()
+            .withTopicArn("test")
+            .withProtocol(sqs.getProtocol())
+            .withEndpoint(sqs.getEndpoint())
+            .withAttributes(expectedAttributes)
+        );
     }
 
     private Map<String, String> getPossibleDeliveryAttributeNameValueMap() {
