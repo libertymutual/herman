@@ -5,6 +5,8 @@
  */
 package com.libertymutualgroup.herman.aws.ecs.cluster;
 
+import com.libertymutualgroup.herman.aws.tags.HermanTag;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,6 +18,7 @@ public class EcsClusterPushDefinition {
     private boolean drainingEnabled = true;
     private int maxConcurrentDraining = 3;
     private List<CftParameter> cftParameters = new ArrayList<>();
+    private List<HermanTag> tags;
 
     public String getClusterName() {
         return clusterName;
@@ -71,5 +74,13 @@ public class EcsClusterPushDefinition {
 
     public void setCftParameters(List<CftParameter> cftParameters) {
         this.cftParameters = cftParameters;
+    }
+
+    public List<HermanTag> getTags() {
+        return tags;
+    }
+
+    public void setTags(List<HermanTag> tags) {
+        this.tags = tags;
     }
 }

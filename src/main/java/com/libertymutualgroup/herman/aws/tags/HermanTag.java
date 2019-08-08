@@ -42,6 +42,14 @@ public class HermanTag {
         return new HermanTag(tag.getKey(), tag.getValue());
     }
 
+    public static HermanTag fromEcsTag(com.amazonaws.services.ecs.model.Tag tag) {
+        return new HermanTag(tag.getKey(), tag.getValue());
+    }
+
+    public static HermanTag fromCftTag(com.amazonaws.services.cloudformation.model.Tag tag) {
+        return new HermanTag(tag.getKey(), tag.getValue());
+    }
+
     public Tag toEc2Tag() {
         return new Tag()
             .withKey(this.key)
@@ -62,6 +70,18 @@ public class HermanTag {
 
     public com.amazonaws.services.dynamodbv2.model.Tag toDynamoTag() {
         return new com.amazonaws.services.dynamodbv2.model.Tag()
+            .withKey(this.key)
+            .withValue(this.value);
+    }
+
+    public com.amazonaws.services.ecs.model.Tag toEcsTag() {
+        return new com.amazonaws.services.ecs.model.Tag()
+            .withKey(this.key)
+            .withValue(this.value);
+    }
+
+    public com.amazonaws.services.cloudformation.model.Tag toCftTag() {
+        return new com.amazonaws.services.cloudformation.model.Tag()
             .withKey(this.key)
             .withValue(this.value);
     }
