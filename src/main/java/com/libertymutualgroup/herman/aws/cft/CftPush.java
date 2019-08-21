@@ -37,6 +37,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
+import com.libertymutualgroup.herman.aws.tags.HermanTag;
+import com.libertymutualgroup.herman.aws.tags.TagUtil;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.cft.CftPushTaskProperties;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -93,6 +95,10 @@ public class CftPush { ;
     }
 
     public void push(String stackName, String template) {
+        this.push(stackName, template, null);
+    }
+
+    public void push(String stackName, String template, List<HermanTag> stackTags) {
 
         // Input data outside of CFT
         String env = taskContext.getEnvName();
@@ -113,7 +119,7 @@ public class CftPush { ;
             stackName = stackName + "-" + region.getName();
         }
 
-        createStack(stackName, template);
+        createStack(stackName, template, stackTags);
 
         buildLogger.addLogEntry("Stack triggered: " + stackName);
         this.stackUtils.waitForCompletion(stackName);
@@ -181,28 +187,31 @@ public class CftPush { ;
 
     }
 
-    private void createStack(String name, String template) {
+    private void createStack(String name, String template, List<HermanTag> stackTags) {
         List<Parameter> parameters = convertPropsToCftParams(template);
 
         String deployEnvironment = taskContext.getEnvName();
 
-        List<Tag> tags = new ArrayList<>();
-        tags.add(new Tag().withKey("Name").withValue(name));
-        tags.add(new Tag().withKey(this.taskProperties.getAppTagKey()).withValue(name));
-        tags.add(new Tag().withKey(this.taskProperties.getAppTagKey() + "_uid").withValue("app-e312c4299a"));
-        tags.add(new Tag().withKey(this.taskProperties.getAppTagKey() + "_env").withValue(deployEnvironment));
-        tags.add(new Tag().withKey(this.taskProperties.getSbuTagKey()).withValue(this.taskProperties.getSbu()));
+        List<HermanTag> defaultTags = new ArrayList<>();
+        defaultTags.add(new HermanTag().withKey("Name").withValue(name));
+        defaultTags.add(new HermanTag().withKey(this.taskProperties.getAppTagKey()).withValue(name));
+        defaultTags.add(new HermanTag().withKey(this.taskProperties.getAppTagKey() + "_uid").withValue("app-e312c4299a"));
+        defaultTags.add(new HermanTag().withKey(this.taskProperties.getAppTagKey() + "_env").withValue(deployEnvironment));
+        defaultTags.add(new HermanTag().withKey(this.taskProperties.getSbuTagKey()).withValue(this.taskProperties.getSbu()));
 
         Properties bambooContext = this.propertyHandler.lookupProperties(BUILD_NUMBER, MAVEN_GROUP, MAVEN_ART,
             MAVEN_VERS);
 
         String artifactId = bambooContext.getProperty(MAVEN_ART);
-        if (artifactId != null && StringUtils.isNotEmpty(artifactId)) {
-            tags.add(new Tag().withKey(this.taskProperties.getCompany() + "_gav")
+        if (StringUtils.isNotEmpty(artifactId)) {
+            defaultTags.add(new HermanTag().withKey(this.taskProperties.getCompany() + "_gav")
                 .withValue(bambooContext.getProperty(MAVEN_GROUP) + ":"
                     + bambooContext.getProperty(MAVEN_ART) + ":"
                     + bambooContext.getProperty(MAVEN_VERS)));
         }
+
+        List<HermanTag> mergedTags = TagUtil.mergeTags(defaultTags, stackTags);
+        List<Tag> tags = TagUtil.hermanToCftTags(mergedTags);
 
         try {
             CreateStackRequest createStackRequest = new CreateStackRequest().withCapabilities("CAPABILITY_IAM")

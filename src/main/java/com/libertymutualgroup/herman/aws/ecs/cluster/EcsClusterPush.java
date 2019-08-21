@@ -45,6 +45,9 @@ import com.amazonaws.services.ecs.model.DescribeContainerInstancesRequest;
 import com.amazonaws.services.ecs.model.DescribeContainerInstancesResult;
 import com.amazonaws.services.ecs.model.ListContainerInstancesRequest;
 import com.amazonaws.services.ecs.model.ListContainerInstancesResult;
+import com.amazonaws.services.ecs.model.Tag;
+import com.amazonaws.services.ecs.model.TagResourceRequest;
+import com.amazonaws.services.ecs.model.UntagResourceRequest;
 import com.amazonaws.services.ecs.model.UpdateContainerInstancesStateRequest;
 import com.amazonaws.util.StringUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -57,6 +60,7 @@ import com.libertymutualgroup.herman.aws.cft.CftPushContext;
 import com.libertymutualgroup.herman.aws.cft.StackUtils;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushContext;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
+import com.libertymutualgroup.herman.aws.tags.TagUtil;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.task.cft.CftPushPropertyFactory;
 import com.libertymutualgroup.herman.task.cft.CftPushTaskProperties;
@@ -137,7 +141,8 @@ public class EcsClusterPush {
             this.logger.addLogEntry("Creating new cluster: " + this.definition.getClusterName());
             // ECS Cluster
             CreateClusterRequest newClusterRequest = new CreateClusterRequest()
-                .withClusterName(this.definition.getClusterName());
+                .withClusterName(this.definition.getClusterName())
+                .withTags(TagUtil.hermanToEcsTags(this.definition.getTags()));
             Cluster newCluster = this.ecsClient.createCluster(newClusterRequest).getCluster();
 
             addClusterProperties(newCluster);
@@ -166,6 +171,20 @@ public class EcsClusterPush {
                 throw new AwsExecException("Unable to find existing cluster with name " + this.definition.getClusterName());
             }
             Cluster existingCluster = clusters.getClusters().get(0);
+
+            this.logger.addLogEntry("... Updating cluster tags");
+
+            UntagResourceRequest clearTagsRequest = new UntagResourceRequest()
+                .withTagKeys(existingCluster.getTags().stream().map(Tag::getKey).collect(Collectors.toList()))
+                .withResourceArn(existingCluster.getClusterArn());
+            this.ecsClient.untagResource(clearTagsRequest);
+
+            TagResourceRequest addTagsRequest = new TagResourceRequest()
+                .withTags(TagUtil.hermanToEcsTags(this.definition.getTags()))
+                .withResourceArn(existingCluster.getClusterArn());
+            this.ecsClient.tagResource(addTagsRequest);
+
+            this.logger.addLogEntry("... Cluster tagging update complete!");
 
             addClusterProperties(existingCluster);
             // Shared Stack
@@ -345,7 +364,7 @@ public class EcsClusterPush {
             .withTaskProperties(cftPushTaskProperties);
         CftPush cftPush = new CftPush(cftPushContext);
 
-        cftPush.push(stackName, stackTemplate);
+        cftPush.push(stackName, stackTemplate, this.definition.getTags());
 
         return this.cfnClient.describeStacks(new DescribeStacksRequest().withStackName(stackName)).getStacks().get(0);
     }
