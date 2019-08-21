@@ -174,10 +174,12 @@ public class EcsClusterPush {
 
             this.logger.addLogEntry("... Updating cluster tags");
 
-            UntagResourceRequest clearTagsRequest = new UntagResourceRequest()
-                .withTagKeys(existingCluster.getTags().stream().map(Tag::getKey).collect(Collectors.toList()))
-                .withResourceArn(existingCluster.getClusterArn());
-            this.ecsClient.untagResource(clearTagsRequest);
+            if (!existingCluster.getTags().isEmpty()) {
+                UntagResourceRequest clearTagsRequest = new UntagResourceRequest()
+                    .withTagKeys(existingCluster.getTags().stream().map(Tag::getKey).collect(Collectors.toList()))
+                    .withResourceArn(existingCluster.getClusterArn());
+                this.ecsClient.untagResource(clearTagsRequest);
+            }
 
             TagResourceRequest addTagsRequest = new TagResourceRequest()
                 .withTags(TagUtil.hermanToEcsTags(this.definition.getTags()))
