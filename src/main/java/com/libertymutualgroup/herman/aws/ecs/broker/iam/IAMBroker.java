@@ -110,7 +110,7 @@ public class IAMBroker {
 
         role = getRole(client, appName);
         List<Tag> existingTags = role.getTags();
-        if (existingTags.size() > 0 && tags.size() > 0) {
+        if (existingTags != null && existingTags.size() > 0 && tags != null && tags.size() > 0) {
             List<Tag> tagsToRemove = existingTags.stream().filter(existingTag ->
                 tags.stream().anyMatch(newTag -> newTag.getKey().equals(existingTag.getKey()))
             ).collect(Collectors.toList());
