@@ -60,6 +60,7 @@ public class IAMBroker {
         PropertyHandler propertyHandler, PushType pushType, List<HermanTag> tags) {
         String appName = definition.getAppName();
         Role role = getRole(client, appName);
+        List<com.amazonaws.services.identitymanagement.model.Tag> iamTags = TagUtil.hermanToIamTags(tags);
 
         String assumePolicy;
         try {
@@ -73,14 +74,11 @@ public class IAMBroker {
         if (role == null) {
             buildLogger.addLogEntry("... Creating new role: " + definition.getAppName());
 
-            List<com.amazonaws.services.identitymanagement.model.Tag> iamTags = TagUtil.hermanToIamTags(tags);
-
             CreateRoleRequest createRoleRequest = new CreateRoleRequest()
                 .withPath("/aws-ecs/")
                 .withRoleName(definition.getAppName())
                 .withAssumeRolePolicyDocument(assumePolicy);
             client.createRole(createRoleRequest);
-            client.tagRole(new TagRoleRequest().withTags(iamTags));
 
         } else {
             buildLogger.addLogEntry("... Using existing role: " + definition.getAppName());
@@ -109,6 +107,7 @@ public class IAMBroker {
         }
 
         role = getRole(client, appName);
+        client.tagRole(new TagRoleRequest().withTags(iamTags));
         try {
             //Roles take a short bit to percolate in IAM, no real status
             Thread.sleep(10000);
