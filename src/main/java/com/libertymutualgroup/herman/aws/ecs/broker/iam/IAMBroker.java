@@ -107,7 +107,7 @@ public class IAMBroker {
         }
 
         role = getRole(client, appName);
-        client.tagRole(new TagRoleRequest().withTags(iamTags));
+        client.tagRole(new TagRoleRequest().withRoleName(appName).withTags(iamTags));
         try {
             //Roles take a short bit to percolate in IAM, no real status
             Thread.sleep(10000);
