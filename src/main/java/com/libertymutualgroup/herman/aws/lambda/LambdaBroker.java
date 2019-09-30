@@ -235,7 +235,7 @@ public class LambdaBroker {
         IAMBroker iamBroker = new IAMBroker(this.buildLogger);
         Role executionRole = iamBroker
             .brokerAppRole(this.iamClient, this.configuration, policy, this.context.getBambooPropertyHandler(),
-                PushType.LAMBDA);
+                PushType.LAMBDA, this.configuration.getTags());
         this.context.getBambooPropertyHandler().addProperty("app.iam", executionRole.getArn());
 
         FunctionCode functionCode;

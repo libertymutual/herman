@@ -43,4 +43,8 @@ public class HermanTagTest {
         assertThat(testTag.toDynamoTag(), instanceOf(com.amazonaws.services.dynamodbv2.model.Tag.class));
     }
 
+    @Test
+    public void testTagToIam(){
+        assertThat(testTag.toIamTag(), instanceOf(com.amazonaws.services.identitymanagement.model.Tag.class));
+    }
 }
