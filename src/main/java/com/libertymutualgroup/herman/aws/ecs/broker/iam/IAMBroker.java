@@ -24,8 +24,10 @@ import com.amazonaws.services.identitymanagement.model.GetRoleRequest;
 import com.amazonaws.services.identitymanagement.model.NoSuchEntityException;
 import com.amazonaws.services.identitymanagement.model.PutRolePolicyRequest;
 import com.amazonaws.services.identitymanagement.model.Role;
-import com.amazonaws.services.identitymanagement.model.UpdateAssumeRolePolicyRequest;
+import com.amazonaws.services.identitymanagement.model.Tag;
 import com.amazonaws.services.identitymanagement.model.TagRoleRequest;
+import com.amazonaws.services.identitymanagement.model.UntagRoleRequest;
+import com.amazonaws.services.identitymanagement.model.UpdateAssumeRolePolicyRequest;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.PushType;
@@ -39,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class IAMBroker {
 
@@ -60,7 +63,6 @@ public class IAMBroker {
         PropertyHandler propertyHandler, PushType pushType, List<HermanTag> tags) {
         String appName = definition.getAppName();
         Role role = getRole(client, appName);
-        List<com.amazonaws.services.identitymanagement.model.Tag> iamTags = TagUtil.hermanToIamTags(tags);
 
         String assumePolicy;
         try {
@@ -107,7 +109,32 @@ public class IAMBroker {
         }
 
         role = getRole(client, appName);
-        client.tagRole(new TagRoleRequest().withRoleName(appName).withTags(iamTags));
+        List<Tag> existingTags = role.getTags();
+        if (existingTags.size() > 0 && tags.size() > 0) {
+            List<Tag> tagsToRemove = existingTags.stream().filter(existingTag ->
+                tags.stream().anyMatch(newTag -> newTag.getKey().equals(existingTag.getKey()))
+            ).collect(Collectors.toList());
+
+            if (tagsToRemove.size() > 0) { // Remove tags that are on role but not new deploy
+                buildLogger.addLogEntry("Clearing old IAM tags");
+                client.untagRole(new UntagRoleRequest()
+                    .withRoleName(appName)
+                    .withTagKeys(tagsToRemove.stream().map(Tag::getKey).collect(Collectors.toList()))
+                );
+            }
+
+            buildLogger.addLogEntry("Updating IAM tags");
+            List<Tag> iamTags = TagUtil.hermanToIamTags(tags);
+            client.tagRole(new TagRoleRequest().withRoleName(appName).withTags(iamTags));
+        }
+        else if (existingTags.size() > 0) {
+            buildLogger.addLogEntry("Clearing old IAM tags");
+            client.untagRole(new UntagRoleRequest()
+                .withRoleName(appName)
+                .withTagKeys(existingTags.stream().map(Tag::getKey).collect(Collectors.toList()))
+            );
+        }
+
         try {
             //Roles take a short bit to percolate in IAM, no real status
             Thread.sleep(10000);
