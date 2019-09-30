@@ -112,7 +112,7 @@ public class IAMBroker {
         List<Tag> existingTags = role.getTags();
         if (existingTags != null && existingTags.size() > 0 && tags != null && tags.size() > 0) {
             List<Tag> tagsToRemove = existingTags.stream().filter(existingTag ->
-                tags.stream().anyMatch(newTag -> newTag.getKey().equals(existingTag.getKey()))
+                tags.stream().noneMatch(newTag -> newTag.getKey().equals(existingTag.getKey()))
             ).collect(Collectors.toList());
 
             if (tagsToRemove.size() > 0) { // Remove tags that are on role but not new deploy
@@ -122,17 +122,19 @@ public class IAMBroker {
                     .withTagKeys(tagsToRemove.stream().map(Tag::getKey).collect(Collectors.toList()))
                 );
             }
-
-            buildLogger.addLogEntry("Updating IAM tags");
-            List<Tag> iamTags = TagUtil.hermanToIamTags(tags);
-            client.tagRole(new TagRoleRequest().withRoleName(appName).withTags(iamTags));
         }
-        else if (existingTags.size() > 0) {
+        else if (existingTags != null && existingTags.size() > 0) { // Just clear all tags, there are no new tags on the
             buildLogger.addLogEntry("Clearing old IAM tags");
             client.untagRole(new UntagRoleRequest()
                 .withRoleName(appName)
                 .withTagKeys(existingTags.stream().map(Tag::getKey).collect(Collectors.toList()))
             );
+        }
+
+        if (tags != null && tags.size() > 0) {
+            buildLogger.addLogEntry("Updating IAM tags");
+            List<Tag> iamTags = TagUtil.hermanToIamTags(tags);
+            client.tagRole(new TagRoleRequest().withRoleName(appName).withTags(iamTags));
         }
 
         try {
