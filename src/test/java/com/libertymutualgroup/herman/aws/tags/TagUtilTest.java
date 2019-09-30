@@ -119,6 +119,18 @@ public class TagUtilTest {
     }
 
     @Test
+    public void testHermanToIamTags(){
+        String testKey = "testKey";
+        String testValue = "testValue";
+        ArrayList<HermanTag> hermanTags = new ArrayList<>();
+        hermanTags.add(new HermanTag(testKey, testValue));
+
+        List<com.amazonaws.services.identitymanagement.model.Tag> tags = TagUtil.hermanToIamTags(hermanTags);
+        assertEquals(testKey, tags.get(0).getKey());
+        assertEquals(testValue, tags.get(0).getValue());
+    }
+
+    @Test
     public void testHermanToMap() {
         String testKey = "testKey";
         String testValue = "testValue";

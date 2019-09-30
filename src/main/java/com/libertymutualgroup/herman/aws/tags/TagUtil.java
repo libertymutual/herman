@@ -56,6 +56,10 @@ public class TagUtil {
         return tags.stream().map(HermanTag::toCftTag).collect(Collectors.toList());
     }
 
+    public static List<com.amazonaws.services.identitymanagement.model.Tag> hermanToIamTags(List<HermanTag> tags) {
+        return tags.stream().map(HermanTag::toIamTag).collect(Collectors.toList());
+    }
+
     public static Map<String, String> hermanToMap(List<HermanTag> tags) {
         return tags.stream().collect(Collectors.toMap(HermanTag::getKey, HermanTag::getValue));
     }

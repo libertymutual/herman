@@ -15,7 +15,11 @@
  */
 package com.libertymutualgroup.herman.aws.ecs.broker.iam;
 
+import com.libertymutualgroup.herman.aws.tags.HermanTag;
+import java.util.List;
+
 public interface IamAppDefinition {
 
     String getAppName();
+    List<HermanTag> getTags();
 }

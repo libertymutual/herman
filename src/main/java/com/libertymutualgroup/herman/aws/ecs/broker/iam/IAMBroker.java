@@ -25,9 +25,12 @@ import com.amazonaws.services.identitymanagement.model.NoSuchEntityException;
 import com.amazonaws.services.identitymanagement.model.PutRolePolicyRequest;
 import com.amazonaws.services.identitymanagement.model.Role;
 import com.amazonaws.services.identitymanagement.model.UpdateAssumeRolePolicyRequest;
+import com.amazonaws.services.identitymanagement.model.TagRoleRequest;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.PushType;
+import com.libertymutualgroup.herman.aws.tags.HermanTag;
+import com.libertymutualgroup.herman.aws.tags.TagUtil;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
@@ -35,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 
 public class IAMBroker {
 
@@ -49,11 +53,11 @@ public class IAMBroker {
 
     public Role brokerAppRole(AmazonIdentityManagement client, IamAppDefinition definition, String rolePolicy,
         PropertyHandler propertyHandler) {
-        return brokerAppRole(client, definition, rolePolicy, propertyHandler, PushType.ECS);
+        return brokerAppRole(client, definition, rolePolicy, propertyHandler, PushType.ECS, definition.getTags());
     }
 
     public Role brokerAppRole(AmazonIdentityManagement client, IamAppDefinition definition, String rolePolicy,
-        PropertyHandler propertyHandler, PushType pushType) {
+        PropertyHandler propertyHandler, PushType pushType, List<HermanTag> tags) {
         String appName = definition.getAppName();
         Role role = getRole(client, appName);
 
@@ -69,11 +73,14 @@ public class IAMBroker {
         if (role == null) {
             buildLogger.addLogEntry("... Creating new role: " + definition.getAppName());
 
+            List<com.amazonaws.services.identitymanagement.model.Tag> iamTags = TagUtil.hermanToIamTags(tags);
+
             CreateRoleRequest createRoleRequest = new CreateRoleRequest()
                 .withPath("/aws-ecs/")
                 .withRoleName(definition.getAppName())
                 .withAssumeRolePolicyDocument(assumePolicy);
             client.createRole(createRoleRequest);
+            client.tagRole(new TagRoleRequest().withTags(iamTags));
 
         } else {
             buildLogger.addLogEntry("... Using existing role: " + definition.getAppName());
