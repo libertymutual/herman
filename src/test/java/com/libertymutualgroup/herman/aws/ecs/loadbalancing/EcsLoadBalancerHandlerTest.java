@@ -1,25 +1,8 @@
 package com.libertymutualgroup.herman.aws.ecs.loadbalancing;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import com.amazonaws.regions.Regions;
 import com.amazonaws.services.elasticloadbalancing.AmazonElasticLoadBalancing;
-import com.amazonaws.services.elasticloadbalancing.model.AddTagsRequest;
-import com.amazonaws.services.elasticloadbalancing.model.ApplySecurityGroupsToLoadBalancerRequest;
-import com.amazonaws.services.elasticloadbalancing.model.AttachLoadBalancerToSubnetsRequest;
-import com.amazonaws.services.elasticloadbalancing.model.ConfigureHealthCheckRequest;
-import com.amazonaws.services.elasticloadbalancing.model.CreateLoadBalancerListenersRequest;
-import com.amazonaws.services.elasticloadbalancing.model.CreateLoadBalancerRequest;
-import com.amazonaws.services.elasticloadbalancing.model.DescribeLoadBalancersRequest;
-import com.amazonaws.services.elasticloadbalancing.model.DescribeLoadBalancersResult;
-import com.amazonaws.services.elasticloadbalancing.model.DuplicateLoadBalancerNameException;
-import com.amazonaws.services.elasticloadbalancing.model.Listener;
-import com.amazonaws.services.elasticloadbalancing.model.LoadBalancerDescription;
-import com.amazonaws.services.elasticloadbalancing.model.Tag;
-import com.amazonaws.services.lambda.AWSLambda;
+import com.amazonaws.services.elasticloadbalancing.model.*;
+import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.EcsDefinitionParser;
 import com.libertymutualgroup.herman.aws.ecs.EcsPushDefinition;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
@@ -28,16 +11,20 @@ import com.libertymutualgroup.herman.aws.ecs.cluster.EcsClusterMetadata;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 import com.libertymutualgroup.herman.logging.SysoutLogger;
 import com.libertymutualgroup.herman.task.ecs.ECSPushTaskProperties;
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.*;
 
 public class EcsLoadBalancerHandlerTest {
 
@@ -48,6 +35,7 @@ public class EcsLoadBalancerHandlerTest {
 
     @Mock
     CertHandler certHandler;
+
     @Mock
     DnsRegistrar dnsRegistrar;
 
@@ -108,6 +96,20 @@ public class EcsLoadBalancerHandlerTest {
         ConfigureHealthCheckRequest req = new ConfigureHealthCheckRequest().withLoadBalancerName(pushDef.getAppName())
             .withHealthCheck(pushDef.getService().getHealthCheck());
         verify(elbClient).configureHealthCheck(req);
+    }
+
+    @Test(expected=AwsExecException.class)
+    public void shouldThrowExceptionWhenElbNameExceedsCharacterLimit() throws AwsExecException {
+        // GIVEN
+        EcsClusterMetadata meta = generateMetadata();
+        EcsPushDefinition pushDef = new EcsPushDefinition();
+
+        pushDef.setAppName("load-balancer-app-name-that-exceeds-max-length");
+
+        // WHEN
+        when(handler.createLoadBalancer(meta, pushDef)).thenThrow(new AwsExecException());
+
+        // THEN (exception thrown above)
     }
 
     @Test
