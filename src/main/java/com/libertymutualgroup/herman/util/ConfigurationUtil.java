@@ -45,7 +45,7 @@ public class ConfigurationUtil {
             S3Object fullObject = s3Client.getObject(new GetObjectRequest(hermanConfigBucket, CONFIG_FILE));
             return IOUtils.toString(fullObject.getObjectContent(), StandardCharsets.UTF_8.name());
         } catch (Exception ex) {
-            throw new RuntimeException("Error getting Herman Configuration from " + CONFIG_FILE, ex);
+            throw new RuntimeException(String.format("ERROR: This AWS Account is not configured for Herman! Please ensure that the appropriate configuration bucket and files are in place, or that you're using the correct AWS Account.\n\nRequested configuration file: ", CONFIG_FILE), ex);
         }
     }
 
