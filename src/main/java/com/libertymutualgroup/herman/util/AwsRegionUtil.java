@@ -26,17 +26,29 @@ public class AwsRegionUtil {
 
     public static Map<String, String> getRegionList() {
         Map<String, String> list = Maps.newHashMap();
-        list.put("us-east-1", "US East (N. Virginia)");
+
         list.put("us-east-2", "US East (Ohio)");
+        list.put("us-east-1", "US East (N. Virginia)");
         list.put("us-west-1", "US West (N. California)");
         list.put("us-west-2", "US West (Oregon)");
+        list.put("ap-east-1", "Asia Pacific (Hong Kong)");
+        list.put("ap-south-1", "Asia Pacific (Mumbai)");
+        list.put("ap-northeast-3", "Asia Pacific (Osaka-Local)");
+        list.put("ap-northeast-2", "Asia Pacific (Seoul)");
+        list.put("ap-southeast-1", "Asia Pacific (Singapore)");
+        list.put("ap-southeast-2", "Asia Pacific (Sydney)");
+        list.put("ap-northeast-1", "Asia Pacific (Tokyo)");
         list.put("ca-central-1", "Canada (Central)");
+        list.put("cn-north-1", "China (Beijing)");
+        list.put("cn-northwest-1", "China (Ningxia)");
         list.put("eu-central-1", "EU (Frankfurt)");
         list.put("eu-west-1", "EU (Ireland)");
         list.put("eu-west-2", "EU (London)");
-        list.put("ap-northeast-1", "Asia Pacific (Tokyo)");
-        list.put("ap-southeast-1", "Asia Pacific (Singapore)");
-        list.put("ap-southeast-2", "Asia Pacific (Sydney)");
+        list.put("eu-west-3", "EU (Paris)");
+        list.put("eu-north-1", "EU (Stockholm)");
+        list.put("me-south-1", "Middle East (Bahrain)");
+        list.put("sa-east-1", "South America (Sao Paulo)");
+
         return list;
     }
 }
