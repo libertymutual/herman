@@ -8,6 +8,7 @@ cftPushVariableBrokerLambda: "herman-cft-push-variable-broker"
 dnsBrokerLambda: "herman-dns-broker"
 s3:
   defaultEncryption: "AES256"
+  defaultLoggingBucket: "my-logging-bucket-1234567890-us-east-1"
 newRelic:
   accountId: 1234567
   nrLambda: "herman-newrelic-broker"
