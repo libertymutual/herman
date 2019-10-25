@@ -141,6 +141,7 @@
       <groupId>org.powermock</groupId>
       <artifactId>powermock-module-junit4</artifactId>
       <version>1.7.4</version>
+      <scope>test</scope>
     </dependency>
 
     <!-- WIRED TEST RUNNER DEPENDENCIES -->
