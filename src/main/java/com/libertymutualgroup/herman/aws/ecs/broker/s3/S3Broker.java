@@ -287,21 +287,28 @@ public class S3Broker {
         }
 
         if (taskProperties != null && taskProperties.getLogsBucket() != null) {
-            buildLogger.addLogEntry(String.format("Enabling S3 access logging using logs bucket %s", taskProperties.getLogsBucket()));
-            String logFilePrefix = String.format("AWSLogs/%s/s3-access/%s/%s",
-                handler.lookupVariable("account.id"),
-                handler.lookupVariable("aws.region"),
-                configuration.getAppName());
-            client.setBucketLoggingConfiguration(new SetBucketLoggingConfigurationRequest(
-                configuration.getAppName(),
-                new BucketLoggingConfiguration(taskProperties.getLogsBucket(), logFilePrefix)));
-        } else {
+            this.setBucketLoggingConfiguration(client, configuration.getAppName(), taskProperties.getLogsBucket());
+        } else if (taskProperties != null && taskProperties.getS3().getDefaultLoggingBucket() != null) {
+            this.setBucketLoggingConfiguration(client, configuration.getAppName(),taskProperties.getS3().getDefaultLoggingBucket());
+        }
+        else {
             buildLogger.addLogEntry("Disabling S3 access logging");
             client.setBucketLoggingConfiguration(new SetBucketLoggingConfigurationRequest(
                 configuration.getAppName(),
                 new BucketLoggingConfiguration()));
         }
         updateNotificationConfiguration(configuration, client);
+    }
+
+    private void setBucketLoggingConfiguration(AmazonS3 client, String appName, String loggingBucket) {
+        buildLogger.addLogEntry(String.format("Enabling S3 access logging using logs bucket %s", loggingBucket));
+        String logFilePrefix = String.format("AWSLogs/%s/s3-access/%s/%s",
+            handler.lookupVariable("account.id"),
+            handler.lookupVariable("aws.region"),
+            appName);
+        client.setBucketLoggingConfiguration(new SetBucketLoggingConfigurationRequest(
+            appName,
+            new BucketLoggingConfiguration(loggingBucket, logFilePrefix)));
     }
 
     private void setBucketPolicy(AmazonS3 client, String bucketPolicy, String bucketName) {

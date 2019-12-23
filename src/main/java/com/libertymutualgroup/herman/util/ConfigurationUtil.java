@@ -39,13 +39,20 @@ public class ConfigurationUtil {
             hermanLogger.addLogEntry(String.format("... Using task config from S3 bucket %s: %s", hermanConfigBucket, CONFIG_FILE));
 
             AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
-                .withCredentials(new AWSStaticCredentialsProvider(sessionCredentials))
-                .withRegion(region)
-                .withClientConfiguration(BambooCredentialsHandler.getConfiguration()).build();
+                    .withCredentials(new AWSStaticCredentialsProvider(sessionCredentials))
+                    .withRegion(region)
+                    .withClientConfiguration(BambooCredentialsHandler.getConfiguration()).build();
             S3Object fullObject = s3Client.getObject(new GetObjectRequest(hermanConfigBucket, CONFIG_FILE));
             return IOUtils.toString(fullObject.getObjectContent(), StandardCharsets.UTF_8.name());
         } catch (Exception ex) {
-            throw new RuntimeException("Error getting Herman Configuration from " + CONFIG_FILE, ex);
+            AWSSecurityTokenService stsClient = AWSSecurityTokenServiceClientBuilder.standard()
+                    .withCredentials(new AWSStaticCredentialsProvider(sessionCredentials))
+                    .withClientConfiguration(BambooCredentialsHandler.getConfiguration()).build();
+
+            String account = stsClient.getCallerIdentity(new GetCallerIdentityRequest()).getAccount();
+            String userId = stsClient.getCallerIdentity(new GetCallerIdentityRequest()).getUserId();
+            String errorMessage = String.format("ERROR: This AWS Account is not configured for Herman! Please ensure that the appropriate configuration bucket and files are in place, or that you're using the correct AWS Account.\nRequested configuration file: %s\nAWS Account ID: %s\nAWS User ID: %s", CONFIG_FILE, account, userId);
+            throw new RuntimeException(errorMessage, ex);
         }
     }
 
@@ -55,9 +62,9 @@ public class ConfigurationUtil {
             hermanLogger.addLogEntry(String.format("... Using ECR policy file from S3 bucket %s: %s", configBucket, ECR_POLICY_FILE));
 
             AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
-                .withCredentials(new AWSStaticCredentialsProvider(sessionCredentials))
-                .withRegion(region)
-                .withClientConfiguration(BambooCredentialsHandler.getConfiguration()).build();
+                    .withCredentials(new AWSStaticCredentialsProvider(sessionCredentials))
+                    .withRegion(region)
+                    .withClientConfiguration(BambooCredentialsHandler.getConfiguration()).build();
             S3Object fullObject = s3Client.getObject(new GetObjectRequest(configBucket, ECR_POLICY_FILE));
             return IOUtils.toString(fullObject.getObjectContent(), StandardCharsets.UTF_8.name());
         } catch (Exception ex) {
@@ -71,9 +78,9 @@ public class ConfigurationUtil {
             hermanLogger.addLogEntry(String.format("... Using KMS policy file from S3 bucket %s: %s", configBucket, KMS_POLICY_FILE));
 
             AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
-                .withCredentials(new AWSStaticCredentialsProvider(sessionCredentials))
-                .withRegion(region)
-                .withClientConfiguration(BambooCredentialsHandler.getConfiguration()).build();
+                    .withCredentials(new AWSStaticCredentialsProvider(sessionCredentials))
+                    .withRegion(region)
+                    .withClientConfiguration(BambooCredentialsHandler.getConfiguration()).build();
             S3Object fullObject = s3Client.getObject(new GetObjectRequest(configBucket, KMS_POLICY_FILE));
             return IOUtils.toString(fullObject.getObjectContent(), StandardCharsets.UTF_8.name());
         } catch (Exception ex) {
@@ -82,10 +89,10 @@ public class ConfigurationUtil {
     }
 
     private static String getConfigurationBucketName(AWSCredentials sessionCredentials, String customConfigurationBucket, Regions region)
-        throws IOException {
+            throws IOException {
         AWSSecurityTokenService stsClient = AWSSecurityTokenServiceClientBuilder.standard()
-            .withCredentials(new AWSStaticCredentialsProvider(sessionCredentials))
-            .withClientConfiguration(BambooCredentialsHandler.getConfiguration()).build();
+                .withCredentials(new AWSStaticCredentialsProvider(sessionCredentials))
+                .withClientConfiguration(BambooCredentialsHandler.getConfiguration()).build();
         String account = stsClient.getCallerIdentity(new GetCallerIdentityRequest()).getAccount();
 
         InputStream versionPropertiesInputStream = ConfigurationUtil.class.getClassLoader().getResourceAsStream(VERSION_PROPERTY_FILE);
@@ -98,19 +105,19 @@ public class ConfigurationUtil {
             hermanConfigBucket = customConfigurationBucket;
         } else {
             hermanConfigBucket = String.format("herman-configuration-%s-%s-%s",
-                account,
-                region.getName(),
-                versionProperties.getProperty("version").toLowerCase());
+                    account,
+                    region.getName(),
+                    versionProperties.getProperty("version").toLowerCase());
         }
         return hermanConfigBucket;
     }
 
-    public <T> T getConfigProperties(AWSCredentials sessionCredentials, HermanLogger logger, Regions region, Class<T> propertiesClass){
+    public <T> T getConfigProperties(AWSCredentials sessionCredentials, HermanLogger logger, Regions region, Class<T> propertiesClass) {
         String propertiesYml = ConfigurationUtil.getHermanConfigurationAsString(sessionCredentials, logger, region);
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
         try {
             return objectMapper.readValue(propertiesYml, propertiesClass);
-        } catch(Exception e){
+        } catch (Exception e) {
             logger.addErrorLogEntry("Error getting properties from config bucket. Continuing...", e);
         }
         return null;

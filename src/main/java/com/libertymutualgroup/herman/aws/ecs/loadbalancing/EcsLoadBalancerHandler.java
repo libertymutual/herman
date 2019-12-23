@@ -74,6 +74,10 @@ public class EcsLoadBalancerHandler {
 
         String appName = definition.getAppName();
 
+        if (appName.length() > 32) {
+            throw new AwsExecException(String.format("Load Balancer name '(%s)' exceeds the 32 maximum character length set by AWS.", appName));
+        }
+
         EcsPortHandler portHandler = new EcsPortHandler();
 
         String protocol = definition.getService().getProtocol();
