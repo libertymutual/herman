@@ -29,7 +29,6 @@ import com.amazonaws.services.ecs.model.PlacementStrategyType;
 import com.amazonaws.services.ecs.model.PortMapping;
 import com.amazonaws.services.ecs.model.TaskDefinitionPlacementConstraint;
 import com.amazonaws.services.ecs.model.TaskDefinitionPlacementConstraintType;
-import com.amazonaws.services.ecs.model.TransportProtocol;
 import com.amazonaws.services.ecs.model.Ulimit;
 import com.amazonaws.services.ecs.model.UlimitName;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -38,6 +37,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.libertymutualgroup.herman.aws.AwsExecException;
 import com.libertymutualgroup.herman.aws.ecs.broker.dynamodb.DynamoDBMixIns;
+
 import java.util.List;
 
 public class EcsDefinitionParser {
@@ -97,10 +97,13 @@ public class EcsDefinitionParser {
         }
     }
 
-    interface IgnoreTransportSetValueObjMixIn {
+    abstract class IgnoreTransportSetValueObjMixIn extends PortMapping {
 
-        @JsonIgnore
-        void setProtocol(TransportProtocol protocol);
+        @Override
+        @JsonProperty("protocol")
+        public void setProtocol(String protocol) {
+            super.setProtocol(protocol);
+        }
     }
 
     interface IgnoreUlimitObjMixIn {

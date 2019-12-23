@@ -43,4 +43,11 @@ public class EcsDefinitionParserTest {
         String template = baseTemplate.append("# ${test}").toString();
         parser.parse(template, false);
     }
+
+    @Test
+    public void shouldNotIgnoreProtocolInPortMappings() {
+        String template = baseTemplate.append("    protocol: udp\n").toString();
+        EcsPushDefinition def = parser.parse(template, false);
+        Assert.assertEquals("udp", def.getContainerDefinitions().get(0).getPortMappings().get(0).getProtocol());
+    }
 }
