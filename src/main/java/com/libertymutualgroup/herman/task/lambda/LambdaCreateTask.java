@@ -50,6 +50,7 @@ public class LambdaCreateTask extends AbstractDeploymentTask {
         final AtlassianBuildLogger buildLogger = new AtlassianBuildLogger(taskContext.getBuildLogger());
         final AWSCredentials sessionCredentials = BambooCredentialsHandler.getCredentials(taskContext);
         final Regions region = Regions.fromName(taskContext.getConfigurationMap().get("awsRegion"));
+        buildLogger.addLogEntry("Starting Herman (version: " + getClass().getPackage().getImplementationVersion() + ") " + getClass().getName() + " in aws region: " + region.getName());
         final PropertyHandler handler = PropertyHandlerUtil
             .getTaskContextPropertyHandler(taskContext, sessionCredentials, getCustomVariableContext());
 
