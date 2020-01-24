@@ -109,6 +109,7 @@ public class S3Bucket {
             "name='" + name + '\'' +
             ", policyName='" + policyName + '\'' +
             ", encryptionOption=" + encryptionOption + '\'' +
+            ", versioning=" + versioning + '\'' +
             ", lambdaNotifications=" + lambdaNotifications + '\'' +
             ", snsNotifications=" + snsNotifications +
              '}';
