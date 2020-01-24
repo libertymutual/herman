@@ -36,6 +36,7 @@ public class S3InjectConfiguration implements KmsAppDefinition {
     private String kmsKeyArn;
     private String kmsKeyName;
     private List<HermanTag> tags;
+    private Boolean versioning = false;
 
     // Index and Error files used for website buckets
     private String indexFile = "index.html";
@@ -157,6 +158,10 @@ public class S3InjectConfiguration implements KmsAppDefinition {
         this.snsNotifications = snsNotifications;
     }
 
+    public Boolean getVersioning() { return versioning; }
+
+    public void setVersioning(Boolean versioning) { this.versioning = versioning; }
+
     public S3InjectConfiguration withAppName(final String appName) {
         this.appName = appName;
         return this;
@@ -224,6 +229,11 @@ public class S3InjectConfiguration implements KmsAppDefinition {
         return this;
     }
 
+    public S3InjectConfiguration withVersioning(final Boolean versioning) {
+        this.versioning = versioning;
+        return this;
+    }
+
     @Override
     public String toString() {
         return "S3InjectConfiguration{" +
@@ -241,6 +251,7 @@ public class S3InjectConfiguration implements KmsAppDefinition {
             ", tags=" + tags +
             ", indexFile='" + indexFile + '\'' +
             ", errorFile='" + errorFile + '\'' +
+            ", versioning='" + versioning + '\'' +
             '}';
     }
 }

@@ -22,6 +22,7 @@ public class S3Bucket {
     private String name;
     private String policyName;
     private S3EncryptionOption encryptionOption;
+    private Boolean versioning = false;
     private List<S3EventConfiguration> snsNotifications;
     private List<S3EventConfiguration> lambdaNotifications;
 
@@ -48,6 +49,10 @@ public class S3Bucket {
     public void setEncryptionOption(S3EncryptionOption encryptionOption) {
         this.encryptionOption = encryptionOption;
     }
+
+    public Boolean getVersioning() { return versioning; }
+
+    public void setVersioning(Boolean versioning) { this.versioning = versioning; }
 
     public List<S3EventConfiguration> getSnsNotifications() {
         return snsNotifications;
@@ -80,6 +85,11 @@ public class S3Bucket {
     public S3Bucket withEncryptionOption(
         final S3EncryptionOption encryptionOption) {
         this.encryptionOption = encryptionOption;
+        return this;
+    }
+
+    public S3Bucket withVersioning(final Boolean versioning) {
+        this.versioning = versioning;
         return this;
     }
 

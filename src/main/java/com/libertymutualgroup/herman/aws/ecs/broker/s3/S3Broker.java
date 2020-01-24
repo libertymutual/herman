@@ -27,6 +27,7 @@ import com.amazonaws.services.s3.model.BucketLoggingConfiguration;
 import com.amazonaws.services.s3.model.BucketNotificationConfiguration;
 import com.amazonaws.services.s3.model.BucketPolicy;
 import com.amazonaws.services.s3.model.BucketTaggingConfiguration;
+import com.amazonaws.services.s3.model.BucketVersioningConfiguration;
 import com.amazonaws.services.s3.model.BucketWebsiteConfiguration;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
@@ -42,6 +43,7 @@ import com.amazonaws.services.s3.model.SetBucketEncryptionRequest;
 import com.amazonaws.services.s3.model.SetBucketLoggingConfigurationRequest;
 import com.amazonaws.services.s3.model.SetBucketNotificationConfigurationRequest;
 import com.amazonaws.services.s3.model.SetBucketPolicyRequest;
+import com.amazonaws.services.s3.model.SetBucketVersioningConfigurationRequest;
 import com.amazonaws.services.s3.model.TopicConfiguration;
 import com.amazonaws.util.IOUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -175,6 +177,7 @@ public class S3Broker {
             taskProperties.getS3().getDefaultEncryption() : bucket.getEncryptionOption());
         configuration.setSnsNotifications(bucket.getSnsNotifications());
         configuration.setLambdaNotifications(bucket.getLambdaNotifications());
+        configuration.setVersioning(bucket.getVersioning());
 
         if (S3EncryptionOption.KMS.equals(configuration.getEncryptionOption()) && kmsKeyId != null) {
             String kmsKeyArn = kmsClient.describeKey(new DescribeKeyRequest().withKeyId(kmsKeyId)).getKeyMetadata().getArn();
@@ -296,6 +299,19 @@ public class S3Broker {
             client.setBucketLoggingConfiguration(new SetBucketLoggingConfigurationRequest(
                 configuration.getAppName(),
                 new BucketLoggingConfiguration()));
+        }
+
+        if(configuration.getVersioning()) {
+            buildLogger.addLogEntry("S3 Versioning enabled");
+            BucketVersioningConfiguration bucketVersioningConfiguration =
+                    new BucketVersioningConfiguration().withStatus("Enabled");
+
+            SetBucketVersioningConfigurationRequest setBucketVersioningConfigurationRequest =
+                    new SetBucketVersioningConfigurationRequest(bucketName,bucketVersioningConfiguration);
+
+            client.setBucketVersioningConfiguration(setBucketVersioningConfigurationRequest);
+        } else {
+            buildLogger.addLogEntry("S3 Versioning not enabled");
         }
         updateNotificationConfiguration(configuration, client);
     }
