@@ -38,7 +38,8 @@ per environment.
             "key": "team",
             "value": "herman-lambda-team"
         }
-    ]
+    ],
+    "scheduleExpression": "cron(0 12 * * ? *)"
 }
 ```
 
@@ -55,7 +56,8 @@ per environment.
 | timeout      | No       | Time (in seconds) that the lambda will execute before timing out. (Default is 5s)                                                                                                                                |
 | vpcId      | No       | Not shown above\* - This will run the lambda within the context of the passed VPC ID.                                                           |
 | useKms       | No       | This will create a KMS key for the lambda to encrypt environment variables and other secrets                                                                                                                     |
-| tags       | No       | List of tags to be applied to lambda and provisioned resources                                                                                                                     |
+| tags       | No       | List of tags to be applied to lambda and provisioned resources
+| scheduleExpression | No | Schedule Expression for cloudwatch rule trigger, see [AWS docs](https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html)                                                                                                                     
 
 ## <span class="underline">Permissions and Policies</span>
 
@@ -162,8 +164,4 @@ Docs](https://docs.aws.amazon.com/lambda/latest/dg/access-control-identity-based
 
 ## <span class="underline">Function Triggers</span>
 
-The Herman broker currently does not support provisioning any Lambda
-triggers. Lambdas deployed in this pattern either must be invoked via
-the AWS API/SDK, or triggers must be deployed as separate cloudformation
-stacks. If there's a trigger type that you want to see here, feel free
-to implement it and send a pull request!
+The Herman broker currently supports provisioning a single scheduled cloudwatch event as a trigger. See `scheduleExpression` parameter above.

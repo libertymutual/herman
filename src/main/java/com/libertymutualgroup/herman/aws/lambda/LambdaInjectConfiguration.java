@@ -50,6 +50,7 @@ public class LambdaInjectConfiguration implements IamAppDefinition, KmsAppDefini
     private List<SnsTopic> topics;
     private List<DynamoDBTable> dynamoDBTables;
     private List<HermanTag> tags;
+    private String scheduleExpression;
 
     public SecurityGroup getCustomSecurityGroup() {
         return customSecurityGroup;
@@ -205,6 +206,14 @@ public class LambdaInjectConfiguration implements IamAppDefinition, KmsAppDefini
         this.tags = tags;
     }
 
+    public String getScheduleExpression() {
+        return scheduleExpression;
+    }
+
+    public void setScheduleExpression(String scheduleExpression) {
+        this.scheduleExpression = scheduleExpression;
+    }
+
     public LambdaInjectConfiguration withFunctionName(final String functionName) {
         this.functionName = functionName;
         return this;
@@ -271,6 +280,11 @@ public class LambdaInjectConfiguration implements IamAppDefinition, KmsAppDefini
         return this;
     }
 
+    public LambdaInjectConfiguration withScheduleExpression(final String scheduleExpression) {
+        this.scheduleExpression = scheduleExpression;
+        return this;
+    }
+
     @Override
     public String getAppName() {
         return functionName;
@@ -298,6 +312,7 @@ public class LambdaInjectConfiguration implements IamAppDefinition, KmsAppDefini
             ", topics=" + topics +
             ", dynamoDbTables=" + dynamoDBTables +
             ", tags=" + tags +
+            ", scheduleExpression=" + scheduleExpression +
             '}';
     }
 }
