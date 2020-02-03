@@ -14,6 +14,7 @@ import com.amazonaws.services.cloudwatchevents.model.RuleState;
 import com.amazonaws.services.cloudwatchevents.model.Target;
 import com.amazonaws.services.lambda.model.GetFunctionResult;
 import com.libertymutualgroup.herman.aws.lambda.LambdaInjectConfiguration;
+import com.libertymutualgroup.herman.aws.tags.TagUtil;
 import com.libertymutualgroup.herman.logging.HermanLogger;
 
 public class CloudWatchEventsBroker {
@@ -32,7 +33,8 @@ public class CloudWatchEventsBroker {
             PutRuleRequest putRuleRequest = new PutRuleRequest()
                     .withName(configuration.getFunctionName() + "-scheduled-trigger")
                     .withScheduleExpression(configuration.getScheduleExpression())
-                    .withState(RuleState.ENABLED);
+                    .withState(RuleState.ENABLED)
+                    .withTags(TagUtil.hermanToCloudWatchEventsTags(configuration.getTags()));
 
             PutRuleResult putRuleResult = this.amazonCloudWatchEvents.putRule(putRuleRequest);
             this.buildLogger.addLogEntry("Created Rule: " + putRuleResult.getRuleArn());
