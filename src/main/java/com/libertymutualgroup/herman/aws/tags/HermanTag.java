@@ -92,6 +92,12 @@ public class HermanTag {
             .withValue(this.value);
     }
 
+    public com.amazonaws.services.cloudwatchevents.model.Tag toCloudWatchEventsTag() {
+        return new com.amazonaws.services.cloudwatchevents.model.Tag()
+                .withKey(this.key)
+                .withValue(this.value);
+    }
+
     public String getKey() {
         return key;
     }
