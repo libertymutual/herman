@@ -89,8 +89,6 @@ import com.libertymutualgroup.herman.aws.ecs.broker.iam.IAMBroker;
 import com.libertymutualgroup.herman.aws.ecs.broker.kinesis.KinesisBroker;
 import com.libertymutualgroup.herman.aws.ecs.broker.kinesis.KinesisStream;
 import com.libertymutualgroup.herman.aws.ecs.broker.kms.KmsBroker;
-import com.libertymutualgroup.herman.aws.ecs.broker.newrelic.NewRelicBroker;
-import com.libertymutualgroup.herman.aws.ecs.broker.newrelic.NewRelicBrokerConfiguration;
 import com.libertymutualgroup.herman.aws.ecs.broker.rds.EcsPushFactory;
 import com.libertymutualgroup.herman.aws.ecs.broker.rds.RdsBroker;
 import com.libertymutualgroup.herman.aws.ecs.broker.rds.RdsInstance;
@@ -495,6 +493,7 @@ public class EcsPush {
                 .withTaskDefinition(taskDefinition.getTaskDefinitionArn()).withServiceName(appName)
                 .withDeploymentConfiguration(definition.getService().getDeploymentConfiguration())
                 .withClientToken(UUID.randomUUID().toString())
+                .withSchedulingStrategy(definition.getService().getSchedulingStrategy())
                 .withPlacementConstraints(definition.getService().getPlacementConstraints())
                 .withPlacementStrategy(definition.getService().getPlacementStrategies());
 
@@ -592,10 +591,17 @@ public class EcsPush {
                 lastEventId = lastEvent.getId();
             }
 
+            float healthyPercent = (float) service.getRunningCount() / service.getDesiredCount();
+
             ServiceEvent latest = service.getEvents().get(0);
             if (Objects.equals(service.getDesiredCount(), service.getRunningCount())
                 && latest.getMessage().contains("has reached a steady state")) {
                 logger.addLogEntry("App has stabilized");
+                return true;
+            }
+            else if (Objects.nonNull(service.getDeploymentConfiguration().getMinimumHealthyPercent()) && healthyPercent > service.getDeploymentConfiguration().getMinimumHealthyPercent()
+                && latest.getMessage().contains("has reached a steady state")) {
+                logger.addLogEntry("Minimum healthy percent satisfied");
                 return true;
             }
             try {
@@ -823,22 +829,6 @@ public class EcsPush {
     }
 
     private void brokerServicesPostPush(EcsPushDefinition definition, EcsClusterMetadata clusterMetadata) {
-        if (taskProperties.getNewRelic() != null) {
-            NewRelicBrokerConfiguration newRelicBrokerConfiguration = new NewRelicBrokerConfiguration()
-                .withBrokerProperties(taskProperties.getNewRelic());
-            NewRelicBroker newRelicBroker = new NewRelicBroker(
-                bambooPropertyHandler,
-                logger,
-                fileUtil,
-                newRelicBrokerConfiguration,
-                lambdaClient);
-            newRelicBroker.brokerNewRelicApplicationDeployment(
-                definition.getNewRelic(),
-                definition.getAppName(),
-                definition.getNewRelicApplicationName(),
-                clusterMetadata.getNewrelicLicenseKey());
-        }
-
         if (definition.getBetaAutoscale() != null) {
             AutoscalingBroker asb = new AutoscalingBroker(pushContext);
             asb.broker(clusterMetadata, definition);
