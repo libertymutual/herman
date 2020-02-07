@@ -56,6 +56,7 @@ public class ECSClusterPushTask extends AbstractDeploymentTask {
         final AtlassianBuildLogger buildLogger = new AtlassianBuildLogger(taskContext.getBuildLogger());
         final AWSCredentials sessionCredentials = BambooCredentialsHandler.getCredentials(taskContext);
         final Regions awsRegion = Regions.fromName(taskContext.getConfigurationMap().get("awsRegion"));
+        buildLogger.addLogEntry("Starting Herman (version: " + getClass().getPackage().getImplementationVersion() + ") " + getClass().getName() + " in aws region: " + awsRegion.getName());
         final int timeout = Integer.parseInt(taskContext.getConfigurationMap().getOrDefault("timeout",
             String.valueOf(ECSClusterPushTaskConfigurator.DEFAULT_TIMEOUT)));
         final PropertyHandler handler = PropertyHandlerUtil.getTaskContextPropertyHandler(

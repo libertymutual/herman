@@ -50,6 +50,7 @@ public class CftPushTask extends AbstractDeploymentTask {
         final AtlassianBuildLogger buildLogger = new AtlassianBuildLogger(taskContext.getBuildLogger());
         final AWSCredentials sessionCredentials = BambooCredentialsHandler.getCredentials(taskContext);
         final Regions awsRegion = Regions.fromName(taskContext.getConfigurationMap().get("awsRegion"));
+        buildLogger.addLogEntry("Starting Herman (version: " + getClass().getPackage().getImplementationVersion() + ") " + getClass().getName() + " in aws region: " + awsRegion.getName());
         final PropertyHandler handler = PropertyHandlerUtil.getTaskContextPropertyHandler(taskContext, sessionCredentials, getCustomVariableContext());
         final CftPushTaskProperties taskProperties = CftPushPropertyFactory.getTaskProperties(sessionCredentials, buildLogger, awsRegion, handler);
 

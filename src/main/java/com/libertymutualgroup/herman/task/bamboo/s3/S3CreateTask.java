@@ -21,16 +21,14 @@ import com.atlassian.bamboo.deployments.execution.DeploymentTaskContext;
 import com.atlassian.bamboo.task.TaskResult;
 import com.atlassian.bamboo.task.TaskResultBuilder;
 import com.atlassian.bamboo.variable.CustomVariableContext;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.libertymutualgroup.herman.aws.AbstractDeploymentTask;
 import com.libertymutualgroup.herman.aws.credentials.BambooCredentialsHandler;
 import com.libertymutualgroup.herman.aws.ecs.PropertyHandler;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.BucketMeta;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3Broker;
 import com.libertymutualgroup.herman.aws.ecs.broker.s3.S3CreateContext;
-import com.libertymutualgroup.herman.task.s3.S3CreateTaskProperties;
 import com.libertymutualgroup.herman.logging.AtlassianBuildLogger;
+import com.libertymutualgroup.herman.task.s3.S3CreateTaskProperties;
 import com.libertymutualgroup.herman.util.ConfigurationUtil;
 import com.libertymutualgroup.herman.util.FileUtil;
 import com.libertymutualgroup.herman.util.PropertyHandlerUtil;
@@ -50,6 +48,7 @@ public class S3CreateTask extends AbstractDeploymentTask {
         final AWSCredentials sessionCredentials = BambooCredentialsHandler.getCredentials(taskContext);
         final Regions awsRegion = Regions.fromName(taskContext.getConfigurationMap().getOrDefault("awsRegion",
             String.valueOf(S3CreateTaskConfigurator.DEFAULT_REGION)));
+        buildLogger.addLogEntry("Starting Herman (version: " + getClass().getPackage().getImplementationVersion() + ") " + getClass().getName() + " in aws region: " + awsRegion.getName());
 
         PropertyHandler handler = PropertyHandlerUtil.getTaskContextPropertyHandler(taskContext, sessionCredentials, getCustomVariableContext());
 

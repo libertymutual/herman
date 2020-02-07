@@ -16,7 +16,6 @@
 package com.libertymutualgroup.herman.aws.ecs;
 
 import com.amazonaws.services.ecs.model.ContainerDefinition;
-import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.PlacementStrategy;
 import com.amazonaws.services.ecs.model.TaskDefinitionPlacementConstraint;
 import com.amazonaws.services.ecs.model.Ulimit;
@@ -74,18 +73,6 @@ public class EcsPushDefinition implements IamAppDefinition, KmsAppDefinition, Dy
     private List<WafRuleAction> wafRuleActions;
     private Boolean prePushOnly;
     private Map<String, Object> customBrokers;
-
-    public String getNewRelicApplicationName() {
-        String newRelicApplicationName = null;
-        if (this.getContainerDefinitions() != null) {
-            newRelicApplicationName = this.getContainerDefinitions().iterator().next().getEnvironment().stream()
-                .filter(environmentVar -> "NEW_RELIC_APP_NAME".equals(environmentVar.getName()))
-                .findAny()
-                .map(KeyValuePair::getValue)
-                .orElse(null);
-        }
-        return newRelicApplicationName;
-    }
 
     public List<ContainerDefinition> getContainerDefinitions() {
         return containerDefinitions;
