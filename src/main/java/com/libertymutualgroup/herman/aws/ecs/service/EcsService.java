@@ -15,12 +15,13 @@
  */
 package com.libertymutualgroup.herman.aws.ecs.service;
 
-import java.util.List;
-
 import com.amazonaws.services.ecs.model.DeploymentConfiguration;
 import com.amazonaws.services.ecs.model.PlacementConstraint;
 import com.amazonaws.services.ecs.model.PlacementStrategy;
+import com.amazonaws.services.ecs.model.SchedulingStrategy;
 import com.amazonaws.services.elasticloadbalancing.model.HealthCheck;
+
+import java.util.List;
 
 public class EcsService {
 
@@ -37,6 +38,7 @@ public class EcsService {
     private Integer healthCheckGracePeriodSeconds = 0;
     private List<PlacementConstraint> placementConstraints;
     private List<PlacementStrategy> placementStrategies;
+    private SchedulingStrategy schedulingStrategy = SchedulingStrategy.REPLICA;
 
     public int getInstanceCount() {
         return instanceCount;
@@ -143,6 +145,14 @@ public class EcsService {
         this.placementStrategies = placementStrategies;
     }
 
+    public SchedulingStrategy getSchedulingStrategy() {
+        return schedulingStrategy;
+    }
+
+    public void setSchedulingStrategy(SchedulingStrategy schedulingStrategy) {
+        this.schedulingStrategy = schedulingStrategy;
+    }
+
     @Override
     public String toString() {
         return "EcsService{" +
@@ -159,6 +169,7 @@ public class EcsService {
             ", healthCheckGracePeriodSeconds=" + healthCheckGracePeriodSeconds +
             ", placementConstraints=" + placementConstraints +
             ", placementStrategies=" + placementStrategies +
+            ", schedulingStrategy=" + schedulingStrategy +
             '}';
     }
 }
