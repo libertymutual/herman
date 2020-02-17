@@ -89,6 +89,8 @@ import com.libertymutualgroup.herman.aws.ecs.broker.iam.IAMBroker;
 import com.libertymutualgroup.herman.aws.ecs.broker.kinesis.KinesisBroker;
 import com.libertymutualgroup.herman.aws.ecs.broker.kinesis.KinesisStream;
 import com.libertymutualgroup.herman.aws.ecs.broker.kms.KmsBroker;
+import com.libertymutualgroup.herman.aws.ecs.broker.newrelic.NewRelicBroker;
+import com.libertymutualgroup.herman.aws.ecs.broker.newrelic.NewRelicBrokerConfiguration;
 import com.libertymutualgroup.herman.aws.ecs.broker.rds.EcsPushFactory;
 import com.libertymutualgroup.herman.aws.ecs.broker.rds.RdsBroker;
 import com.libertymutualgroup.herman.aws.ecs.broker.rds.RdsInstance;
@@ -829,6 +831,22 @@ public class EcsPush {
     }
 
     private void brokerServicesPostPush(EcsPushDefinition definition, EcsClusterMetadata clusterMetadata) {
+        if (taskProperties.getNewRelic() != null && definition.getNewRelicApplicationName() != null) {
+            NewRelicBrokerConfiguration newRelicBrokerConfiguration = new NewRelicBrokerConfiguration()
+                .withBrokerProperties(taskProperties.getNewRelic());
+            NewRelicBroker newRelicBroker = new NewRelicBroker(
+                bambooPropertyHandler,
+                logger,
+                fileUtil,
+                newRelicBrokerConfiguration,
+                lambdaClient);
+            newRelicBroker.brokerNewRelicApplicationDeployment(
+                definition.getNewRelic(),
+                definition.getAppName(),
+                definition.getNewRelicApplicationName(),
+                clusterMetadata.getNewrelicLicenseKey());
+        }
+
         if (definition.getBetaAutoscale() != null) {
             AutoscalingBroker asb = new AutoscalingBroker(pushContext);
             asb.broker(clusterMetadata, definition);

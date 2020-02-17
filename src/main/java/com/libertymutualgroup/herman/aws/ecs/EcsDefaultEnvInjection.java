@@ -27,31 +27,12 @@ public class EcsDefaultEnvInjection {
         EcsClusterMetadata meta) {
 
         for (ContainerDefinition container : definition.getContainerDefinitions()) {
-            inject(container, definition.getAppName(), region, deployEnv,
-                meta.getNewrelicOrgTag(), meta.getNewrelicLicenseKey());
+            inject(container, region);
         }
 
     }
 
-    private void inject(ContainerDefinition def, String appName, String region, String deployEnv,
-        String org, String key) {
-        List<KeyValuePair> env = def.getEnvironment();
-        if (!propExists(env, "NEW_RELIC_APP_NAME")) {
-            def.getEnvironment()
-                .add(new KeyValuePair().withName("NEW_RELIC_APP_NAME").withValue(appName + " (" + region + ")"));
-        }
-
-        if (!propExists(env, "newrelic.config.labels")) {
-            def.getEnvironment().add(new KeyValuePair().withName("newrelic.config.labels")
-                .withValue("Environment:" + deployEnv + ";Region:" + region + ";Organization:" + org + ";"));
-            def.getEnvironment().add(new KeyValuePair().withName("NEWRELIC_CONFIG_LABELS")
-                .withValue("Environment:" + deployEnv + ";Region:" + region + ";Organization:" + org + ";"));
-        }
-        if (!propExists(env, "NEW_RELIC_LICENSE_KEY") && key != null) {
-            def.getEnvironment().add(new KeyValuePair().withName("NEW_RELIC_LICENSE_KEY")
-                .withValue(key));
-        }
-
+    private void inject(ContainerDefinition def, String region) {
         def.getEnvironment().add(new KeyValuePair().withName("aws.region").withValue(region));
 
     }
