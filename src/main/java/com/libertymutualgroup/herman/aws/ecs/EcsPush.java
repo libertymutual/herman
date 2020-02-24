@@ -51,6 +51,7 @@ import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionResult;
 import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.RunTaskResult;
+import com.amazonaws.services.ecs.model.SchedulingStrategy;
 import com.amazonaws.services.ecs.model.Service;
 import com.amazonaws.services.ecs.model.ServiceEvent;
 import com.amazonaws.services.ecs.model.StopTaskRequest;
@@ -491,13 +492,18 @@ public class EcsPush {
         if (!serviceExists) {
             logger.addLogEntry("NEW SERVICE");
             CreateServiceRequest cr = new CreateServiceRequest().withCluster(clusterMetadata.getClusterId())
-                .withDesiredCount(definition.getService().getInstanceCount()).withRole(serviceRole)
-                .withTaskDefinition(taskDefinition.getTaskDefinitionArn()).withServiceName(appName)
+                .withRole(serviceRole)
+                .withTaskDefinition(taskDefinition.getTaskDefinitionArn())
+                .withServiceName(appName)
                 .withDeploymentConfiguration(definition.getService().getDeploymentConfiguration())
                 .withClientToken(UUID.randomUUID().toString())
                 .withSchedulingStrategy(definition.getService().getSchedulingStrategy())
                 .withPlacementConstraints(definition.getService().getPlacementConstraints())
                 .withPlacementStrategy(definition.getService().getPlacementStrategies());
+
+            if (!definition.getService().getSchedulingStrategy().equals(SchedulingStrategy.DAEMON)) {
+                cr.withDesiredCount(definition.getService().getInstanceCount());
+            }
 
             if (balancer != null) {
                 logger.addLogEntry("Adding load balancer to service");
@@ -515,10 +521,13 @@ public class EcsPush {
         } else {
             logger.addLogEntry("UPDATE SERVICE");
             UpdateServiceRequest updateRequest = new UpdateServiceRequest().withCluster(clusterMetadata.getClusterId())
-                .withDesiredCount(definition.getService().getInstanceCount())
                 .withDeploymentConfiguration(definition.getService().getDeploymentConfiguration())
                 .withTaskDefinition(taskDefinition.getTaskDefinitionArn())
                 .withService(appName);
+
+            if (!definition.getService().getSchedulingStrategy().equals(SchedulingStrategy.DAEMON)) {
+                updateRequest.withDesiredCount(definition.getService().getInstanceCount());
+            }
 
             if (balancer != null) {
                 updateRequest
