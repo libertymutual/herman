@@ -37,6 +37,7 @@ import com.amazonaws.services.ecs.model.Container;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.CreateServiceRequest;
 import com.amazonaws.services.ecs.model.CreateServiceResult;
+import com.amazonaws.services.ecs.model.DeleteServiceRequest;
 import com.amazonaws.services.ecs.model.DeregisterTaskDefinitionRequest;
 import com.amazonaws.services.ecs.model.DescribeServicesRequest;
 import com.amazonaws.services.ecs.model.DescribeServicesResult;
@@ -539,7 +540,7 @@ public class EcsPush {
             ecsClient.updateService(updateRequest);
         }
 
-        waitForRequestInitialization(appName, ecsClient, clusterMetadata);
+        waitForRequestInitialization(definition, ecsClient, clusterMetadata);
         boolean deploySuccessful = waitForDeployment(appName, ecsClient, clusterMetadata);
 
         if (!deploySuccessful) {
@@ -562,11 +563,11 @@ public class EcsPush {
 
                 ecsClient.updateService(updateRequest);
 
-                waitForRequestInitialization(appName, ecsClient, clusterMetadata);
+                waitForRequestInitialization(definition, ecsClient, clusterMetadata);
                 boolean rollbackSuccessful = waitForDeployment(appName, ecsClient, clusterMetadata);
 
                 if (!rollbackSuccessful) {
-                    setUnsuccessfulServiceToZero(appName, ecsClient, clusterMetadata);
+                    setUnsuccessfulServiceToZero(definition, ecsClient, clusterMetadata);
                     throw new AwsExecException(
                         "Rollback never stabilized. Shutting down to stop flapping, we tried...");
                 } else {
@@ -574,7 +575,7 @@ public class EcsPush {
                         "Application rolled back successfully. Marking Bamboo as failed for notice.");
                 }
             } else {
-                setUnsuccessfulServiceToZero(appName, ecsClient, clusterMetadata);
+                setUnsuccessfulServiceToZero(definition, ecsClient, clusterMetadata);
                 throw new AwsExecException(
                     "Deployment never stabilized, no prior version. Shutting down to stop flapping, all we can do.");
             }
@@ -602,7 +603,7 @@ public class EcsPush {
                 lastEventId = lastEvent.getId();
             }
 
-            float healthyPercent = (float) service.getRunningCount() / service.getDesiredCount();
+
 
             ServiceEvent latest = service.getEvents().get(0);
             if (Objects.equals(service.getDesiredCount(), service.getRunningCount())
@@ -610,11 +611,7 @@ public class EcsPush {
                 logger.addLogEntry("App has stabilized");
                 return true;
             }
-            else if (Objects.nonNull(service.getDeploymentConfiguration().getMinimumHealthyPercent()) && healthyPercent > service.getDeploymentConfiguration().getMinimumHealthyPercent()
-                && latest.getMessage().contains("has reached a steady state")) {
-                logger.addLogEntry("Minimum healthy percent satisfied");
-                return true;
-            }
+
             try {
                 Thread.sleep(POLLING_INTERVAL_MS);
             } catch (InterruptedException e) {
@@ -623,16 +620,33 @@ public class EcsPush {
             }
             timeoutCount--;
         }
-        return false;
+        // Run one last check to see if minimum healthy percent was achieved
+        DescribeServicesResult servicesResult = ecsClient.describeServices(
+            new DescribeServicesRequest().withCluster(clusterMetadata.getClusterId()).withServices(appName));
+        Service service = servicesResult.getServices().get(0);
+        float healthyPercent = ((float) service.getRunningCount() / service.getDesiredCount()) * 100;
+        if (Objects.nonNull(service.getDeploymentConfiguration().getMinimumHealthyPercent()) && healthyPercent > service.getDeploymentConfiguration().getMinimumHealthyPercent()) {
+            logger.addLogEntry("Minimum healthy percent satisfied");
+            return true;
+        }
+
+        return false; // Didn't make minimum healthy percent, mark as failed
     }
 
-    private void setUnsuccessfulServiceToZero(String appName, AmazonECS ecsClient, EcsClusterMetadata clusterMetadata) {
-        logger.addLogEntry("Deployment was not successful - setting instance count to 0");
-        ecsClient.updateService(new UpdateServiceRequest().withCluster(clusterMetadata.getClusterId())
-            .withDesiredCount(0).withService(appName));
+    private void setUnsuccessfulServiceToZero(EcsPushDefinition definition, AmazonECS ecsClient, EcsClusterMetadata clusterMetadata) {
+        if (definition.getService().getSchedulingStrategy().equals(SchedulingStrategy.DAEMON)) {
+            logger.addLogEntry("Deployment was not successful - Deleting daemon service");
+            ecsClient.deleteService(new DeleteServiceRequest().withCluster(clusterMetadata.getClusterId())
+                .withService(definition.getAppName()));
+        }
+        else {
+            logger.addLogEntry("Deployment was not successful - setting instance count to 0");
+            ecsClient.updateService(new UpdateServiceRequest().withCluster(clusterMetadata.getClusterId())
+                .withDesiredCount(0).withService(definition.getAppName()));
+        }
     }
 
-    private void waitForRequestInitialization(String appName, AmazonECS ecsClient, EcsClusterMetadata clusterMetadata) {
+    private void waitForRequestInitialization(EcsPushDefinition definition, AmazonECS ecsClient, EcsClusterMetadata clusterMetadata) {
         int timeoutCount = this.pushContext.getTimeout() * 6;
 
         while (timeoutCount > 0) {
@@ -643,7 +657,7 @@ public class EcsPush {
                 throw new AwsExecException(INTERRUPTED_WHILE_POLLING);
             }
             DescribeServicesResult servicesResult = ecsClient.describeServices(
-                new DescribeServicesRequest().withCluster(clusterMetadata.getClusterId()).withServices(appName));
+                new DescribeServicesRequest().withCluster(clusterMetadata.getClusterId()).withServices(definition.getAppName()));
             Service service = servicesResult.getServices().get(0);
             if (service != null && !service.getEvents().isEmpty()) {
                 ServiceEvent lastEvent = service.getEvents().get(0);
@@ -658,7 +672,7 @@ public class EcsPush {
             }
             timeoutCount--;
         }
-        setUnsuccessfulServiceToZero(appName, ecsClient, clusterMetadata);
+        setUnsuccessfulServiceToZero(definition, ecsClient, clusterMetadata);
         throw new AwsExecException("AWS never initiated the deployment");
     }
 
