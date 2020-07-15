@@ -454,6 +454,38 @@ public class EcsPush {
         return taskResult;
     }
 
+    private TaskDefinition registerPriorTaskDefinitionWithUpdatedContainerEnvConfig(EcsPushDefinition ecsPushDefinition, TaskDefinition priorTaskDef, AmazonECS ecsClient) {
+        RdsInstance currentRdsInstanceDefinition = ecsPushDefinition.getDatabase();
+        if (currentRdsInstanceDefinition != null) {
+            for (ContainerDefinition containerDef : priorTaskDef.getContainerDefinitions()) {
+                containerDef.getEnvironment().replaceAll(keyValuePair -> {
+                    if (keyValuePair.getName().equals(currentRdsInstanceDefinition.getInjectNames().getEncryptedPassword()))
+                        keyValuePair.setValue(currentRdsInstanceDefinition.getEncryptedPassword());
+                    else if (keyValuePair.getName().equals(currentRdsInstanceDefinition.getInjectNames().getAppEncryptedPassword()))
+                        keyValuePair.setValue(currentRdsInstanceDefinition.getAppEncryptedPassword());
+                    else if (keyValuePair.getName().equals(currentRdsInstanceDefinition.getInjectNames().getAdminEncryptedPassword()))
+                        keyValuePair.setValue(currentRdsInstanceDefinition.getAdminEncryptedPassword());
+                    return keyValuePair;
+                });
+            }
+
+            RegisterTaskDefinitionResult taskResult = ecsClient.registerTaskDefinition(new RegisterTaskDefinitionRequest()
+                    .withFamily(priorTaskDef.getFamily())
+                    .withContainerDefinitions(priorTaskDef.getContainerDefinitions())
+                    .withVolumes(priorTaskDef.getVolumes())
+                    .withPlacementConstraints(priorTaskDef.getPlacementConstraints())
+                    .withNetworkMode(priorTaskDef.getNetworkMode())
+                    .withTaskRoleArn(priorTaskDef.getTaskRoleArn())
+                    .withMemory(priorTaskDef.getMemory()));
+
+            logger.addLogEntry("Registered new task definition revision of prior working version: " + taskResult.getTaskDefinition().getTaskDefinitionArn());
+
+            return taskResult.getTaskDefinition();
+        }
+        return priorTaskDef;
+
+    }
+
     private String deployService(AmazonECS ecsClient, EcsClusterMetadata clusterMetadata, EcsPushDefinition definition,
         LoadBalancer balancer, TaskDefinition taskDefinition, TaskDefinition priorDef) {
         String appName = definition.getAppName();
@@ -546,14 +578,15 @@ public class EcsPush {
         if (!deploySuccessful) {
             if (priorDef != null) {
                 logger.addLogEntry("Deployment never stabilized - rolling back!");
-                logger.addLogEntry("Rolling back to " + priorDef.getTaskRoleArn());
+                TaskDefinition rollBackTaskDefinition = registerPriorTaskDefinitionWithUpdatedContainerEnvConfig(definition, priorDef, ecsClient);
+                logger.addLogEntry("Rolling back to " + rollBackTaskDefinition.getTaskRoleArn());
 
                 UpdateServiceRequest updateRequest = new UpdateServiceRequest()
                     .withCluster(clusterMetadata.getClusterId())
                     .withDesiredCount(definition.getService().getInstanceCount())
                     .withDeploymentConfiguration(definition.getService().getDeploymentConfiguration())
                     .withTaskDefinition(
-                        priorDef.getTaskDefinitionArn())// "aws-kms-encrypt-dev-us-east-1-task-LEP2I3IDX73G:1")
+                            rollBackTaskDefinition.getTaskDefinitionArn())// "aws-kms-encrypt-dev-us-east-1-task-LEP2I3IDX73G:1")
                     .withService(appName);
 
                 if (balancer != null) {
